@@ -1,0 +1,48 @@
+{
+  "name": "chan-dongle-extended",
+  "version": "0.0.1",
+  "description": "feature SMS multipart, phonebook memory access, PIN code managment",
+  "main": "./out/lib/index.js",
+  "types": "./out/lib/index.d.ts",
+  "scripts": {
+    "postinstall": "npm run tsc",
+    "tsc": "./node_modules/.bin/tsc -p ./tsconfig.json",
+    "test": "DEBUG=_* node ./out/test/main"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/garronej/chan-dongle-extended.git"
+  },
+  "keywords": [
+    "chan_dongle",
+    "asterisk",
+    "multipart SMS",
+    "phonebook",
+    "contact",
+    "PIN"
+  ],
+  "author": "Joseph Garrone",
+  "license": "MIT",
+  "dependencies": {
+    "@types/chai": "^3.4.34",
+    "@types/colors": "^1.1.1",
+    "@types/debug": "0.0.29",
+    "@types/node": "^4.2.2",
+    "colors": "^1.1.2",
+    "debug": "^2.6.1",
+    "object-extended": "garronej/object-extended",
+    "timer-extended": "garronej/timer-extended",
+    "ts-events-extended": "garronej/ts-events-extended",
+    "ts-exec-stack": "garronej/ts-exec-stack",
+    "ts-promisify": "garronej/ts-promisify",
+    "typescript": "^2.2.1",
+    "@types/ini": "^1.3.29",
+    "asterisk-manager": "^0.1.15",
+    "gsm-modem-connection": "garronej/gsm-modem-connection",
+    "ini": "^1.3.4"
+    //"ts-gsm-modem": "garronej/ts-gsm-modem"
+  },
+  "devDependencies": {
+    "why-is-node-running": "^1.2.2"
+  }
+}
