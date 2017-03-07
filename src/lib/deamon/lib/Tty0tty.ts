@@ -1,17 +1,17 @@
-export class VoidModem {
+export class Tty0tty {
 
     private static store= (()=>{
 
-        let out: VoidModem[]= [];
+        let out: Tty0tty[]= [];
 
         for (let i = 0; i <= 6; i += 2)
-            out.push(new VoidModem(`/dev/tnt${i}`, `/dev/tnt${i + 1}`));
+            out.push(new Tty0tty(`/dev/tnt${i}`, `/dev/tnt${i + 1}`));
 
         return out;
 
     })();
 
-    public static get(): VoidModem {
+    public static get(): Tty0tty {
 
         for (let pair of this.store)
             if (pair.available) {

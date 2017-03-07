@@ -7,7 +7,8 @@
                     "es5",
                     "scripthost",
                     "es2015.promise",
-                    "es2015.core"
+                    "es2015.core",
+                    "es2015.collection"
             ],
         "declaration": true,
         "outDir": "./out",
