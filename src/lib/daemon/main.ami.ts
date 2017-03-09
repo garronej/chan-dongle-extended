@@ -2,6 +2,7 @@
 import { activeModems, lockedModems } from "./main";
 import { AmiService } from "./lib/AmiService";
 import { UserEvent } from "../shared/AmiUserEvent";
+import { divide } from "../tools/divide";
 
 import * as _debug from "debug";
 let debug = _debug("_main.ami");
@@ -31,6 +32,21 @@ activeModems.evtSet.attach(imei => {
                     dischargeTime.getDate().toString(),
                     isDelivered ? "true" : "false",
                     status
+                )
+            )
+    );
+
+    modem.evtMessage.attach(
+        ({
+            number,
+            date,
+            text
+        }) => AmiService.postEvent(
+                UserEvent.Event.NewMessage.buildAction(
+                    imei,
+                    number,
+                    date.getTime().toString(),
+                    JSON.stringify(text)
                 )
             )
     );
@@ -86,9 +102,17 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
 
         let { modem } = activeModems.get(evtRequest.imei)!;
 
+        let text: string;
+
+        try {
+            text = JSON.parse(evtRequest.text);
+        } catch (error) {
+            text = evtRequest.text;
+        }
+
         modem.sendMessage(
             evtRequest.number,
-            JSON.parse(evtRequest.text) as string,
+            text,
             messageId => {
 
                 if (isNaN(messageId))
@@ -96,7 +120,7 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
 
                 callback(
                     UserEvent.Response.SendMessage.buildAction(
-                        actionid!,
+                        actionid,
                         messageId.toString()
                     )
                 );
@@ -106,11 +130,73 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
     } else if (UserEvent.Request.GetLockedDongles.matchEvt(evtRequest))
         callback(
             UserEvent.Response.GetLockedDongles.buildAction(
-                evtRequest.actionid!,
+                actionid,
                 JSON.stringify(lockedModems.toObject())
             )
         );
-    else if (UserEvent.Request.GetActiveDongles.matchEvt(evtRequest))
+    else if (UserEvent.Request.GetSimPhonebook.matchEvt(evtRequest)){
+
+        if (!activeModems.has(evtRequest.imei))
+            return replyError(`Dongle imei: ${evtRequest.imei} not found`);
+
+        let { modem } = activeModems.get(evtRequest.imei)!;
+
+        let contactsSplit= divide(900,JSON.stringify(modem.contacts));
+
+        let phonebookpart1= contactsSplit[0];
+        let phonebookpart2= contactsSplit[1] || "";
+        let phonebookpart3= contactsSplit[2] || "";
+
+        callback(
+            UserEvent.Response.GetSimPhonebook.buildAction(
+                actionid,
+                phonebookpart1,
+                phonebookpart2,
+                phonebookpart3
+            )
+        );
+    }else if( UserEvent.Request.CreateContact.matchEvt(evtRequest)){
+
+        if (!activeModems.has(evtRequest.imei))
+            return replyError(`Dongle imei: ${evtRequest.imei} not found`);
+
+        let { modem } = activeModems.get(evtRequest.imei)!;
+
+        let { name, number } = evtRequest;
+
+        //TODO: validate params.
+
+        modem.createContact(number, name,
+            contact => callback(
+                UserEvent.Response.CreateContact.buildAction(
+                    actionid,
+                    contact.index.toString(),
+                    contact.name,
+                    contact.number
+                )
+            )
+        );
+    } else if( UserEvent.Request.DeleteContact.matchEvt(evtRequest)){
+
+        if (!activeModems.has(evtRequest.imei))
+            return replyError(`Dongle imei: ${evtRequest.imei} not found`);
+
+        let { modem } = activeModems.get(evtRequest.imei)!;
+
+        let index= parseInt(evtRequest.index);
+
+        if( !modem.getContact(index) )
+            return replyError(`Contact index ${index} does not exist`);
+
+        modem.deleteContact(index,
+            () => callback(
+                UserEvent.Response.DeleteContact.buildAction(
+                    actionid
+                )
+            )
+        );
+
+    } else if (UserEvent.Request.GetActiveDongles.matchEvt(evtRequest))
         callback(
             UserEvent.Response.GetActiveDongles.buildAction(
                 evtRequest.actionid!,

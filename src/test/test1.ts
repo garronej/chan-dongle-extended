@@ -32,6 +32,8 @@ client.evtNewActiveDongle.attach(({ imei }) => console.log(`New active dongle ${
 
 client.evtRequestUnlockCode.attach(requestUnlockCode => console.log("Request unlock code: ", requestUnlockCode));
 
+client.evtNewMessage.attach(message => console.log("New Message: ", message));
+
 client.getActiveDongles(dongles => {
 
     if (!Object.keys(dongles).length)
@@ -44,7 +46,7 @@ client.getActiveDongles(dongles => {
         client.sendMessage(
             imei,
             "0636786385",
-            "Yo Yo Yo Yo!",
+            "Un message\n plus commpliquer | alors @ ou pas",
             (error, messageId) => {
 
                 if (error)
@@ -56,9 +58,31 @@ client.getActiveDongles(dongles => {
             }
         );
 
+        client.createContact(
+            imei,
+            "Sim Free",
+            "+33769365812",
+            (error, contact) => {
+
+                console.log("Created Contact: ", contact!);
+
+                client.getSimPhonebook(imei, (error, contacts) => console.log("Phonebook", JSON.stringify(contacts, null, 2)));
+
+                client.deleteContact(imei, contact!.index, error => {
+
+                    console.log("after remove contact");
+
+                    client.getSimPhonebook(imei, (error, contacts) => console.log("Phonebook", JSON.stringify(contacts, null, 2)));
+
+
+                })
+
+
+            }
+        );
+
 
     }
-
 
 
 });

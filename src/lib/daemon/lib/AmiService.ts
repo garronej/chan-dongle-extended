@@ -53,28 +53,4 @@ ami.on("userevent", (evt: UserEvent): void => {
         }
     });
 
-
 });
-
-
-function divide(maxLength: number, str: string): string[] {
-
-    function callee(state: string[]): string[] {
-
-        let current = state.pop()!;
-
-        if (current.length > maxLength) {
-
-            let part = current.substring(0, maxLength);
-
-            let rest = current.substring(maxLength, current.length);
-
-            return callee([...state, part, rest]);
-
-        } else return [...state, current];
-
-    }
-
-    return callee([str]);
-
-}

@@ -3,7 +3,7 @@ import { AmiCredential, Credential } from "../shared/AmiCredential";
 import * as AstMan from "asterisk-manager";
 import { SyncEvent } from "ts-events-extended";
 
-import { StatusReport, LockedPinState } from "../../../../ts-gsm-modem/out/lib/index";
+import { StatusReport, Message, LockedPinState, Contact } from "../../../../ts-gsm-modem/out/lib/index";
 
 
 export class AmiClient {
@@ -28,6 +28,7 @@ export class AmiClient {
         pinState: LockedPinState;
         tryLeft: number;
     }>();
+    public readonly evtNewMessage = new SyncEvent<{ imei: string } & Message>();
 
     constructor(credential: Credential) {
 
@@ -61,6 +62,14 @@ export class AmiClient {
                     "pinState": evt.pinstate,
                     "tryLeft": parseInt(evt.tryleft)
                 });
+            else if (UserEvent.Event.NewMessage.matchEvt(evt))
+                this.evtNewMessage.post({
+                    "imei": evt.imei,
+                    "number": evt.number,
+                    "date": new Date(parseInt(evt.date)),
+                    "text": JSON.parse(evt.text) as string
+                });
+
 
         });
 
@@ -97,7 +106,11 @@ export class AmiClient {
 
             ami.removeListener("userevent", callee);
 
-            callback(evt.error ? new Error(evt.error) : null, parseInt(evt.messageid));
+            if( evt.error )
+                callback(new Error(evt.error), NaN);
+            else
+                callback(null, parseInt(evt.messageid));
+
 
         });
 
@@ -131,8 +144,115 @@ export class AmiClient {
 
     }
 
+    public getSimPhonebook(
+        imei: string,
+        callback: (error: null | Error, phonebook: Contact[]) => void
+    ): void {
 
-    public getActiveDongles(callback: (dongles: string[]) => void
+        let ami = this.ami;
+
+        let actionid = ami.action(
+            UserEvent.Request.GetSimPhonebook.buildAction(imei)
+        );
+
+        ami.on("userevent", function callee(evt: UserEvent) {
+
+            if (!UserEvent.Response.GetSimPhonebook.matchEvt(evt, actionid))
+                return;
+
+            ami.removeListener("userevent", callee);
+
+            if (evt.error)
+                callback(new Error(evt.error), []);
+            else
+                callback(null, JSON.parse(
+                    evt.phonebookpart1 + evt.phonebookpart2 + evt.phonebookpart3
+                ));
+
+
+        });
+
+
+    }
+
+    public createContact(
+        imei: string,
+        name: string,
+        number: string,
+        callback?: (error: null | Error, contact: Contact | null )=> void
+    ): void {
+        let ami= this.ami;
+
+        let actionid= ami.action(
+            UserEvent.Request.CreateContact.buildAction(
+                imei,
+                name,
+                number
+            )
+        );
+
+        if( !callback ) return;
+
+        ami.on("userevent", function callee(evt: UserEvent){
+
+            if(!UserEvent.Response.CreateContact.matchEvt(evt, actionid))
+                return;
+
+            
+            ami.removeListener("userevent", callee);
+
+
+            if (evt.error)
+                callback(new Error(evt.error), null);
+            else
+                callback(null, {
+                    "index": parseInt(evt.index),
+                    "name": evt.name,
+                    "number": evt.number
+                });
+
+        });
+
+
+    }
+
+    public deleteContact(
+        imei: string,
+        index: number,
+        callback?: (error: null | Error) => void
+    ): void {
+
+        let ami= this.ami;
+
+        let actionid= ami.action(
+            UserEvent.Request.DeleteContact.buildAction(
+                imei,
+                index.toString()
+            )
+        );
+
+        if( !callback ) return;
+
+        ami.on("userevent", function callee(evt: UserEvent) {
+            
+            if( !UserEvent.Response.DeleteContact.matchEvt(evt, actionid) )
+                return;
+
+            ami.removeListener("userevent", callee);
+
+            if (evt.error)
+                callback(new Error(evt.error));
+            else
+                callback(null);
+
+        });
+
+
+    }
+
+
+    public getActiveDongles(
+        callback: (dongles: string[]) => void
     ): void {
 
         let ami = this.ami;
@@ -199,5 +319,6 @@ export class AmiClient {
 
 
     }
+
 
 }

@@ -4,18 +4,25 @@ import {
 
 export interface UserEvent {
     userevent: string;
-    actionid?: string;
+    actionid: string;
     [key: string]: string | undefined;
 }
 
 export namespace UserEvent {
 
-    export function buildAction(userevent: string): UserEvent {
+    export function buildAction(userevent: string, actionid?: string): UserEvent {
+
+        actionid= actionid || Date.now().toString();
+
         return {
             "action": "UserEvent",
-            userevent
+            userevent,
+            actionid
         };
+
     }
+
+    /*START EVENT*/
 
     export interface Event extends UserEvent {
         userevent: "DongleExt Event",
@@ -36,6 +43,7 @@ export namespace UserEvent {
                 dongleevent
             } as Event;
         }
+
 
         export interface RequestUnlockCode extends Event {
             dongleevent: "RequestUnlockCode";
@@ -63,6 +71,36 @@ export namespace UserEvent {
             }
 
         }
+
+        export interface NewMessage extends Event {
+            dongleevent: "NewMessage";
+            imei: string;
+            number: string;
+            date: string;
+            text: string;
+        }
+
+        export namespace NewMessage{
+
+            export function matchEvt(evt: UserEvent): evt is NewMessage {
+                return (
+                    Event.matchEvt(evt) &&
+                    evt.dongleevent === "NewMessage"
+                );
+            }
+
+            export function buildAction(imei: string, number: string, date: string, text: string): NewMessage {
+                return {
+                    ...Event.buildAction("NewMessage"),
+                    imei,
+                    number,
+                    date,
+                    text
+                } as NewMessage;
+            }
+
+        }
+
 
         export interface NewActiveDongle extends Event {
             dongleevent: "NewActiveModem";
@@ -152,12 +190,11 @@ export namespace UserEvent {
 
         }
 
-
-
-
-
     }
 
+    /*END EVENT*/
+
+    /*START REQUEST*/
 
     export interface Request extends UserEvent {
         userevent: "DongleExt Request";
@@ -179,6 +216,97 @@ export namespace UserEvent {
                 command
             } as Request;
         }
+
+
+        export interface GetSimPhonebook extends Request{
+            command: "GetSimPhonebook";
+            imei: string;
+        }
+
+        export namespace GetSimPhonebook {
+
+            export function matchEvt(evt: UserEvent): evt is GetSimPhonebook {
+                return (
+                    Request.matchEvt(evt) &&
+                    evt.command === "GetSimPhonebook" &&
+                    evt.hasOwnProperty("imei")
+                );
+            }
+
+            export function buildAction(imei: string): GetSimPhonebook {
+                return {
+                    ...Request.buildAction("GetSimPhonebook"),
+                    imei
+                } as GetSimPhonebook;
+            }
+
+        }
+
+
+
+        export interface DeleteContact extends Request{
+            command: "DeleteContact";
+            imei: string;
+            index: string;
+        }
+
+
+        export namespace DeleteContact {
+
+            export function matchEvt(evt: UserEvent): evt is DeleteContact {
+                return (
+                    Request.matchEvt(evt) &&
+                    evt.command === "DeleteContact" &&
+                    evt.hasOwnProperty("imei") &&
+                    evt.hasOwnProperty("index")
+                );
+            }
+
+            export function buildAction(imei: string, index: string): DeleteContact {
+                return {
+                    ...Request.buildAction("DeleteContact"),
+                    imei,
+                    index
+                } as DeleteContact;
+            }
+
+        }
+
+
+
+        export interface CreateContact extends Request{
+            command: "CreateContact";
+            imei: string;
+            name: string;
+            number: string;
+        }
+
+
+        export namespace CreateContact {
+
+            export function matchEvt(evt: UserEvent): evt is CreateContact {
+                return (
+                    Request.matchEvt(evt) &&
+                    evt.command === "CreateContact" &&
+                    evt.hasOwnProperty("imei") &&
+                    evt.hasOwnProperty("name") &&
+                    evt.hasOwnProperty("number")
+                );
+            }
+
+            export function buildAction(imei: string, name: string, number: string): CreateContact {
+                return {
+                    ...Request.buildAction("CreateContact"),
+                    imei,
+                    name,
+                    number
+                } as CreateContact;
+            }
+
+        }
+
+
+
 
         export interface SendMessage extends Request {
             command: "SendMessage";
@@ -296,6 +424,10 @@ export namespace UserEvent {
 
     }
 
+    /*END REQUEST*/
+
+    /*START RESPONSE*/
+
     export interface Response extends UserEvent {
         userevent: "DongleExt Response";
         responseto: string;
@@ -313,9 +445,8 @@ export namespace UserEvent {
 
         export function buildAction(responseto: string, actionid: string, error?: string): Response {
             let out = {
-                ...UserEvent.buildAction("DongleExt Response"),
-                responseto,
-                actionid
+                ...UserEvent.buildAction("DongleExt Response", actionid),
+                responseto
             } as Response;
 
             if (typeof error === "string") out.error = error;
@@ -346,6 +477,68 @@ export namespace UserEvent {
             }
         }
 
+
+        export interface CreateContact extends Response {
+            responseto: "CreateContact";
+            index: string;
+            name: string;
+            number: string;
+        }
+
+        export namespace CreateContact {
+
+            export function matchEvt(evt: UserEvent, actionid: string): evt is CreateContact {
+                return (
+                    Response.matchEvt(evt, actionid) &&
+                    evt.responseto === "CreateContact"
+                );
+            }
+
+            export function buildAction(actionid: string, index: string, name: string, number: string): CreateContact {
+                return {
+                    ...Response.buildAction("CreateContact", actionid),
+                    index,
+                    name,
+                    number
+                } as CreateContact;
+
+            }
+        }
+
+        export interface GetSimPhonebook extends Response {
+            responseto: "GetSimPhonebook";
+            phonebookpart1: string;
+            phonebookpart2: string;
+            phonebookpart3: string;
+        }
+
+        export namespace GetSimPhonebook {
+
+            export function matchEvt(evt: UserEvent, actionid: string): evt is GetSimPhonebook {
+                return (
+                    Response.matchEvt(evt, actionid) &&
+                    evt.responseto === "GetSimPhonebook"
+                );
+            }
+
+            export function buildAction(
+                actionid: string,
+                phonebookpart1: string,
+                phonebookpart2: string,
+                phonebookpart3: string
+            ): GetSimPhonebook {
+                return {
+                    ...Response.buildAction("GetSimPhonebook", actionid),
+                    phonebookpart1,
+                    phonebookpart2,
+                    phonebookpart3
+                } as GetSimPhonebook;
+            }
+
+        }
+
+
+
         export interface GetLockedDongles extends Response {
             responseto: "GetLockedDongles";
             dongles: string;
@@ -365,6 +558,28 @@ export namespace UserEvent {
                     ...Response.buildAction("GetLockedDongles", actionid),
                     dongles
                 } as GetLockedDongles;
+            }
+
+        }
+
+
+        export interface DeleteContact extends Response {
+            responseto: "DeleteContact";
+        }
+
+        export namespace DeleteContact {
+
+            export function matchEvt(evt: UserEvent, actionid: string): evt is DeleteContact {
+                return (
+                    Response.matchEvt(evt, actionid) &&
+                    evt.responseto === "DeleteContact"
+                );
+            }
+
+            export function buildAction(actionid: string): DeleteContact {
+                return {
+                    ...Response.buildAction("DeleteContact", actionid),
+                } as DeleteContact;
             }
 
         }
@@ -396,5 +611,6 @@ export namespace UserEvent {
 
     }
 
+    /*END RESPONSE*/
 
 }
