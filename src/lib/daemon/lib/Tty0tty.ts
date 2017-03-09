@@ -11,7 +11,7 @@ export class Tty0tty {
 
     })();
 
-    public static get(): Tty0tty {
+    public static getPair(): Tty0tty {
 
         for (let pair of this.store)
             if (pair.available) {
@@ -30,7 +30,7 @@ export class Tty0tty {
     private available = true;
 
     private constructor(
-        public readonly local: string,
-        public readonly extern: string
+        public readonly leftEnd: string,
+        public readonly rightEnd: string
     ) {}
 }

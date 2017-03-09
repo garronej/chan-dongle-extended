@@ -1,9 +1,8 @@
-
 import * as log from "why-is-node-running";
-import { DongleExtClient } from "../lib/client/AmiClient";
+import { AmiClient } from "../lib/client/AmiClient";
 
 
-const client = DongleExtClient.getLocal();
+const client = AmiClient.getLocal();
 
 /*
 client.sendMessage(
@@ -31,35 +30,62 @@ client.evtDongleDisconnect.attach(({ imei }) => console.log(`Dongle ${imei} has 
 
 client.evtNewActiveDongle.attach(({ imei }) => console.log(`New active dongle ${imei}`));
 
-client.evtRequestUnlockCode.attach( requestUnlockCode => console.log("Request unlock code: ", requestUnlockCode));
+client.evtRequestUnlockCode.attach(requestUnlockCode => console.log("Request unlock code: ", requestUnlockCode));
 
-client.getActiveDongles( dongles => {
+client.getActiveDongles(dongles => {
 
-    for( let imei of dongles ){
+    if (!Object.keys(dongles).length)
+        return console.log("No active dongle");
+
+    for (let imei of dongles) {
+
         console.log(`Dongle ${imei} connected`);
+
+        client.sendMessage(
+            imei,
+            "0636786385",
+            "Yo Yo Yo Yo!",
+            (error, messageId) => {
+
+                if (error)
+                    console.log(error);
+                else console.log("MessageId: ", messageId);
+
+                //client.disconnect();
+
+            }
+        );
+
+
     }
+
+
 
 });
 
-client.getLockedDongles( dongles => {
+client.getLockedDongles(dongles => {
 
-    if( !Object.keys(dongles).length ){
+    if (!Object.keys(dongles).length) {
         console.log("alldongle unlocked");
         return;
     }
 
-    let imei= Object.keys(dongles)[0];
+    console.log("Locked dongles: ", dongles);
+
+    let imei = Object.keys(dongles)[0];
 
     console.assert(imei === "353762037478870");
 
     let { pinState, tryLeft } = dongles[imei];
 
-    if( tryLeft === 1 ) return;
+    if (tryLeft === 1) return;
 
     client.unlockDongle(imei, "1234", error => {
-        if( error ){
+        if (error) {
             console.log(error.message);
         }
+
+        console.log("unlock success");
     });
 
 

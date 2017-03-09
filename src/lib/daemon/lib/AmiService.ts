@@ -7,7 +7,7 @@ import { ObjectExt } from "object-extended";
 import { UserEvent } from "../../shared/AmiUserEvent";
 
 import * as _debug from "debug";
-let debug= _debug("_AsteriskInterface");
+let debug= _debug("_AmiService");
 
 require("colors");
 

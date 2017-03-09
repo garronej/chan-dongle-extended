@@ -4,9 +4,12 @@ import { AmiService } from "./lib/AmiService";
 import { UserEvent } from "../shared/AmiUserEvent";
 
 import * as _debug from "debug";
-let debug = _debug("_bridgeAmi");
+let debug = _debug("_main.ami");
 
 activeModems.evtSet.attach(imei => {
+
+    debug(`New active modem ${imei}`);
+
     AmiService.postEvent(
         UserEvent.Event.NewActiveDongle.buildAction(
             imei
@@ -35,17 +38,23 @@ activeModems.evtSet.attach(imei => {
 
 });
 
-activeModems.evtDelete.attach(
-    imei => AmiService.postEvent(
+activeModems.evtDelete.attach(imei => {
+
+    debug(`Modem terminate ${imei}`);
+
+    AmiService.postEvent(
         UserEvent.Event.DongleDisconnect.buildAction(
             imei
         )
-    )
+    );
+}
 );
 
 lockedModems.evtSet.attach(imei => {
 
     let { pinState, tryLeft } = lockedModems.get(imei)!;
+
+    debug(`Locked modem: ${pinState}, ${tryLeft}`);
 
     AmiService.postEvent(
         UserEvent.Event.RequestUnlockCode.buildAction(
@@ -110,7 +119,9 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
         );
     else if (UserEvent.Request.UnlockDongle.matchEvt(evtRequest)) {
 
-        let lockedModem = lockedModems.get(evtRequest.imei);
+        let { imei } = evtRequest;
+
+        let lockedModem = lockedModems.get(imei);
 
         if (!lockedModem)
             return replyError(`Dongle imei: ${evtRequest.imei} not found`);
@@ -138,6 +149,8 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
 
         } else
             return replyError(`${pinState}, not supported`);
+
+        lockedModems.delete(imei);
 
         callback(
             UserEvent.Response.buildAction(

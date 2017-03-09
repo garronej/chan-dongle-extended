@@ -9,8 +9,6 @@ import { TrackableMap } from "../tools/TrackableMap";
 import * as _debug from "debug";
 let debug= _debug("_main");
 
-require("colors");
-
 export const activeModems= new TrackableMap<string, {
     modem: Modem;
     accessPoint: ModemAccessPoint;
@@ -22,6 +20,8 @@ export const lockedModems= new TrackableMap<string, {
         callback: UnlockCodeProviderCallback;
 }>();
 
+require("./main.ami");
+require("./main.bridge");
 
 const modemWatcher = new ModemWatcher();
 
@@ -39,7 +39,7 @@ modemWatcher.evtConnect.attach(accessPoint => {
 
         if (!hasSim) return;
 
-        lockedModems.delete(modem.imei);
+        debug(`Modem ${modem.imei} enabled`);
 
         activeModems.set(modem.imei, { modem, accessPoint });
 

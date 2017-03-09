@@ -9,8 +9,7 @@ import { Tty0tty } from "./lib/Tty0tty";
 import { lockedModems, activeModems } from "./main";
 
 import * as _debug from "debug";
-let debug = _debug("_bridgeChanDongle");
-
+let debug = _debug("_main.bridge");
 
 activeModems.evtSet.attach( imei => {
 
@@ -52,7 +51,7 @@ activeModems.evtSet.attach( imei => {
         console.log("uncaught error serialPortVirtual", serialPortError)
     );
 
-    portVirtual.on("open", () => console.log("portVirtual open".green));
+    portVirtual.on("open", () => debug("portVirtual open".green));
 
     modem.evtUnsolicitedAtMessage.attach(urc => {
 
