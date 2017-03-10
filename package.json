@@ -5,13 +5,17 @@
   "main": "./out/lib/index.js",
   "types": "./out/lib/index.d.ts",
   "scripts": {
-    "postinstall": "npm run tsc",
+    "postinstall": "npm run tsc & npm run install-service",
     "tsc": "./node_modules/.bin/tsc -p ./tsconfig.json",
+    "install-service": "sudo node ./out/bin/installService",
     "daemon": "DEBUG=_* node ./out/lib/daemon/main"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/garronej/chan-dongle-extended.git"
+  },
+  "bin": {
+    "dongleExt": "./out/bin/dongleExt.js"
   },
   "keywords": [
     "chan_dongle",

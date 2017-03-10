@@ -98,11 +98,12 @@ client.getLockedDongles(dongles => {
 
     let imei = Object.keys(dongles)[0];
 
-    console.assert(imei === "353762037478870");
 
     let { pinState, tryLeft } = dongles[imei];
 
     if (tryLeft === 1) return;
+
+    console.log("unlocking dongle", imei);
 
     client.unlockDongle(imei, "1234", error => {
         if (error) {

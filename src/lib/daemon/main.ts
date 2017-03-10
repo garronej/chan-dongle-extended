@@ -9,6 +9,8 @@ import { TrackableMap } from "../tools/TrackableMap";
 import * as _debug from "debug";
 let debug= _debug("_main");
 
+const autoUnlock= true;
+
 export const activeModems= new TrackableMap<string, {
     modem: Modem;
     accessPoint: ModemAccessPoint;
@@ -33,8 +35,15 @@ modemWatcher.evtConnect.attach(accessPoint => {
 
     Modem.create({
         "path": accessPoint.atInterface,
-        "unlockCodeProvider":
-        (imei, pinState, tryLeft, callback) => lockedModems.set(imei, { pinState, tryLeft, callback })
+        "unlockCodeProvider": (()=>{
+
+            if( autoUnlock )
+                return { "pinFirstTry": "0000", "pinSecondTry": "1234" };
+            else
+                return (imei, pinState, tryLeft, callback) => lockedModems.set(imei, { pinState, tryLeft, callback });
+
+
+        })()
     }, (modem, hasSim) => {
 
         if (!hasSim) return;

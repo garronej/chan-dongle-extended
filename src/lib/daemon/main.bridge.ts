@@ -48,14 +48,14 @@ activeModems.evtSet.attach( imei => {
     });
 
     portVirtual.evtError.attach(serialPortError =>
-        console.log("uncaught error serialPortVirtual", serialPortError)
+        debug("uncaught error serialPortVirtual", serialPortError)
     );
 
     portVirtual.on("open", () => debug("portVirtual open".green));
 
     modem.evtUnsolicitedAtMessage.attach(urc => {
 
-        //console.log(JSON.stringify(urc, null, 2).yellow);
+        debug(JSON.stringify(urc, null, 2).yellow);
         portVirtual.writeAndDrain(urc.raw)
 
     });
@@ -67,23 +67,23 @@ activeModems.evtSet.attach( imei => {
         let forwardResp = (rawResp: string) => {
 
             if (modem.runCommand.isRunning) {
-                console.log([
-                    `More recent command from chanDongle`,
+                debug([
+                    `Newer command from chanDongle`,
                     `dropping ${JSON.stringify(rawResp)} response to ${JSON.stringify(command)} command`
                 ].join("\n").red);
                 return;
             }
 
-            //console.log(JSON.stringify(rawResp).blue);
+            debug(JSON.stringify(rawResp).blue);
 
             portVirtual.writeAndDrain(rawResp, error => {
 
                 if (error) {
 
                     if (error.causedBy === "drain")
-                        console.log("drain problem".red, error);
+                        debug("drain problem".red, error);
                     else if (error.causedBy === "write")
-                        console.log("write problem".america, error);
+                        debug("write problem".america, error);
 
                 }
 
@@ -96,11 +96,11 @@ activeModems.evtSet.attach( imei => {
             return;
         }
 
-        //console.log(JSON.stringify(command).green);
+        debug(JSON.stringify(command).green);
 
         if (modem.runCommand.isRunning) {
 
-            console.log([
+            debug([
                 `a command is already running`,
                 `${modem.runCommand.queuedCalls.length} command in stack`,
                 `flushing the pending command in stack`
