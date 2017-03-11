@@ -5,8 +5,15 @@ import { SyncEvent } from "ts-events-extended";
 
 import { StatusReport, Message, LockedPinState, Contact } from "../../../../ts-gsm-modem/out/lib/index";
 
+export type LockedDongles= {
+        [imei: string]: {
+            pinState: LockedPinState,
+            tryLeft: number
+        };
+}
 
 export class AmiClient {
+
 
     private static localClient: AmiClient | undefined = undefined;
 
@@ -79,99 +86,122 @@ export class AmiClient {
         this.ami.disconnect();
     }
 
+    public getLockedDongles(
+        callback?: (dongles: LockedDongles) => void
+    ): Promise<LockedDongles> {
 
-    //TODO: test if | break
+        let promise = new Promise<LockedDongles>(resolve => {
+
+            let ami = this.ami;
+
+            let actionid = ami.action(
+                UserEvent.Request.GetLockedDongles.buildAction()
+            );
+
+            ami.on("userevent", function callee(evt: UserEvent) {
+
+                if (!UserEvent.Response.GetLockedDongles.matchEvt(evt, actionid))
+                    return;
+
+                ami.removeListener("userevent", callee);
+
+                resolve(JSON.parse(evt.dongles));
+
+            });
+
+        });
+
+        if( !callback )
+            return promise;
+        else{
+            promise.then( dongles => callback(dongles));
+            return null as any;
+        }
+
+    }
+
     public sendMessage(
         imei: string,
         number: string,
         text: string,
         callback?: (error: Error | null, messageId: number) => void
-    ): void {
+    ): Promise<[Error | null, number]> {
 
-        let ami = this.ami;
+        let promise = new Promise<[Error | null, number]>(resolve => {
 
-        let actionid = ami.action(
-            UserEvent.Request.SendMessage.buildAction(
-                imei, number, JSON.stringify(text)
-            )
-        );
+            let ami = this.ami;
 
-        if (!callback) return;
+            let actionid = ami.action(
+                UserEvent.Request.SendMessage.buildAction(
+                    imei, number, JSON.stringify(text)
+                )
+            );
 
+            ami.on("userevent", function callee(evt: UserEvent) {
 
-        ami.on("userevent", function callee(evt: UserEvent) {
+                if (!UserEvent.Response.SendMessage.matchEvt(evt, actionid))
+                    return;
 
-            if (!UserEvent.Response.SendMessage.matchEvt(evt, actionid))
-                return;
+                ami.removeListener("userevent", callee);
 
-            ami.removeListener("userevent", callee);
+                if (evt.error)
+                    resolve([new Error(evt.error), NaN]);
+                else
+                    resolve([null, parseInt(evt.messageid)]);
 
-            if( evt.error )
-                callback(new Error(evt.error), NaN);
-            else
-                callback(null, parseInt(evt.messageid));
+            });
 
 
         });
 
-    }
-
-    public getLockedDongles(callback: (dongles: {
-        [imei: string]: {
-            pinState: LockedPinState,
-            tryLeft: number
+        if (!callback)
+            return promise;
+        else {
+            promise.then(([error, messageId]) => callback(error, messageId));
+            return null as any;
         }
-    }) => void
-    ): void {
-
-        let ami = this.ami;
-
-        let actionid = ami.action(
-            UserEvent.Request.GetLockedDongles.buildAction()
-        );
-
-        ami.on("userevent", function callee(evt: UserEvent) {
-
-            if (!UserEvent.Response.GetLockedDongles.matchEvt(evt, actionid))
-                return;
-
-            ami.removeListener("userevent", callee);
-
-            callback(JSON.parse(evt.dongles));
-
-        });
 
 
     }
 
     public getSimPhonebook(
         imei: string,
-        callback: (error: null | Error, phonebook: Contact[]) => void
-    ): void {
+        callback?: (error: null | Error, phonebook: Contact[]) => void
+    ): Promise<[Error | null, Contact[]]> {
 
-        let ami = this.ami;
+        let promise = new Promise<[Error | null, Contact[]]>(resolve => {
 
-        let actionid = ami.action(
-            UserEvent.Request.GetSimPhonebook.buildAction(imei)
-        );
+            let ami = this.ami;
 
-        ami.on("userevent", function callee(evt: UserEvent) {
+            let actionid = ami.action(
+                UserEvent.Request.GetSimPhonebook.buildAction(imei)
+            );
 
-            if (!UserEvent.Response.GetSimPhonebook.matchEvt(evt, actionid))
-                return;
+            ami.on("userevent", function callee(evt: UserEvent) {
 
-            ami.removeListener("userevent", callee);
+                if (!UserEvent.Response.GetSimPhonebook.matchEvt(evt, actionid))
+                    return;
 
-            if (evt.error)
-                callback(new Error(evt.error), []);
-            else
-                callback(null, JSON.parse(
-                    evt.phonebookpart1 + evt.phonebookpart2 + evt.phonebookpart3
-                ));
+                ami.removeListener("userevent", callee);
 
+                if (evt.error)
+                    resolve([new Error(evt.error), []]);
+                else
+                    resolve([null, JSON.parse(
+                        evt.phonebookpart1 + evt.phonebookpart2 + evt.phonebookpart3
+                    )]);
+
+
+            });
 
         });
 
+        if( !callback )
+            return promise;
+        else{
+            promise.then( ([error, phonebook])=> callback(error, phonebook) );
+            return null as any;
+        }
 
     }
 
@@ -179,39 +209,50 @@ export class AmiClient {
         imei: string,
         name: string,
         number: string,
-        callback?: (error: null | Error, contact: Contact | null )=> void
-    ): void {
-        let ami= this.ami;
+        callback?: (error: null | Error, contact: Contact | null) => void
+    ): Promise<[null | Error, Contact | null]> {
 
-        let actionid= ami.action(
-            UserEvent.Request.CreateContact.buildAction(
-                imei,
-                name,
-                number
-            )
-        );
+        let promise = new Promise<[null | Error, Contact | null]>(resolve => {
 
-        if( !callback ) return;
+            let ami = this.ami;
 
-        ami.on("userevent", function callee(evt: UserEvent){
+            let actionid = ami.action(
+                UserEvent.Request.CreateContact.buildAction(
+                    imei,
+                    name,
+                    number
+                )
+            );
 
-            if(!UserEvent.Response.CreateContact.matchEvt(evt, actionid))
-                return;
+            ami.on("userevent", function callee(evt: UserEvent) {
 
-            
-            ami.removeListener("userevent", callee);
+                if (!UserEvent.Response.CreateContact.matchEvt(evt, actionid))
+                    return;
+
+                ami.removeListener("userevent", callee);
 
 
-            if (evt.error)
-                callback(new Error(evt.error), null);
-            else
-                callback(null, {
-                    "index": parseInt(evt.index),
-                    "name": evt.name,
-                    "number": evt.number
-                });
+                if (evt.error)
+                    resolve([new Error(evt.error), null]);
+                else
+                    resolve([null, {
+                        "index": parseInt(evt.index),
+                        "name": evt.name,
+                        "number": evt.number
+                    }]);
+
+            });
+
 
         });
+
+        if( !callback )
+            return promise;
+        else{
+            promise.then( ([error, contact])=> callback(error, contact));
+            return null as any;
+        }
+
 
 
     }
@@ -220,66 +261,84 @@ export class AmiClient {
         imei: string,
         index: number,
         callback?: (error: null | Error) => void
-    ): void {
+    ): Promise<null | Error> {
 
-        let ami= this.ami;
+        let promise = new Promise<null | Error>(resolve => {
 
-        let actionid= ami.action(
-            UserEvent.Request.DeleteContact.buildAction(
-                imei,
-                index.toString()
-            )
-        );
+            let ami = this.ami;
 
-        if( !callback ) return;
+            let actionid = ami.action(
+                UserEvent.Request.DeleteContact.buildAction(
+                    imei,
+                    index.toString()
+                )
+            );
 
-        ami.on("userevent", function callee(evt: UserEvent) {
-            
-            if( !UserEvent.Response.DeleteContact.matchEvt(evt, actionid) )
-                return;
+            ami.on("userevent", function callee(evt: UserEvent) {
 
-            ami.removeListener("userevent", callee);
+                if (!UserEvent.Response.DeleteContact.matchEvt(evt, actionid))
+                    return;
 
-            if (evt.error)
-                callback(new Error(evt.error));
-            else
-                callback(null);
+                ami.removeListener("userevent", callee);
+
+                if (evt.error)
+                    resolve(new Error(evt.error));
+                else
+                    resolve(null);
+
+            });
 
         });
+
+        if (!callback)
+            return promise;
+        else {
+            promise.then(error => callback(error));
+            return null as any;
+        }
 
 
     }
 
 
     public getActiveDongles(
-        callback: (dongles: string[]) => void
-    ): void {
+        callback?: (dongles: string[]) => void
+    ): Promise<string[]> {
 
-        let ami = this.ami;
+        let promise = new Promise<string[]>(resolve => {
 
-        let actionid = ami.action(
-            UserEvent.Request.GetActiveDongles.buildAction()
-        );
+            let ami = this.ami;
 
-        ami.on("userevent", function callee(evt: UserEvent) {
+            let actionid = ami.action(
+                UserEvent.Request.GetActiveDongles.buildAction()
+            );
 
-            if (!UserEvent.Response.GetActiveDongles.matchEvt(evt, actionid))
-                return;
+            ami.on("userevent", function callee(evt: UserEvent) {
 
-            ami.removeListener("userevent", callee);
+                if (!UserEvent.Response.GetActiveDongles.matchEvt(evt, actionid))
+                    return;
 
-            callback(JSON.parse(evt.dongles));
+                ami.removeListener("userevent", callee);
+
+                resolve(JSON.parse(evt.dongles));
+
+            });
 
         });
+
+        if( !callback )
+            return promise;
+        else{
+            promise.then( dongles => callback(dongles));
+            return null as any;
+        }
 
 
     }
 
-    public unlockDongle(imei: string, pin: string, callback?: (error: null | Error) => void): void;
-    public unlockDongle(imei: string, puk: string, newPin: string, callback?: (error: null | Error) => void): void;
-    public unlockDongle(...inputs: any[]): void {
-
-        let ami = this.ami;
+    public unlockDongle(imei: string, pin: string, callback?: (error: null | Error) => void): Promise<null | Error>;
+    public unlockDongle(imei: string, puk: string, newPin: string, callback?: (error: null | Error) => void): Promise<null | Error>;
+    public unlockDongle(...inputs: any[]): any {
 
         let imei = inputs[0];
         let callback: ((error: null | Error) => void) | undefined = undefined;
@@ -291,31 +350,44 @@ export class AmiClient {
         else
             inputs.push(lastInput);
 
-        let actionid: string;
+        let promise = new Promise<null | Error>(resolve => {
 
-        if (inputs.length === 2)
-            actionid = ami.action(
-                UserEvent.Request.UnlockDongle.buildAction(imei, inputs[1])
-            );
-        else
-            actionid = ami.action(
-                UserEvent.Request.UnlockDongle.buildAction(imei, inputs[1], inputs[2])
-            );
-
-        if (!callback) return;
-
-        ami.on("userevent", function callee(evt: UserEvent) {
-
-            if (!UserEvent.Response.GetLockedDongles.matchEvt(evt, actionid))
-                return;
+            let ami = this.ami;
 
 
-            ami.removeListener("userevent", callee);
+            let actionid: string;
 
-            callback!(evt.error ? new Error(evt.error) : null);
+            if (inputs.length === 2)
+                actionid = ami.action(
+                    UserEvent.Request.UnlockDongle.buildAction(imei, inputs[1])
+                );
+            else
+                actionid = ami.action(
+                    UserEvent.Request.UnlockDongle.buildAction(imei, inputs[1], inputs[2])
+                );
+
+
+            ami.on("userevent", function callee(evt: UserEvent) {
+
+                if (!UserEvent.Response.GetLockedDongles.matchEvt(evt, actionid))
+                    return;
+
+                ami.removeListener("userevent", callee);
+
+                resolve(evt.error ? new Error(evt.error) : null);
+
+
+            });
 
 
         });
+
+        if ( typeof callback === "function" ){
+            promise.then( error => callback(error));
+        }else 
+            return promise;
+
+
 
 
     }

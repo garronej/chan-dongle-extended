@@ -3,6 +3,8 @@
 import * as program from "commander";
 import { AmiClient } from "../lib/index";
 import { spawn } from "child_process";
+import * as pr from "ts-promisify";
+import * as storage from "node-persist";
 require("colors");
 
 function assertServiceRunning(): Promise<void> {
@@ -36,14 +38,13 @@ program
     .alias("a")
     .description("List PIN locked dongle's IMEI")
     .option("-j, --json", "Format result in json")
-    .action(options => {
-        (async () => {
+    .action(async options => {
 
             await assertServiceRunning();
 
             let client = AmiClient.getLocal();
 
-            let dongles = await new Promise<string[]>(resolve => client.getActiveDongles(resolve));
+            let [ dongles ] = await pr.typed(client, client.getActiveDongles)();
 
             if (!options.json)
                 for (let imei of dongles)
@@ -53,8 +54,48 @@ program
 
             process.exit(0);
 
-        })();
     });
+    
+      //.command("select", "Select a dongle for the subsequent calls")
+
+program
+.command("select [imei]")
+.alias("s")
+.description([
+    "Select dongle for subsequent calls",
+" ( to avoid having to set --imei on each command)"
+].join(""))
+.action(async (imei:string) => {
+
+        if( !imei ){
+            console.log("Error: command malformed".red);
+            process.exit(-1);
+        }
+
+        let client = AmiClient.getLocal();
+
+
+        let [ active ]= await pr.typed(client, client.getActiveDongles)();
+
+        let [ locked ]= await pr.typed(client, client.getLockedDongles)();
+
+        let dongles= [ ...active, ...Object.keys(locked) ];
+
+        if( dongles.indexOf(imei) < 0 ){
+            console.log("Error: no such dongle connected".red);
+            process.exit(-1);
+        }
+
+        await storage.init();
+
+        await storage.setItem("imei", imei);
+
+        console.log(`Dongle ${imei} selected`.green);
+
+        process.exit(0);
+
+
+});
 
 program
     .command("send")
@@ -63,38 +104,46 @@ program
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("-n, --number [number]", "target phone number")
     .option("-t, --text [text]", "Text of the message")
-    .action(options => {
-        (async () => {
+    .action(async options => {
 
-            await assertServiceRunning();
+        await assertServiceRunning();
 
-            let { imei, number, text } = options;
+        let { imei, number, text } = options;
 
-            if (!imei || !number || !text) {
-                console.log("Error: command malformed".red);
-                console.log(options.optionHelp());
-                process.exit(-1);
-            }
+        if (!number || !text) {
+            console.log("Error: command malformed".red);
+            console.log(options.optionHelp());
+            process.exit(-1);
+        }
 
-            text= JSON.parse('"'+text+'"');
+        if( !imei ){
 
-            let client = AmiClient.getLocal();
+            await storage.init();
 
-            client.sendMessage(imei, number, text, (error, messageId)=> {
+            imei= await storage.getItem("imei");
 
-                if( error ){
-                    console.log(error.message.red);
-                    process.exit(-1);
-                }
+        }
 
-                console.log(messageId);
+        if( !imei ){
+            console.log("Error: No dongle selected");
+            process.exit(-1);
+        }
 
-                process.exit(0);
+        text = JSON.parse('"' + text + '"');
 
-            });
+        let client = AmiClient.getLocal();
 
+        let [error, messageId] = await client.sendMessage(imei, number, text);
 
-        })();
+        if (error) {
+            console.log(error.message.red);
+            process.exit(-1);
+        }
+
+        console.log(messageId);
+
+        process.exit(0);
+
     });
 
 
