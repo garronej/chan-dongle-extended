@@ -9,7 +9,12 @@ import { TrackableMap } from "../tools/TrackableMap";
 import * as _debug from "debug";
 let debug= _debug("_main");
 
-const autoUnlock= true;
+process.on("unhandledRejection", error=> { 
+    console.log("INTERNAL ERROR".red);
+    console.log(error);
+    throw error;
+});
+
 
 export const activeModems= new TrackableMap<string, {
     modem: Modem;
@@ -17,6 +22,7 @@ export const activeModems= new TrackableMap<string, {
 }>();
 
 export const lockedModems= new TrackableMap<string, {
+        iccid: string;
         pinState: LockedPinState;
         tryLeft: number;
         callback: UnlockCodeProviderCallback;
@@ -35,22 +41,23 @@ modemWatcher.evtConnect.attach(accessPoint => {
 
     Modem.create({
         "path": accessPoint.atInterface,
-        "unlockCodeProvider": (()=>{
-
-            if( autoUnlock )
-                return { "pinFirstTry": "0000", "pinSecondTry": "1234" };
-            else
-                return (imei, pinState, tryLeft, callback) => lockedModems.set(imei, { pinState, tryLeft, callback });
+        "unlockCodeProvider":
+        (imei, iccid, pinState, tryLeft, callback) => 
+            lockedModems.set(imei, { iccid, pinState, tryLeft, callback })
+    }, async (error, modem, hasSim) => {
 
 
-        })()
-    }, (modem, hasSim) => {
+        if( error )
+            return debug("Initialization error".red, error);
 
-        if (!hasSim) return;
+        if (!hasSim) 
+            return debug("No sim!".red);
+
 
         debug(`Modem ${modem.imei} enabled`);
 
         activeModems.set(modem.imei, { modem, accessPoint });
+
 
     });
 

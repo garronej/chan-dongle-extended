@@ -48,6 +48,7 @@ export namespace UserEvent {
         export interface RequestUnlockCode extends Event {
             dongleevent: "RequestUnlockCode";
             imei: string;
+            iccid: string;
             pinstate: LockedPinState;
             tryleft: string;
         }
@@ -61,10 +62,11 @@ export namespace UserEvent {
                 )
             }
 
-            export function buildAction(imei: string, pinstate: LockedPinState, tryleft: string): RequestUnlockCode {
+            export function buildAction(imei: string, iccid: string, pinstate: LockedPinState, tryleft: string): RequestUnlockCode {
                 return {
                     ...Event.buildAction("RequestUnlockCode"),
                     imei,
+                    iccid,
                     pinstate,
                     tryleft
                 } as RequestUnlockCode;

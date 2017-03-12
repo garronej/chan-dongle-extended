@@ -5,11 +5,20 @@ import { SyncEvent } from "ts-events-extended";
 
 import { StatusReport, Message, LockedPinState, Contact } from "../../../../ts-gsm-modem/out/lib/index";
 
-export type LockedDongles= {
-        [imei: string]: {
-            pinState: LockedPinState,
-            tryLeft: number
-        };
+
+export interface DongleBase {
+    imei: string;
+    iccid: string;
+}
+
+export interface LockedDongle extends DongleBase {
+    pinState: LockedPinState;
+    tryLeft: number;
+}
+
+export interface DongleActive extends DongleBase {
+    imsi: string;
+    number: string | undefined;
 }
 
 export class AmiClient {
@@ -17,7 +26,7 @@ export class AmiClient {
 
     private static localClient: AmiClient | undefined = undefined;
 
-    public static getLocal(): AmiClient {
+    public static localhost(): AmiClient {
 
         if (this.localClient) return this.localClient;
 
@@ -32,6 +41,7 @@ export class AmiClient {
     public readonly evtNewActiveDongle = new SyncEvent<{ imei: string }>();
     public readonly evtRequestUnlockCode = new SyncEvent<{
         imei: string;
+        iccid: string;
         pinState: LockedPinState;
         tryLeft: number;
     }>();
@@ -66,6 +76,7 @@ export class AmiClient {
             else if (UserEvent.Event.RequestUnlockCode.matchEvt(evt))
                 this.evtRequestUnlockCode.post({
                     "imei": evt.imei,
+                    "iccid": evt.iccid,
                     "pinState": evt.pinstate,
                     "tryLeft": parseInt(evt.tryleft)
                 });
@@ -87,10 +98,10 @@ export class AmiClient {
     }
 
     public getLockedDongles(
-        callback?: (dongles: LockedDongles) => void
-    ): Promise<LockedDongles> {
+        callback?: (dongles: LockedDongle[]) => void
+    ): Promise<LockedDongle[]> {
 
-        let promise = new Promise<LockedDongles>(resolve => {
+        let promise = new Promise<LockedDongle[]>(resolve => {
 
             let ami = this.ami;
 
@@ -302,10 +313,10 @@ export class AmiClient {
 
 
     public getActiveDongles(
-        callback?: (dongles: string[]) => void
-    ): Promise<string[]> {
+        callback?: (dongles: DongleActive[]) => void
+    ): Promise<DongleActive[]> {
 
-        let promise = new Promise<string[]>(resolve => {
+        let promise = new Promise<DongleActive[]>(resolve => {
 
             let ami = this.ami;
 
@@ -326,10 +337,10 @@ export class AmiClient {
 
         });
 
-        if( !callback )
+        if (!callback)
             return promise;
-        else{
-            promise.then( dongles => callback(dongles));
+        else {
+            promise.then(dongles => callback(dongles));
             return null as any;
         }
 
@@ -369,7 +380,7 @@ export class AmiClient {
 
             ami.on("userevent", function callee(evt: UserEvent) {
 
-                if (!UserEvent.Response.GetLockedDongles.matchEvt(evt, actionid))
+                if (!UserEvent.Response.matchEvt(evt, actionid))
                     return;
 
                 ami.removeListener("userevent", callee);
@@ -382,12 +393,12 @@ export class AmiClient {
 
         });
 
-        if ( typeof callback === "function" ){
-            promise.then( error => callback(error));
-        }else 
+        if (!callback)
             return promise;
-
-
+        else {
+            promise.then(error => callback!(error));
+            return null as any;
+        }
 
 
     }

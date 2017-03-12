@@ -22,8 +22,6 @@ export class AmiService {
 
     public static postEvent(actionEvent: UserEvent.Event): void {
 
-        debug("actionEvent", actionEvent);
-
         ami.action(actionEvent);
     }
 
@@ -40,17 +38,15 @@ ami.on("userevent", (evt: UserEvent): void => {
 
     if (!UserEvent.Request.matchEvt(evt))
         return;
-    
-    debug("evtRequest", evt);
 
     AmiService.evtRequest.post({
         "evtRequest": evt,
         "callback": actionResponse => {
-
-            debug("actionResponse", actionResponse);
 
             ami.action(actionResponse);
         }
     });
 
 });
+
+ami.on("userevent", ( { actionid, event, action, userevent, privilege, ...prettyEvt }: UserEvent) => debug(prettyEvt));

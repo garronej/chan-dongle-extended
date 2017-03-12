@@ -2,9 +2,9 @@ import * as log from "why-is-node-running";
 import { AmiClient } from "../lib/client/AmiClient";
 
 
-const client = AmiClient.getLocal();
-
 /*
+const client = AmiClient.localhost();
+
 client.sendMessage(
     "353762037478870",
     "0636786385",
@@ -19,7 +19,6 @@ client.sendMessage(
 
     }
 );
-*/
 
 
 client.evtMessageStatusReport.attach(
@@ -116,3 +115,4 @@ client.getLockedDongles(dongles => {
 
 });
 
+*/

@@ -3,21 +3,34 @@ import { activeModems, lockedModems } from "./main";
 import { AmiService } from "./lib/AmiService";
 import { UserEvent } from "../shared/AmiUserEvent";
 import { divide } from "../tools/divide";
+import * as storage from "node-persist";
+
+import { DongleActive, LockedDongle } from "../client/AmiClient";
 
 import * as _debug from "debug";
 let debug = _debug("_main.ami");
 
-activeModems.evtSet.attach(imei => {
+activeModems.evtSet.attach(async imei => {
 
     debug(`New active modem ${imei}`);
+
+    let { modem } = activeModems.get(imei)!;
+
+    if (modem.pin) {
+
+        debug(`Persistent storing of pin: ${modem.pin} for SIM ICCID: ${modem.iccid}`);
+
+        await storage.init();
+
+        await storage.setItem("pinOf_" + modem.iccid, modem.pin);
+
+    }
 
     AmiService.postEvent(
         UserEvent.Event.NewActiveDongle.buildAction(
             imei
         )
     );
-
-    let { modem } = activeModems.get(imei)!;
 
     modem.evtMessageStatusReport.attach(
         ({
@@ -29,7 +42,7 @@ activeModems.evtSet.attach(imei => {
                 UserEvent.Event.MessageStatusReport.buildAction(
                     imei,
                     messageId.toString(),
-                    dischargeTime.getDate().toString(),
+                    dischargeTime.getTime().toString(),
                     isDelivered ? "true" : "false",
                     status
                 )
@@ -66,19 +79,28 @@ activeModems.evtDelete.attach(imei => {
 }
 );
 
-lockedModems.evtSet.attach(imei => {
+lockedModems.evtSet.attach(async imei => {
 
-    let { pinState, tryLeft } = lockedModems.get(imei)!;
+    let { iccid, pinState, tryLeft, callback } = lockedModems.get(imei)!;
 
-    debug(`Locked modem: ${pinState}, ${tryLeft}`);
+    debug(`Locked modem IMEI: ${imei},ICCID: ${iccid}, ${pinState}, ${tryLeft}`);
 
-    AmiService.postEvent(
-        UserEvent.Event.RequestUnlockCode.buildAction(
-            imei,
-            pinState,
-            tryLeft.toString()
-        )
-    );
+    await storage.init();
+
+    let pin: string | undefined = await storage.getItem("pinOf_" + iccid);
+
+    if (pin && pinState === "SIM PIN" && tryLeft > 1){
+        debug(`Using stored pin ${pin} for unlocking dongle`);
+        callback(pin);
+    }else
+        AmiService.postEvent(
+            UserEvent.Event.RequestUnlockCode.buildAction(
+                imei,
+                iccid,
+                pinState,
+                tryLeft.toString()
+            )
+        );
 
 });
 
@@ -127,25 +149,33 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
             }
         );
 
-    } else if (UserEvent.Request.GetLockedDongles.matchEvt(evtRequest))
+    } else if (UserEvent.Request.GetLockedDongles.matchEvt(evtRequest)){
+
+        let dongles: LockedDongle[]= [];
+
+        for( let imei of lockedModems.keysAsArray()){
+            let { iccid, pinState, tryLeft }= lockedModems.get(imei)!;
+            dongles.push({ imei, iccid, pinState, tryLeft });
+        }
+
         callback(
             UserEvent.Response.GetLockedDongles.buildAction(
                 actionid,
-                JSON.stringify(lockedModems.toObject())
+                JSON.stringify(dongles)
             )
         );
-    else if (UserEvent.Request.GetSimPhonebook.matchEvt(evtRequest)){
+    }else if (UserEvent.Request.GetSimPhonebook.matchEvt(evtRequest)) {
 
         if (!activeModems.has(evtRequest.imei))
             return replyError(`Dongle imei: ${evtRequest.imei} not found`);
 
         let { modem } = activeModems.get(evtRequest.imei)!;
 
-        let contactsSplit= divide(900,JSON.stringify(modem.contacts));
+        let contactsSplit = divide(900, JSON.stringify(modem.contacts));
 
-        let phonebookpart1= contactsSplit[0];
-        let phonebookpart2= contactsSplit[1] || "";
-        let phonebookpart3= contactsSplit[2] || "";
+        let phonebookpart1 = contactsSplit[0];
+        let phonebookpart2 = contactsSplit[1] || "";
+        let phonebookpart3 = contactsSplit[2] || "";
 
         callback(
             UserEvent.Response.GetSimPhonebook.buildAction(
@@ -155,7 +185,7 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
                 phonebookpart3
             )
         );
-    }else if( UserEvent.Request.CreateContact.matchEvt(evtRequest)){
+    } else if (UserEvent.Request.CreateContact.matchEvt(evtRequest)) {
 
         if (!activeModems.has(evtRequest.imei))
             return replyError(`Dongle imei: ${evtRequest.imei} not found`);
@@ -176,16 +206,16 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
                 )
             )
         );
-    } else if( UserEvent.Request.DeleteContact.matchEvt(evtRequest)){
+    } else if (UserEvent.Request.DeleteContact.matchEvt(evtRequest)) {
 
         if (!activeModems.has(evtRequest.imei))
             return replyError(`Dongle imei: ${evtRequest.imei} not found`);
 
         let { modem } = activeModems.get(evtRequest.imei)!;
 
-        let index= parseInt(evtRequest.index);
+        let index = parseInt(evtRequest.index);
 
-        if( !modem.getContact(index) )
+        if (!modem.getContact(index))
             return replyError(`Contact index ${index} does not exist`);
 
         modem.deleteContact(index,
@@ -196,14 +226,26 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
             )
         );
 
-    } else if (UserEvent.Request.GetActiveDongles.matchEvt(evtRequest))
+    } else if (UserEvent.Request.GetActiveDongles.matchEvt(evtRequest)){
+
+        let dongles: DongleActive[]= [];
+
+        for( let imei of activeModems.keysAsArray() ){
+
+            let { modem } = activeModems.get(imei)!;
+            let { iccid, imsi, number } = modem;
+
+            dongles.push({imei, iccid, imsi, number});
+            
+        }
+
         callback(
             UserEvent.Response.GetActiveDongles.buildAction(
                 evtRequest.actionid!,
-                JSON.stringify(activeModems.keysAsArray())
+                JSON.stringify(dongles)
             )
         );
-    else if (UserEvent.Request.UnlockDongle.matchEvt(evtRequest)) {
+    } else if (UserEvent.Request.UnlockDongle.matchEvt(evtRequest)) {
 
         let { imei } = evtRequest;
 

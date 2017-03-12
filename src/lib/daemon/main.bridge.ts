@@ -9,7 +9,7 @@ import { Tty0tty } from "./lib/Tty0tty";
 import { lockedModems, activeModems } from "./main";
 
 import * as _debug from "debug";
-let debug = _debug("_main.bridge");
+let debug = _debug("0_main.bridge");
 
 activeModems.evtSet.attach( imei => {
 
