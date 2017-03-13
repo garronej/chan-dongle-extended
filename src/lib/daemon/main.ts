@@ -35,7 +35,7 @@ const modemWatcher = new ModemWatcher();
 
 modemWatcher.evtConnect.attach(accessPoint => {
 
-    debug("accessPoint", accessPoint.infos);
+    debug(accessPoint.infos);
 
     //modemWatcher.stop();
 

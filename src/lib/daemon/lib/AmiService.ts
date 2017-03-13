@@ -50,3 +50,4 @@ ami.on("userevent", (evt: UserEvent): void => {
 });
 
 ami.on("userevent", ( { actionid, event, action, userevent, privilege, ...prettyEvt }: UserEvent) => debug(prettyEvt));
+

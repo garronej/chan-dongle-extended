@@ -3,27 +3,17 @@ import * as readline from "readline";
 import { writeFile } from "fs";
 require("colors");
 
-const daemonPath = __dirname + "/../lib/daemon";
 const servicePath = "/etc/systemd/system/dongleExt.service";
 
 (async () => {
 
-    const nodePath = await new Promise<string>(resolve => {
-        spawn("which", ["node"])
-            .stdout
-            .once("data",
-            data => resolve(
-                data
-                    .toString("utf8")
-                    .slice(0, -1)
-            )
-            );
-    });
+    const node_execpath= process.argv[0];
+
 
     console.log([
         "Now you will be ask to choose the user that will run the service\n",
         "Be aware that this user need read access to /ect/asterisk/manager.conf",
-        " and read/write access to /etc/asterisk.dongles.conf"
+        " and read/write access to /etc/asterisk/dongles.conf"
     ].join("").yellow);
 
     const user = await ask("User? (default root)");
@@ -36,8 +26,8 @@ const servicePath = "/etc/systemd/system/dongleExt.service";
         `Requires=After=asterisk.service`,
         ``,
         `[Service]`,
-        `ExecStart=${nodePath} ${daemonPath}/main`,
-        `#WorkingDirectory=${daemonPath}`,
+        `ExecStart=${node_execpath} ${process.cwd()}/out/lib/daemon/main`,
+        `WorkingDirectory=${process.cwd()}`,
         `Restart=always`,
         `RestartSec=10`,
         `StandardOutput=syslog`,
@@ -102,3 +92,17 @@ function ask(question): Promise<string> {
     });
 
 }
+
+    /*
+    const node_execpath = await new Promise<string>(resolve => {
+        spawn("which", ["node"])
+            .stdout
+            .once("data",
+            data => resolve(
+                data
+                    .toString("utf8")
+                    .slice(0, -1)
+            )
+            );
+    });
+    */

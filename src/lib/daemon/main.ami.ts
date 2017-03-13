@@ -4,6 +4,9 @@ import { AmiService } from "./lib/AmiService";
 import { UserEvent } from "../shared/AmiUserEvent";
 import { divide } from "../tools/divide";
 import * as storage from "node-persist";
+import * as path from "path";
+
+storage.initSync({ "dir": path.join(__dirname, "..", "..", "..", ".node-persist", "storage") });
 
 import { DongleActive, LockedDongle } from "../client/AmiClient";
 
@@ -19,8 +22,6 @@ activeModems.evtSet.attach(async imei => {
     if (modem.pin) {
 
         debug(`Persistent storing of pin: ${modem.pin} for SIM ICCID: ${modem.iccid}`);
-
-        await storage.init();
 
         await storage.setItem("pinOf_" + modem.iccid, modem.pin);
 
@@ -85,14 +86,12 @@ lockedModems.evtSet.attach(async imei => {
 
     debug(`Locked modem IMEI: ${imei},ICCID: ${iccid}, ${pinState}, ${tryLeft}`);
 
-    await storage.init();
-
     let pin: string | undefined = await storage.getItem("pinOf_" + iccid);
 
-    if (pin && pinState === "SIM PIN" && tryLeft > 1){
+    if (pin && pinState === "SIM PIN" && tryLeft > 1) {
         debug(`Using stored pin ${pin} for unlocking dongle`);
         callback(pin);
-    }else
+    } else
         AmiService.postEvent(
             UserEvent.Event.RequestUnlockCode.buildAction(
                 imei,
@@ -149,12 +148,12 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
             }
         );
 
-    } else if (UserEvent.Request.GetLockedDongles.matchEvt(evtRequest)){
+    } else if (UserEvent.Request.GetLockedDongles.matchEvt(evtRequest)) {
 
-        let dongles: LockedDongle[]= [];
+        let dongles: LockedDongle[] = [];
 
-        for( let imei of lockedModems.keysAsArray()){
-            let { iccid, pinState, tryLeft }= lockedModems.get(imei)!;
+        for (let imei of lockedModems.keysAsArray()) {
+            let { iccid, pinState, tryLeft } = lockedModems.get(imei)!;
             dongles.push({ imei, iccid, pinState, tryLeft });
         }
 
@@ -164,7 +163,7 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
                 JSON.stringify(dongles)
             )
         );
-    }else if (UserEvent.Request.GetSimPhonebook.matchEvt(evtRequest)) {
+    } else if (UserEvent.Request.GetSimPhonebook.matchEvt(evtRequest)) {
 
         if (!activeModems.has(evtRequest.imei))
             return replyError(`Dongle imei: ${evtRequest.imei} not found`);
@@ -226,17 +225,17 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
             )
         );
 
-    } else if (UserEvent.Request.GetActiveDongles.matchEvt(evtRequest)){
+    } else if (UserEvent.Request.GetActiveDongles.matchEvt(evtRequest)) {
 
-        let dongles: DongleActive[]= [];
+        let dongles: DongleActive[] = [];
 
-        for( let imei of activeModems.keysAsArray() ){
+        for (let imei of activeModems.keysAsArray()) {
 
             let { modem } = activeModems.get(imei)!;
             let { iccid, imsi, number } = modem;
 
-            dongles.push({imei, iccid, imsi, number});
-            
+            dongles.push({ imei, iccid, imsi, number });
+
         }
 
         callback(

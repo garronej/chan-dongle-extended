@@ -1,12 +1,13 @@
 {
   "name": "chan-dongle-extended",
-  "version": "0.3.0",
+  "version": "0.3.1",
   "description": "feature SMS multipart, phonebook memory access, PIN code managment",
   "main": "./out/lib/index.js",
   "types": "./out/lib/index.d.ts",
   "scripts": {
-    "postinstall": "npm run tsc && npm run install-service",
+    "postinstall": "npm run tsc && npm run mk-persistent-dir && npm run install-service",
     "tsc": "./node_modules/.bin/tsc -p ./tsconfig.json",
+    "mk-persistent-dir": "mkdir -p .node-persist && chmod 777 .node-persist",
     "install-service": "sudo node ./out/bin/installService",
     "daemon": "DEBUG=_* node ./out/lib/daemon/main"
   },

@@ -7,6 +7,10 @@ import * as pr from "ts-promisify";
 import * as storage from "node-persist";
 require("colors");
 
+import * as path from "path";
+
+const persistDir= path.join(__dirname, "..", "..", ".node-persist", "storage");
+
 function assertServiceRunning(): Promise<void> {
 
     return new Promise<void>(resolve => resolve());
@@ -38,7 +42,7 @@ async function getImei(options: { imei: string | undefined }): Promise<string> {
 
     if (options.imei) return options.imei;
 
-    await storage.init();
+    await storage.init({"dir": persistDir});
 
     let imei = await storage.getItem("cli_imei");
 
@@ -119,7 +123,7 @@ program
             process.exit(-1);
         }
 
-        await storage.init();
+        await storage.init({ "dir": persistDir });
 
         await storage.setItem("cli_imei", imei);
 

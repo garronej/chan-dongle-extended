@@ -104,6 +104,7 @@ export namespace UserEvent {
         }
 
 
+        //TODO: provide more info
         export interface NewActiveDongle extends Event {
             dongleevent: "NewActiveModem";
             imei: string;
