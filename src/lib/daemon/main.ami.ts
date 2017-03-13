@@ -29,7 +29,10 @@ activeModems.evtSet.attach(async imei => {
 
     AmiService.postEvent(
         UserEvent.Event.NewActiveDongle.buildAction(
-            imei
+            imei,
+            modem.iccid,
+            modem.imsi,
+            modem.number || ""
         )
     );
 

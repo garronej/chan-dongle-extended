@@ -108,6 +108,9 @@ export namespace UserEvent {
         export interface NewActiveDongle extends Event {
             dongleevent: "NewActiveModem";
             imei: string;
+            iccid: string;
+            imsi: string;
+            number: string;
         }
 
         export namespace NewActiveDongle {
@@ -119,10 +122,18 @@ export namespace UserEvent {
                 );
             }
 
-            export function buildAction(imei: string): NewActiveDongle {
+            export function buildAction(
+                imei: string,
+                iccid: string,
+                imsi: string,
+                number: string
+            ): NewActiveDongle {
                 return {
                     ...Event.buildAction("NewActiveModem"),
-                    imei
+                    imei,
+                    iccid,
+                    imsi,
+                    number
                 } as NewActiveDongle;
             }
 
@@ -141,6 +152,7 @@ export namespace UserEvent {
                     evt.dongleevent === "DongleDisconnect"
                 );
             }
+
 
             export function buildAction(imei: string): DongleDisconnect {
                 return {
@@ -221,7 +233,7 @@ export namespace UserEvent {
         }
 
 
-        export interface GetSimPhonebook extends Request{
+        export interface GetSimPhonebook extends Request {
             command: "GetSimPhonebook";
             imei: string;
         }
@@ -247,7 +259,7 @@ export namespace UserEvent {
 
 
 
-        export interface DeleteContact extends Request{
+        export interface DeleteContact extends Request {
             command: "DeleteContact";
             imei: string;
             index: string;
@@ -277,7 +289,7 @@ export namespace UserEvent {
 
 
 
-        export interface CreateContact extends Request{
+        export interface CreateContact extends Request {
             command: "CreateContact";
             imei: string;
             name: string;

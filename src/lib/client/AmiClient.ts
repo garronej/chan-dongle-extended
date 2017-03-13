@@ -37,14 +37,9 @@ export class AmiClient {
     private readonly ami: any;
 
     public readonly evtMessageStatusReport = new SyncEvent<{ imei: string } & StatusReport>();
-    public readonly evtDongleDisconnect = new SyncEvent<{ imei: string }>();
-    public readonly evtNewActiveDongle = new SyncEvent<{ imei: string }>();
-    public readonly evtRequestUnlockCode = new SyncEvent<{
-        imei: string;
-        iccid: string;
-        pinState: LockedPinState;
-        tryLeft: number;
-    }>();
+    public readonly evtDongleDisconnect = new SyncEvent<{ imei: string}>();
+    public readonly evtNewActiveDongle = new SyncEvent<DongleActive>();
+    public readonly evtRequestUnlockCode = new SyncEvent<LockedDongle>();
     public readonly evtNewMessage = new SyncEvent<{ imei: string } & Message>();
 
     constructor(credential: Credential) {
@@ -71,7 +66,10 @@ export class AmiClient {
                 });
             else if (UserEvent.Event.NewActiveDongle.matchEvt(evt))
                 this.evtNewActiveDongle.post({
-                    "imei": evt.imei
+                    "imei": evt.imei,
+                    "iccid": evt.iccid,
+                    "imsi": evt.imsi,
+                    "number": evt.number || undefined
                 });
             else if (UserEvent.Event.RequestUnlockCode.matchEvt(evt))
                 this.evtRequestUnlockCode.post({
