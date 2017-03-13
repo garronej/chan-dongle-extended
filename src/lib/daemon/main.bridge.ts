@@ -9,7 +9,10 @@ import { Tty0tty } from "./lib/Tty0tty";
 import { lockedModems, activeModems } from "./main";
 
 import * as _debug from "debug";
-let debug = _debug("0_main.bridge");
+let debug = _debug("_main.bridge");
+
+/*<HARDWARE>usb<-->accessPoint.atInterface<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
+/*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
 
 activeModems.evtSet.attach( imei => {
 
@@ -35,15 +38,11 @@ activeModems.evtSet.attach( imei => {
 
         activeModems.delete(modem.imei);
 
-        ChanDongleConfManager.removeDongle("Dongle" + accessPoint.rpiPort, () => {
-
-            portVirtual.close(error => {
-
-                voidModem.release();
-
-            });
-
-        });
+        ChanDongleConfManager.removeDongle("Dongle" + accessPoint.rpiPort,
+            () => portVirtual.close(
+                error => voidModem.release()
+            )
+        );
 
     });
 
@@ -53,12 +52,13 @@ activeModems.evtSet.attach( imei => {
 
     portVirtual.on("open", () => debug("portVirtual open".green));
 
-    modem.evtUnsolicitedAtMessage.attach(urc => {
 
-        debug(JSON.stringify(urc, null, 2).yellow);
-        portVirtual.writeAndDrain(urc.raw)
+    portVirtual.once("data",
+        () => modem.evtUnsolicitedAtMessage.attach(
+            urc => portVirtual.writeAndDrain(urc.raw)
+        )
+    );
 
-    });
 
     portVirtual.on("data", (buff: Buffer) => {
 
@@ -74,20 +74,9 @@ activeModems.evtSet.attach( imei => {
                 return;
             }
 
-            debug(JSON.stringify(rawResp).blue);
+            //debug(JSON.stringify(rawResp).blue);
 
-            portVirtual.writeAndDrain(rawResp, error => {
-
-                if (error) {
-
-                    if (error.causedBy === "drain")
-                        debug("drain problem".red, error);
-                    else if (error.causedBy === "write")
-                        debug("write problem".america, error);
-
-                }
-
-            });
+            portVirtual.writeAndDrain(rawResp);
 
         };
 
@@ -96,7 +85,7 @@ activeModems.evtSet.attach( imei => {
             return;
         }
 
-        debug(JSON.stringify(command).green);
+        //debug(JSON.stringify(command).green);
 
         if (modem.runCommand.isRunning) {
 
@@ -109,8 +98,6 @@ activeModems.evtSet.attach( imei => {
             modem.runCommand.cancelAllQueuedCalls();
         }
 
-
-        //TODO: make a special stack here... or not because it's external
         modem.runCommand(command, {
             "recoverable": true,
             "reportMode": ReportMode.NO_DEBUG_INFO,

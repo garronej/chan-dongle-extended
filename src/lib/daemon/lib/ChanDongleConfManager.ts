@@ -4,6 +4,9 @@ import { execStack, ExecStack } from "ts-exec-stack";
 import { ini } from "../../tools/iniExt";
 import { AmiCredential } from "../../shared/AmiCredential";
 
+import * as _debug from "debug";
+let debug= _debug("_ChanDongleConfManager");
+
 
 const { port, host, user, secret } = AmiCredential.retrieve();
 const path = "/etc/asterisk/dongle.conf";
@@ -115,18 +118,27 @@ function update(callback: () => void): void {
 
 function reloadChanDongle(callback: () => void): void {
 
-    let ami = new AstMan(port, host, user, secret, false);
+    let ami = new AstMan(port, host, user, secret, true);
 
-    let actionId = ami.action({
-        "action": "DongleReload",
-        "When": "when convenient"
-    }, (error, res) => {
+    ami.once("close", hasError => {
+        if( hasError ) setTimeout(()=> reloadChanDongle(callback), 15000);
+    });
 
-        if (error) throw error;
+    ami.once("connect", () => {
 
-        ami.disconnect();
+        let actionId = ami.action({
+            "action": "DongleReload",
+            "When": "when convenient"
+        }, (error, res) => {
 
-        callback();
+            if (error) throw error;
+
+            ami.disconnect();
+
+            callback();
+
+        });
+
 
     });
 
