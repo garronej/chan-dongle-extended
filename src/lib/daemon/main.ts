@@ -1,10 +1,10 @@
 import { 
     Modem, 
     UnlockCodeProviderCallback, 
-    LockedPinState 
+    AtMessage
 } from "../../../../ts-gsm-modem/out/lib/index";
-import { ModemWatcher, Modem as ModemAccessPoint } from "gsm-modem-connection";
-import { TrackableMap } from "../tools/TrackableMap";
+import { Monitor, AccessPoint } from "gsm-modem-connection";
+import { TrackableMap } from "trackable-map";
 
 import * as _debug from "debug";
 let debug= _debug("_main");
@@ -18,12 +18,12 @@ process.on("unhandledRejection", error=> {
 
 export const activeModems= new TrackableMap<string, {
     modem: Modem;
-    accessPoint: ModemAccessPoint;
+    accessPoint: AccessPoint;
 }>();
 
 export const lockedModems= new TrackableMap<string, {
         iccid: string;
-        pinState: LockedPinState;
+        pinState: AtMessage.LockedPinState;
         tryLeft: number;
         callback: UnlockCodeProviderCallback;
 }>();
@@ -31,21 +31,18 @@ export const lockedModems= new TrackableMap<string, {
 require("./main.ami");
 require("./main.bridge");
 
-const modemWatcher = new ModemWatcher();
+Monitor.evtModemDisconnect.attach( accessPoint => debug(`DISCONNECT: ${accessPoint.toString()}`));
 
-modemWatcher.evtConnect.attach(accessPoint => {
+Monitor.evtModemConnect.attach(accessPoint => {
 
-    debug(accessPoint.infos);
-
-    //modemWatcher.stop();
+    debug(`CONNECT: ${accessPoint.toString()}`);
 
     Modem.create({
-        "path": accessPoint.atInterface,
+        "path": accessPoint.dataIfPath,
         "unlockCodeProvider":
         (imei, iccid, pinState, tryLeft, callback) => 
             lockedModems.set(imei, { iccid, pinState, tryLeft, callback })
     }, async (error, modem, hasSim) => {
-
 
         if( error )
             return debug("Initialization error".red, error);
@@ -53,11 +50,9 @@ modemWatcher.evtConnect.attach(accessPoint => {
         if (!hasSim) 
             return debug("No sim!".red);
 
-
         debug(`Modem ${modem.imei} enabled`);
 
         activeModems.set(modem.imei, { modem, accessPoint });
-
 
     });
 

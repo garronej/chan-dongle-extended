@@ -68,8 +68,8 @@ try {
 
 export interface DongleConf {
     id: string;
-    atInterface: string;
-    audioInterface: string;
+    dataIfPath: string;
+    audioIfPath: string;
 }
 
 export class ChanDongleConfManager {
@@ -80,8 +80,8 @@ export class ChanDongleConfManager {
         (dongleConf: DongleConf, callback?: () => void): void => {
 
             config[dongleConf.id] = {
-                "audio": dongleConf.audioInterface,
-                "data": dongleConf.atInterface
+                "audio": dongleConf.audioIfPath,
+                "data": dongleConf.dataIfPath
             };
 
             update(callback!);

@@ -3,7 +3,6 @@ import * as AstMan from "asterisk-manager";
 import { SyncEvent } from "ts-events-extended";
 import { AmiCredential } from "../../shared/AmiCredential";
 import { Contact } from "../../../../../ts-gsm-modem/out/lib/index";
-import { ObjectExt } from "object-extended";
 import { UserEvent } from "../../shared/AmiUserEvent";
 
 import * as _debug from "debug";

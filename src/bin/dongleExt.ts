@@ -223,4 +223,30 @@ program
 
     });
 
+
+program
+    .command("phonebook")
+    .description("Get SIM card phonebook")
+    .option("-i, --imei [imei]", "IMEI of the dongle")
+    .action(async options => {
+
+        await assertServiceRunning();
+
+        let imei = await getImei(options);
+
+        let [error, contacts] = await AmiClient
+            .localhost()
+            .getSimPhonebook(imei);
+
+        if (error) {
+            console.log(error.message.red);
+            process.exit(-1);
+        }
+
+        console.log(JSON.stringify(contacts, null, 2));
+
+        process.exit(0);
+
+    });
+
 program.parse(process.argv);

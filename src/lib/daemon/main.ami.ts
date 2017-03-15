@@ -13,11 +13,14 @@ import { DongleActive, LockedDongle } from "../client/AmiClient";
 import * as _debug from "debug";
 let debug = _debug("_main.ami");
 
-activeModems.evtSet.attach(async imei => {
+activeModems.evtSet.attach(async ({key, value}) => {
+
+    let imei= key;
+    let { modem }= value;
+    
 
     debug(`New active modem ${imei}`);
 
-    let { modem } = activeModems.get(imei)!;
 
     if (modem.pin) {
 
@@ -71,7 +74,9 @@ activeModems.evtSet.attach(async imei => {
 
 });
 
-activeModems.evtDelete.attach(imei => {
+activeModems.evtDelete.attach( ({ key }) => {
+
+    let imei= key;
 
     debug(`Modem terminate ${imei}`);
 
@@ -83,9 +88,13 @@ activeModems.evtDelete.attach(imei => {
 }
 );
 
-lockedModems.evtSet.attach(async imei => {
+lockedModems.evtSet.attach(async ({key, value}) => {
 
-    let { iccid, pinState, tryLeft, callback } = lockedModems.get(imei)!;
+    let imei= key;
+
+    let lockedModem= value;
+
+    let { iccid, pinState, tryLeft, callback } = lockedModem;
 
     debug(`Locked modem IMEI: ${imei},ICCID: ${iccid}, ${pinState}, ${tryLeft}`);
 

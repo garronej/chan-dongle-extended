@@ -1,5 +1,5 @@
 import {
-    LockedPinState
+    AtMessage
 } from "../../../../ts-gsm-modem/out/lib/index";
 
 export interface UserEvent {
@@ -49,7 +49,7 @@ export namespace UserEvent {
             dongleevent: "RequestUnlockCode";
             imei: string;
             iccid: string;
-            pinstate: LockedPinState;
+            pinstate: AtMessage.LockedPinState;
             tryleft: string;
         }
 
@@ -62,7 +62,7 @@ export namespace UserEvent {
                 )
             }
 
-            export function buildAction(imei: string, iccid: string, pinstate: LockedPinState, tryleft: string): RequestUnlockCode {
+            export function buildAction(imei: string, iccid: string, pinstate: AtMessage.LockedPinState, tryleft: string): RequestUnlockCode {
                 return {
                     ...Event.buildAction("RequestUnlockCode"),
                     imei,

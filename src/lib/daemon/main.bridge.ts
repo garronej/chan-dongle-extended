@@ -1,7 +1,7 @@
 
 import { 
     SerialPortExt, 
-    ReportMode
+    AtMessage
 } from "../../../../ts-gsm-modem/out/lib/index";
 
 import { ChanDongleConfManager } from "./lib/ChanDongleConfManager";
@@ -11,25 +11,29 @@ import { lockedModems, activeModems } from "./main";
 import * as _debug from "debug";
 let debug = _debug("_main.bridge");
 
-/*<HARDWARE>usb<-->accessPoint.atInterface<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
+/*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
 /*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
 
-activeModems.evtSet.attach( imei => {
+activeModems.evtSet.attach( ({value}) => {
 
-    let { modem, accessPoint } = activeModems.get(imei)!;
+
+    let { modem, accessPoint } = value;
 
     let voidModem = Tty0tty.getPair();
 
     ChanDongleConfManager.addDongle({
-        "id": "Dongle" + accessPoint.rpiPort,
-        "atInterface": voidModem.rightEnd,
-        "audioInterface": accessPoint.audioInterface
+        "id": `Dongle${accessPoint.id}`,
+        "dataIfPath": voidModem.rightEnd,
+        "audioIfPath": accessPoint.audioIfPath
     });
 
-    let portVirtual = new SerialPortExt(voidModem.leftEnd, {
-        "baudRate": 115200,
-        "parser": SerialPortExt.parsers.readline("\r")
-    });
+    let portVirtual = new SerialPortExt(
+        voidModem.leftEnd,
+        {
+            "baudRate": 115200,
+            "parser": SerialPortExt.parsers.readline("\r")
+        }
+    );
 
 
     modem.evtTerminate.attachOnce(error => {
@@ -38,7 +42,7 @@ activeModems.evtSet.attach( imei => {
 
         activeModems.delete(modem.imei);
 
-        ChanDongleConfManager.removeDongle("Dongle" + accessPoint.rpiPort,
+        ChanDongleConfManager.removeDongle(`Dongle${accessPoint.id}`,
             () => portVirtual.close(
                 error => voidModem.release()
             )
@@ -46,11 +50,9 @@ activeModems.evtSet.attach( imei => {
 
     });
 
-    portVirtual.evtError.attach(serialPortError =>
-        debug("uncaught error serialPortVirtual", serialPortError)
+    portVirtual.evtError.attach(
+        serialPortError => debug("uncaught error serialPortVirtual", serialPortError)
     );
-
-    portVirtual.on("open", () => debug("portVirtual open".green));
 
 
     portVirtual.once("data",
@@ -100,7 +102,7 @@ activeModems.evtSet.attach( imei => {
 
         modem.runCommand(command, {
             "recoverable": true,
-            "reportMode": ReportMode.NO_DEBUG_INFO,
+            "reportMode": AtMessage.ReportMode.NO_DEBUG_INFO,
             "retryOnErrors": false
         }, (_, __, rawResp) => forwardResp(rawResp));
 
