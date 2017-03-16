@@ -13,11 +13,7 @@ import { DongleActive, LockedDongle } from "../client/AmiClient";
 import * as _debug from "debug";
 let debug = _debug("_main.ami");
 
-activeModems.evtSet.attach(async ({key, value}) => {
-
-    let imei= key;
-    let { modem }= value;
-    
+activeModems.evtSet.attach(async ([{ modem }, imei]) => {
 
     debug(`New active modem ${imei}`);
 
@@ -74,9 +70,7 @@ activeModems.evtSet.attach(async ({key, value}) => {
 
 });
 
-activeModems.evtDelete.attach( ({ key }) => {
-
-    let imei= key;
+activeModems.evtDelete.attach( ( [_, imei] ) => {
 
     debug(`Modem terminate ${imei}`);
 
@@ -88,32 +82,28 @@ activeModems.evtDelete.attach( ({ key }) => {
 }
 );
 
-lockedModems.evtSet.attach(async ({key, value}) => {
+lockedModems.evtSet.attach(
+    async ( [ { iccid, pinState, tryLeft, callback }, imei ]) => {
 
-    let imei= key;
+        debug(`Locked modem IMEI: ${imei},ICCID: ${iccid}, ${pinState}, ${tryLeft}`);
 
-    let lockedModem= value;
+        let pin: string | undefined = await storage.getItem("pinOf_" + iccid);
 
-    let { iccid, pinState, tryLeft, callback } = lockedModem;
+        if (pin && pinState === "SIM PIN" && tryLeft > 1) {
+            debug(`Using stored pin ${pin} for unlocking dongle`);
+            callback(pin);
+        } else
+            AmiService.postEvent(
+                UserEvent.Event.RequestUnlockCode.buildAction(
+                    imei,
+                    iccid,
+                    pinState,
+                    tryLeft.toString()
+                )
+            );
 
-    debug(`Locked modem IMEI: ${imei},ICCID: ${iccid}, ${pinState}, ${tryLeft}`);
-
-    let pin: string | undefined = await storage.getItem("pinOf_" + iccid);
-
-    if (pin && pinState === "SIM PIN" && tryLeft > 1) {
-        debug(`Using stored pin ${pin} for unlocking dongle`);
-        callback(pin);
-    } else
-        AmiService.postEvent(
-            UserEvent.Event.RequestUnlockCode.buildAction(
-                imei,
-                iccid,
-                pinState,
-                tryLeft.toString()
-            )
-        );
-
-});
+    }
+);
 
 
 AmiService.evtRequest.attach(({ evtRequest, callback }) => {

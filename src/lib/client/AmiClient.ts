@@ -3,7 +3,7 @@ import { AmiCredential, Credential } from "../shared/AmiCredential";
 import * as AstMan from "asterisk-manager";
 import { SyncEvent } from "ts-events-extended";
 
-import { StatusReport, Message, LockedPinState, Contact } from "../../../../ts-gsm-modem/out/lib/index";
+import { StatusReport, AtMessage, Message, Contact } from "../../../../ts-gsm-modem/out/lib/index";
 
 
 export interface DongleBase {
@@ -12,7 +12,7 @@ export interface DongleBase {
 }
 
 export interface LockedDongle extends DongleBase {
-    pinState: LockedPinState;
+    pinState: AtMessage.LockedPinState;
     tryLeft: number;
 }
 

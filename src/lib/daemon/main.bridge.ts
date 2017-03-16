@@ -14,15 +14,17 @@ let debug = _debug("_main.bridge");
 /*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
 /*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
 
-activeModems.evtSet.attach( ({value}) => {
+activeModems.evtSet.attach( ([ {modem, accessPoint }] ) => {
 
-
-    let { modem, accessPoint } = value;
 
     let voidModem = Tty0tty.getPair();
 
+    let id= "Dongle" + accessPoint.rpiPort;
+
+    debug(`accessPoint.id: ${accessPoint.id}, Dongle id: ${id}`);
+
     ChanDongleConfManager.addDongle({
-        "id": `Dongle${accessPoint.id}`,
+        "id": id,
         "dataIfPath": voidModem.rightEnd,
         "audioIfPath": accessPoint.audioIfPath
     });
@@ -42,7 +44,7 @@ activeModems.evtSet.attach( ({value}) => {
 
         activeModems.delete(modem.imei);
 
-        ChanDongleConfManager.removeDongle(`Dongle${accessPoint.id}`,
+        ChanDongleConfManager.removeDongle(id,
             () => portVirtual.close(
                 error => voidModem.release()
             )

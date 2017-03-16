@@ -83,7 +83,7 @@ program
 
         await runShellCommandAssertSuccess("systemctl daemon-reload");
 
-        console.log("Rules successfully uninstalled".green);
+        console.log("dongleExt.service removed from systemd".green);
 
         process.exit(0);
 
@@ -115,7 +115,7 @@ program
 
         await runShellCommandAssertSuccess("systemctl restart udev.service");
 
-        console.log(`Success: Rules wrote in ${udevRulesPath}:\n${rules}`.green);
+        console.log(`Success: Rules wrote in ${udevRulesPath}:\n\n${rules}`.green);
 
         process.exit(0);
 
@@ -138,6 +138,7 @@ program
 
     });
 
+program.parse(process.argv);
 
 function runShellCommand(cmd: string): Promise<number> {
 
@@ -203,3 +204,4 @@ function writeFileAssertSuccess(filename: string, data: string): Promise<void> {
     );
 
 }
+

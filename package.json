@@ -1,6 +1,6 @@
 {
   "name": "chan-dongle-extended",
-  "version": "0.4.0",
+  "version": "0.5.0",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./out/lib/index.js",
   "types": "./out/lib/index.d.ts",
@@ -16,7 +16,7 @@
     "uninstall": "npm run remove-udev-rules && npm run uninstall-service && npm run clean",
     "remove-udev-rules": "sudo node ./out/bin/dongleExtInstaller remove-udev-rules",
     "uninstall-service": "sudo node ./out/bin/dongleExtInstaller uninstall-service",
-    "clean": "rm -rf ./out ./node_modules",
+    "clean": "rm -rf ./out ./node_modules ./.node-persist",
 
     "daemon": "DEBUG=_* node ./out/lib/daemon/main"
   },
