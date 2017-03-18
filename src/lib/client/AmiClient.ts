@@ -23,7 +23,6 @@ export interface DongleActive extends DongleBase {
 
 export class AmiClient {
 
-
     private static localClient: AmiClient | undefined = undefined;
 
     public static localhost(): AmiClient {
@@ -58,7 +57,7 @@ export class AmiClient {
                     "messageId": parseInt(evt.messageid),
                     "isDelivered": evt.isdelivered === "true",
                     "status": evt.status,
-                    "dischargeTime": new Date(parseInt(evt.dischargetime))
+                    "dischargeTime": new Date(evt.dischargetime)
                 });
             else if (UserEvent.Event.DongleDisconnect.matchEvt(evt))
                 this.evtDongleDisconnect.post({
@@ -82,8 +81,8 @@ export class AmiClient {
                 this.evtNewMessage.post({
                     "imei": evt.imei,
                     "number": evt.number,
-                    "date": new Date(parseInt(evt.date)),
-                    "text": JSON.parse(evt.text) as string
+                    "date": new Date(evt.date),
+                    "text": UserEvent.Event.NewMessage.reassembleText(evt)
                 });
 
 
@@ -142,7 +141,7 @@ export class AmiClient {
 
             let actionid = ami.action(
                 UserEvent.Request.SendMessage.buildAction(
-                    imei, number, JSON.stringify(text)
+                    imei, number, text
                 )
             );
 
@@ -329,7 +328,12 @@ export class AmiClient {
 
                 ami.removeListener("userevent", callee);
 
-                resolve(JSON.parse(evt.dongles));
+                let out: DongleActive[]= [];
+
+                for( let dongleStr of UserEvent.Response.GetActiveDongles.reassembleDongles(evt))
+                    out.push(JSON.parse(dongleStr));
+
+                resolve(out);
 
             });
 
@@ -400,6 +404,5 @@ export class AmiClient {
 
 
     }
-
 
 }

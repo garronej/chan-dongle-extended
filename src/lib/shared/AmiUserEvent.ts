@@ -2,6 +2,8 @@ import {
     AtMessage
 } from "../../../../ts-gsm-modem/out/lib/index";
 
+import { divide } from "../tools/divide";
+
 export interface UserEvent {
     userevent: string;
     actionid: string;
@@ -79,7 +81,8 @@ export namespace UserEvent {
             imei: string;
             number: string;
             date: string;
-            text: string;
+            textsplitcount: string;
+            [textn: string]: string;
         }
 
         export namespace NewMessage{
@@ -92,13 +95,29 @@ export namespace UserEvent {
             }
 
             export function buildAction(imei: string, number: string, date: string, text: string): NewMessage {
-                return {
+
+                let textParts= divide(500, text);
+
+                let out= {
                     ...Event.buildAction("NewMessage"),
                     imei,
                     number,
                     date,
-                    text
+                    "textsplitcount": textParts.length.toString(),
                 } as NewMessage;
+
+                for( let i=0; i< textParts.length; i++ )
+                    out[`text${i}`]= JSON.stringify(textParts[i]);
+                
+                return out;
+            }
+
+            export function reassembleText(evt: NewMessage): string {
+                let out= "";
+                for( let i=0; i< parseInt(evt.textsplitcount); i++)
+                    out+= JSON.parse(evt[`text${i}`]);
+                
+                return out;
             }
 
         }
@@ -328,6 +347,8 @@ export namespace UserEvent {
             imei: string;
             number: string;
             text: string;
+            textsplitcount: string;
+            [textn: string]: string;
         }
 
         export namespace SendMessage {
@@ -338,15 +359,48 @@ export namespace UserEvent {
                     evt.command === "SendMessage" &&
                     evt.hasOwnProperty("imei") &&
                     evt.hasOwnProperty("number") &&
-                    evt.hasOwnProperty("text")
+                    (
+                        (
+                            evt.hasOwnProperty("textsplitcount") &&
+                            evt.hasOwnProperty("text0")
+                        ) || evt.hasOwnProperty("text")
+                    )
                 );
             }
 
             export function buildAction(imei: string, number: string, text: string): SendMessage {
-                return {
+
+                let textParts = divide(500, text);
+
+                let out = {
                     ...Request.buildAction("SendMessage"),
-                    imei, number, text
+                    imei,
+                    number,
+                    "textsplitcount": textParts.length.toString()
                 } as SendMessage;
+
+                for (let i = 0; i < textParts.length; i++)
+                    out[`text${i}`] = JSON.stringify(textParts[i]);
+
+                return out;
+
+            }
+
+            export function reassembleText(evt: SendMessage): string {
+
+                if( evt.text ){
+                    try{
+                        return JSON.parse(evt.text);
+                    }catch(error){
+                        return evt.text;
+                    }
+                }
+
+                let out = "";
+                for (let i = 0; i < parseInt(evt.textsplitcount); i++)
+                    out += JSON.parse(evt[`text${i}`]);
+
+                return out;
             }
 
         }
@@ -602,7 +656,8 @@ export namespace UserEvent {
 
         export interface GetActiveDongles extends Response {
             responseto: "GetActiveDongles";
-            dongles: string;
+            donglecount: string;
+            [donglen: string ]: string | undefined;
         }
 
         export namespace GetActiveDongles {
@@ -614,11 +669,26 @@ export namespace UserEvent {
                 );
             }
 
-            export function buildAction(actionid: string, dongles: string): GetActiveDongles {
-                return {
+            export function buildAction(actionid: string, dongles: string[]): GetActiveDongles {
+                let out= {
                     ...Response.buildAction("GetActiveDongles", actionid),
-                    dongles
+                    "donglecount": dongles.length.toString()
                 } as GetActiveDongles;
+
+                for( let i=0; i< dongles.length; i++ )
+                    out[`dongle${i}`]= dongles[i];
+                
+                return out;
+            }
+
+            export function reassembleDongles(evt: GetActiveDongles): string[] {
+                let out: string[]= [];
+
+                for( let i= 0; i < parseInt(evt.donglecount); i++)
+                    out.push(evt[`dongle${i}`]!);
+                
+                return out;
+
             }
 
         }

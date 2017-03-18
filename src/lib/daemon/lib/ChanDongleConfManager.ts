@@ -8,6 +8,39 @@ import * as _debug from "debug";
 let debug= _debug("_ChanDongleConfManager");
 
 
+export interface DongleConf {
+    id: string;
+    dataIfPath: string;
+    audioIfPath: string;
+}
+
+export namespace ChanDongleConfManager {
+
+    const cluster= {};
+
+    export const addDongle = execStack(cluster ,"WRITE",
+        ({id, dataIfPath, audioIfPath}: DongleConf, callback?: () => void): void => {
+
+            config[id] = {
+                "audio": audioIfPath,
+                "data": dataIfPath
+            };
+
+            update(callback!);
+
+        });
+
+    export const removeDongle = execStack(cluster, "WRITE",
+        (dongleId: string, callback?: () => void): void => {
+
+            delete config[dongleId];
+
+            update(callback!);
+
+        });
+
+}
+
 const { port, host, user, secret } = AmiCredential.retrieve();
 const path = "/etc/asterisk/dongle.conf";
 
@@ -60,42 +93,6 @@ try {
             "dtmf": "relax"
         }
     };
-
-}
-
-
-
-
-export interface DongleConf {
-    id: string;
-    dataIfPath: string;
-    audioIfPath: string;
-}
-
-export class ChanDongleConfManager {
-
-    private constructor() { }
-
-    public static addDongle = execStack("WRITE",
-        (dongleConf: DongleConf, callback?: () => void): void => {
-
-            config[dongleConf.id] = {
-                "audio": dongleConf.audioIfPath,
-                "data": dongleConf.dataIfPath
-            };
-
-            update(callback!);
-
-        });
-
-    public static removeDongle = execStack("WRITE",
-        (dongleId: string, callback?: () => void): void => {
-
-            delete config[dongleId];
-
-            update(callback!);
-
-        });
 
 }
 

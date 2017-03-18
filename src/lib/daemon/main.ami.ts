@@ -3,10 +3,8 @@ import { activeModems, lockedModems } from "./main";
 import { AmiService } from "./lib/AmiService";
 import { UserEvent } from "../shared/AmiUserEvent";
 import { divide } from "../tools/divide";
-import * as storage from "node-persist";
-import * as path from "path";
+import { Storage } from "./lib/Storage";
 
-storage.initSync({ "dir": path.join(__dirname, "..", "..", "..", ".node-persist", "storage") });
 
 import { DongleActive, LockedDongle } from "../client/AmiClient";
 
@@ -17,12 +15,21 @@ activeModems.evtSet.attach(async ([{ modem }, imei]) => {
 
     debug(`New active modem ${imei}`);
 
-
     if (modem.pin) {
 
-        debug(`Persistent storing of pin: ${modem.pin} for SIM ICCID: ${modem.iccid}`);
+        debug(`Persistent storing of pin: ${modem.pin}`);
 
-        await storage.setItem("pinOf_" + modem.iccid, modem.pin);
+        if (modem.iccidAvailableBeforeUnlock)
+            debug(`for SIM ICCID: ${modem.iccid}`);
+        else
+            debug(`for dongle IMEI: ${modem.imei}, because SIM ICCID is not readable with this dongle when SIM is locked`);
+
+        let data = await Storage.read();
+
+        data.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
+
+        await Storage.write(data);
+
 
     }
 
@@ -45,7 +52,7 @@ activeModems.evtSet.attach(async ([{ modem }, imei]) => {
                 UserEvent.Event.MessageStatusReport.buildAction(
                     imei,
                     messageId.toString(),
-                    dischargeTime.getTime().toString(),
+                    dischargeTime.toISOString(),
                     isDelivered ? "true" : "false",
                     status
                 )
@@ -61,8 +68,8 @@ activeModems.evtSet.attach(async ([{ modem }, imei]) => {
                 UserEvent.Event.NewMessage.buildAction(
                     imei,
                     number,
-                    date.getTime().toString(),
-                    JSON.stringify(text)
+                    date.toISOString(),
+                    text
                 )
             )
     );
@@ -70,7 +77,7 @@ activeModems.evtSet.attach(async ([{ modem }, imei]) => {
 
 });
 
-activeModems.evtDelete.attach( ( [_, imei] ) => {
+activeModems.evtDelete.attach(([_, imei]) => {
 
     debug(`Modem terminate ${imei}`);
 
@@ -83,14 +90,25 @@ activeModems.evtDelete.attach( ( [_, imei] ) => {
 );
 
 lockedModems.evtSet.attach(
-    async ( [ { iccid, pinState, tryLeft, callback }, imei ]) => {
+    async ([{ iccid, pinState, tryLeft, callback }, imei]) => {
 
         debug(`Locked modem IMEI: ${imei},ICCID: ${iccid}, ${pinState}, ${tryLeft}`);
 
-        let pin: string | undefined = await storage.getItem("pinOf_" + iccid);
+        let data = await Storage.read();
 
-        if (pin && pinState === "SIM PIN" && tryLeft > 1) {
+        let pin = data.pins[iccid || imei];
+
+        if (pin) {
+
+            delete data.pins[iccid || imei];
+
+            await Storage.write(data);
+
+        }
+
+        if (pin && pinState === "SIM PIN" && tryLeft === 3) {
             debug(`Using stored pin ${pin} for unlocking dongle`);
+            lockedModems.delete(imei);
             callback(pin);
         } else
             AmiService.postEvent(
@@ -125,13 +143,7 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
 
         let { modem } = activeModems.get(evtRequest.imei)!;
 
-        let text: string;
-
-        try {
-            text = JSON.parse(evtRequest.text);
-        } catch (error) {
-            text = evtRequest.text;
-        }
+        let text = UserEvent.Request.SendMessage.reassembleText(evtRequest);
 
         modem.sendMessage(
             evtRequest.number,
@@ -240,10 +252,12 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
 
         }
 
+        let donglesStr = dongles.map(value => JSON.stringify(value));
+
         callback(
             UserEvent.Response.GetActiveDongles.buildAction(
                 evtRequest.actionid!,
-                JSON.stringify(dongles)
+                donglesStr
             )
         );
     } else if (UserEvent.Request.UnlockDongle.matchEvt(evtRequest)) {

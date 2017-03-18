@@ -16,7 +16,6 @@ let debug = _debug("_main.bridge");
 
 activeModems.evtSet.attach( ([ {modem, accessPoint }] ) => {
 
-
     let voidModem = Tty0tty.getPair();
 
     let id= "Dongle" + accessPoint.rpiPort;

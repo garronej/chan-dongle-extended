@@ -2,82 +2,81 @@ import { ini } from "../tools/iniExt";
 import { readFileSync } from "fs";
 require("colors");
 
-const confPath= "/etc/asterisk/manager.conf";
+const confPath = "/etc/asterisk/manager.conf";
 
 export interface Credential {
-        port: number;
-        host: string;
-        user: string;
-        secret: string;
+    port: number;
+    host: string;
+    user: string;
+    secret: string;
 };
 
-export class AmiCredential {
+export namespace AmiCredential {
 
-    private constructor(){}
+    export function retrieve(): Credential {
 
-    private static credential: Credential | undefined= undefined;
+        if (credential) return credential;
 
-    public static retrieve(): Credential{
-
-        if (this.credential) return this.credential;
-
-        return this.credential = this.init();
+        return credential = init();
 
     }
 
-    private static init(): Credential {
 
-        let config = ini.parseStripWhitespace(readFileSync(confPath, "utf8"))
+}
 
-        let general: {
-            enabled?: "yes" | "no";
-            port?: string;
-            bindaddr?: string;
-        } = config.general || {};
+let credential: Credential | undefined = undefined;
 
-        if (general.enabled !== "yes")
-            throw new Error("Asterisk manager is not enabled");
+function init(): Credential {
 
-        let port: number = general.port ? parseInt(general.port) : 5038;
-        let host: string =
-            (general.bindaddr && general.bindaddr !== "0.0.0.0") ? general.bindaddr : "127.0.0.1";
+    let config = ini.parseStripWhitespace(readFileSync(confPath, "utf8"))
 
-        delete config.general;
+    let general: {
+        enabled?: "yes" | "no";
+        port?: string;
+        bindaddr?: string;
+    } = config.general || {};
 
-        let credential: {
-            user: string;
-            secret: string
-        } | undefined = undefined;
+    if (general.enabled !== "yes")
+        throw new Error("Asterisk manager is not enabled");
 
-        for (let userName of Object.keys(config)) {
+    let port: number = general.port ? parseInt(general.port) : 5038;
+    let host: string =
+        (general.bindaddr && general.bindaddr !== "0.0.0.0") ? general.bindaddr : "127.0.0.1";
 
-            let userConfig: {
-                secret?: string;
-                read?: string;
-                write?: string;
-            } = config[userName];
+    delete config.general;
 
-            if (
-                !userConfig.secret ||
-                !userConfig.write ||
-                !userConfig.read
-            ) continue;
+    let credential: {
+        user: string;
+        secret: string
+    } | undefined = undefined;
 
-            if (
-                isGranted(getListAuthority(userConfig.read!)) &&
-                isGranted(getListAuthority(userConfig.write!))
-            ) {
+    for (let userName of Object.keys(config)) {
 
-                credential = { "user": userName, "secret": userConfig.secret };
-                break;
+        let userConfig: {
+            secret?: string;
+            read?: string;
+            write?: string;
+        } = config[userName];
 
-            }
+        if (
+            !userConfig.secret ||
+            !userConfig.write ||
+            !userConfig.read
+        ) continue;
+
+        if (
+            isGranted(getListAuthority(userConfig.read!)) &&
+            isGranted(getListAuthority(userConfig.write!))
+        ) {
+
+            credential = { "user": userName, "secret": userConfig.secret };
+            break;
 
         }
 
-        return { ...credential, port, host };
-
     }
+
+    return { ...credential, port, host };
 
 }
 

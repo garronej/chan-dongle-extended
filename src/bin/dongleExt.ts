@@ -5,11 +5,12 @@ import { AmiClient } from "../lib/index";
 import { spawn } from "child_process";
 import * as pr from "ts-promisify";
 import * as storage from "node-persist";
-require("colors");
 
+require("colors");
 import * as path from "path";
 
 const persistDir= path.join(__dirname, "..", "..", ".node-persist", "storage");
+
 
 function assertServiceRunning(): Promise<void> {
 
@@ -206,7 +207,7 @@ program
 
         let imei = await getImei(options);
 
-        text = JSON.parse('"' + text + '"');
+        text = JSON.parse(`"${text}"`);
 
         let [error, messageId] = await AmiClient
             .localhost()

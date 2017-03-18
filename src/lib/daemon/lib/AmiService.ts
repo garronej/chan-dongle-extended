@@ -10,26 +10,25 @@ let debug= _debug("_AmiService");
 
 require("colors");
 
-export class AmiService {
+export namespace AmiService {
 
-    private constructor(){}
-
-    public static readonly evtRequest = new SyncEvent<{
+    export const evtRequest = new SyncEvent<{
         evtRequest: UserEvent.Request;
         callback: (actionResponse: UserEvent.Response) => void;
     }>();
 
-    public static postEvent(actionEvent: UserEvent.Event): void {
+    export function postEvent(actionEvent: UserEvent.Event): void {
 
         ami.action(actionEvent);
-    }
 
+    }
 
 }
 
 const { port, host, user, secret } = AmiCredential.retrieve();
 
-const ami = new AstMan( port, host, user, secret, true);
+const ami = new AstMan(port, host, user, secret, true);
+
 
 ami.keepConnected();
 
@@ -48,5 +47,4 @@ ami.on("userevent", (evt: UserEvent): void => {
 
 });
 
-ami.on("userevent", ( { actionid, event, action, userevent, privilege, ...prettyEvt }: UserEvent) => debug(prettyEvt));
-
+ami.on("userevent", ({ actionid, event, action, userevent, privilege, ...prettyEvt }: UserEvent) => debug(prettyEvt));
