@@ -98,7 +98,7 @@ export class AmiClient {
         callback?: (dongles: LockedDongle[]) => void
     ): Promise<LockedDongle[]> {
 
-        let promise = new Promise<LockedDongle[]>(resolve => {
+        return new Promise<LockedDongle[]>(resolve => {
 
             let ami = this.ami;
 
@@ -113,18 +113,15 @@ export class AmiClient {
 
                 ami.removeListener("userevent", callee);
 
-                resolve(JSON.parse(evt.dongles));
+                let lockedDongles: LockedDongle[]= JSON.parse(evt.dongles);
+
+                if( callback ) callback(lockedDongles);
+                resolve(lockedDongles);
 
             });
 
         });
 
-        if( !callback )
-            return promise;
-        else{
-            promise.then( dongles => callback(dongles));
-            return null as any;
-        }
 
     }
 
@@ -135,7 +132,7 @@ export class AmiClient {
         callback?: (error: Error | null, messageId: number) => void
     ): Promise<[Error | null, number]> {
 
-        let promise = new Promise<[Error | null, number]>(resolve => {
+        return new Promise<[Error | null, number]>(resolve => {
 
             let ami = this.ami;
 
@@ -152,22 +149,32 @@ export class AmiClient {
 
                 ami.removeListener("userevent", callee);
 
-                if (evt.error)
-                    resolve([new Error(evt.error), NaN]);
-                else
-                    resolve([null, parseInt(evt.messageid)]);
+                let error: null | Error;
+                let messageId: number;
+
+                if( evt.error ){
+
+                    error= new Error(evt.error);
+
+                    messageId= NaN;
+
+                }else{
+
+                    error= null;
+
+                    messageId= parseInt(evt.messageid);
+
+                }
+
+                if( callback ) callback(error, messageId);
+                resolve([error, messageId]);
+
 
             });
 
 
         });
 
-        if (!callback)
-            return promise;
-        else {
-            promise.then(([error, messageId]) => callback(error, messageId));
-            return null as any;
-        }
 
 
     }
@@ -177,7 +184,7 @@ export class AmiClient {
         callback?: (error: null | Error, phonebook: Contact[]) => void
     ): Promise<[Error | null, Contact[]]> {
 
-        let promise = new Promise<[Error | null, Contact[]]>(resolve => {
+        return new Promise<[Error | null, Contact[]]>(resolve => {
 
             let ami = this.ami;
 
@@ -192,24 +199,32 @@ export class AmiClient {
 
                 ami.removeListener("userevent", callee);
 
-                if (evt.error)
-                    resolve([new Error(evt.error), []]);
-                else
-                    resolve([null, JSON.parse(
-                        evt.phonebookpart1 + evt.phonebookpart2 + evt.phonebookpart3
-                    )]);
+                let error: null | Error;
+                let contacts: Contact[];
 
+                if (evt.error) {
+
+                    error = new Error(evt.error);
+
+                    contacts = [];
+
+                } else {
+
+                    error = null;
+
+                    contacts = JSON.parse(
+                        evt.phonebookpart1 + evt.phonebookpart2 + evt.phonebookpart3
+                    );
+
+                }
+
+                if (callback) callback(null, contacts);
+                resolve([null, contacts]);
 
             });
 
         });
 
-        if( !callback )
-            return promise;
-        else{
-            promise.then( ([error, phonebook])=> callback(error, phonebook) );
-            return null as any;
-        }
 
     }
 
@@ -220,7 +235,7 @@ export class AmiClient {
         callback?: (error: null | Error, contact: Contact | null) => void
     ): Promise<[null | Error, Contact | null]> {
 
-        let promise = new Promise<[null | Error, Contact | null]>(resolve => {
+        return new Promise<[null | Error, Contact | null]>(resolve => {
 
             let ami = this.ami;
 
@@ -240,27 +255,28 @@ export class AmiClient {
                 ami.removeListener("userevent", callee);
 
 
-                if (evt.error)
-                    resolve([new Error(evt.error), null]);
-                else
-                    resolve([null, {
-                        "index": parseInt(evt.index),
-                        "name": evt.name,
-                        "number": evt.number
-                    }]);
+                if (evt.error) {
+
+                    let error = new Error(evt.error);
+
+                    if (callback) callback(error, null);
+
+                    resolve([error, null]);
+
+                    return;
+                }
+
+                let { index, name, number } = evt;
+
+                let contact: Contact = { "index": parseInt(evt.index), name, number }
+
+                if (callback) callback(null, contact);
+                resolve([null, contact]);
 
             });
 
 
         });
-
-        if( !callback )
-            return promise;
-        else{
-            promise.then( ([error, contact])=> callback(error, contact));
-            return null as any;
-        }
-
 
 
     }
@@ -271,7 +287,7 @@ export class AmiClient {
         callback?: (error: null | Error) => void
     ): Promise<null | Error> {
 
-        let promise = new Promise<null | Error>(resolve => {
+        return new Promise<null | Error>(resolve => {
 
             let ami = this.ami;
 
@@ -289,21 +305,15 @@ export class AmiClient {
 
                 ami.removeListener("userevent", callee);
 
-                if (evt.error)
-                    resolve(new Error(evt.error));
-                else
-                    resolve(null);
+                let error = evt.error ? new Error(evt.error) : null;
+
+                if (callback) callback(error);
+                resolve(error);
 
             });
 
         });
 
-        if (!callback)
-            return promise;
-        else {
-            promise.then(error => callback(error));
-            return null as any;
-        }
 
 
     }
@@ -313,7 +323,7 @@ export class AmiClient {
         callback?: (dongles: DongleActive[]) => void
     ): Promise<DongleActive[]> {
 
-        let promise = new Promise<DongleActive[]>(resolve => {
+        return new Promise<DongleActive[]>(resolve => {
 
             let ami = this.ami;
 
@@ -328,24 +338,17 @@ export class AmiClient {
 
                 ami.removeListener("userevent", callee);
 
-                let out: DongleActive[]= [];
+                let out: DongleActive[] = [];
 
-                for( let dongleStr of UserEvent.Response.GetActiveDongles.reassembleDongles(evt))
+                for (let dongleStr of UserEvent.Response.GetActiveDongles.reassembleDongles(evt))
                     out.push(JSON.parse(dongleStr));
 
+                if (callback) callback(out);
                 resolve(out);
 
             });
 
         });
-
-        if (!callback)
-            return promise;
-        else {
-            promise.then(dongles => callback(dongles));
-            return null as any;
-        }
-
 
     }
 
@@ -363,10 +366,9 @@ export class AmiClient {
         else
             inputs.push(lastInput);
 
-        let promise = new Promise<null | Error>(resolve => {
+        return new Promise<null | Error>(resolve => {
 
             let ami = this.ami;
-
 
             let actionid: string;
 
@@ -387,21 +389,16 @@ export class AmiClient {
 
                 ami.removeListener("userevent", callee);
 
-                resolve(evt.error ? new Error(evt.error) : null);
+                let error = evt.error ? new Error(evt.error) : null;
+
+                if (callback) callback(error);
+                resolve(error);
 
 
             });
 
 
         });
-
-        if (!callback)
-            return promise;
-        else {
-            promise.then(error => callback!(error));
-            return null as any;
-        }
-
 
     }
 
