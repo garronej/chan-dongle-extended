@@ -1,6 +1,5 @@
-
 import { 
-    SerialPortExt, 
+    SerialPortExt,
     AtMessage
 } from "../../../../ts-gsm-modem/out/lib/index";
 
@@ -8,17 +7,19 @@ import { ChanDongleConfManager } from "./lib/ChanDongleConfManager";
 import { Tty0tty } from "./lib/Tty0tty";
 import { lockedModems, activeModems } from "./main";
 
+import * as pr from "ts-promisify";
+
 import * as _debug from "debug";
 let debug = _debug("_main.bridge");
 
 /*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
 /*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
 
-activeModems.evtSet.attach( ([ {modem, accessPoint }] ) => {
+activeModems.evtSet.attach(async ([{ modem, accessPoint }]) => {
 
     let voidModem = Tty0tty.getPair();
 
-    let id= "Dongle" + accessPoint.rpiPort;
+    let id = "Dongle" + accessPoint.rpiPort;
 
     debug(`accessPoint.id: ${accessPoint.id}, Dongle id: ${id}`);
 
@@ -36,34 +37,33 @@ activeModems.evtSet.attach( ([ {modem, accessPoint }] ) => {
         }
     );
 
+    modem.evtTerminate.attachOnce(async () => {
 
-    modem.evtTerminate.attachOnce(error => {
+        debug("Modem terminate => closing bridge");
 
-        debug("modem disconnect", error);
+        await ChanDongleConfManager.removeDongle(id);
 
-        activeModems.delete(modem.imei);
+        debug("Dongle removed from chan dongle config");
 
-        ChanDongleConfManager.removeDongle(id,
-            () => portVirtual.close(
-                error => voidModem.release()
-            )
-        );
+        if (portVirtual.isOpen()){
+            await pr.typed(portVirtual, portVirtual.close)();
+            debug("Virtual port closed");
+        }
+
+        voidModem.release();
 
     });
 
-    portVirtual.evtError.attach(
-        serialPortError => debug("uncaught error serialPortVirtual", serialPortError)
-    );
+    portVirtual.evtError.attach(serialPortError => {
+        debug("uncaught error serialPortVirtual", serialPortError);
 
-
-    portVirtual.once("data",
-        () => modem.evtUnsolicitedAtMessage.attach(
-            urc => portVirtual.writeAndDrain(urc.raw)
-        )
-    );
+        modem.terminate(new Error("Bridge serialport error"));
+    });
 
 
     portVirtual.on("data", (buff: Buffer) => {
+
+        if( modem.isTerminated ) return;
 
         let command = buff.toString("utf8") + "\r";
 
@@ -108,6 +108,13 @@ activeModems.evtSet.attach( ([ {modem, accessPoint }] ) => {
         }, (_, __, rawResp) => forwardResp(rawResp));
 
     });
+
+
+    await portVirtual.evtData.waitFor();
+
+    modem.evtUnsolicitedAtMessage.attach(
+        urc => portVirtual.writeAndDrain(urc.raw)
+    );
 
 
 

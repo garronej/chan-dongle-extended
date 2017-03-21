@@ -30,57 +30,64 @@ export const lockedModems = new TrackableMap<string, {
     callback: UnlockCodeProviderCallback;
 }>();
 
-if( process.env["NODE_ENV"] !== "production") require("./repl");
+if (process.env["NODE_ENV"] !== "production") require("./repl");
 require("./evtLogger");
 require("./main.ami");
 require("./main.bridge");
 
 Monitor.evtModemDisconnect.attach(accessPoint => debug(`DISCONNECT: ${accessPoint.toString()}`));
 
-Monitor.evtModemConnect.attach(accessPoint => {
+Monitor.evtModemConnect.attach(async accessPoint => {
 
     debug(`CONNECT: ${accessPoint.toString()}`);
 
-    Modem.create({
+    let [error, modem, hasSim] = await Modem.create({
         "path": accessPoint.dataIfPath,
         "unlockCodeProvider":
         (imei, iccid, pinState, tryLeft, callback) =>
             lockedModems.set(imei, { iccid, pinState, tryLeft, callback })
-    }, async (error, modem, hasSim) => {
+    });
 
-        if (error) {
-            debug("Initialization error".red, error);
+    if (error) {
+        debug("Initialization error".red, error);
 
-            if (modem.pin) {
+        if (modem.pin) {
 
-                debug(`Still unlock was successful so, Persistent storing of pin: ${modem.pin}`);
+            debug(`Still unlock was successful so, Persistent storing of pin: ${modem.pin}`);
 
-                if( modem.iccidAvailableBeforeUnlock )
-                    debug(`for SIM ICCID: ${modem.iccid}`);
-                else
-                    debug(`for dongle IMEI: ${modem.imei}, because SIM ICCID is not readable with this dongle when SIM is locked`);
+            if (modem.iccidAvailableBeforeUnlock)
+                debug(`for SIM ICCID: ${modem.iccid}`);
+            else
+                debug(`for dongle IMEI: ${modem.imei}, because SIM ICCID is not readable with this dongle when SIM is locked`);
 
-                let data = await Storage.read();
+            let data = await Storage.read();
 
-                data.pins[modem.iccidAvailableBeforeUnlock?modem.iccid:modem.imei] = modem.pin;
+            data.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
 
-                await Storage.write(data);
+            await Storage.write(data);
 
-            }
-
-            lockedModems.delete(modem.imei);
-            return;
         }
 
-        if (!hasSim)
-            return debug("No sim!".red);
+        lockedModems.delete(modem.imei);
+        return;
+    }
 
-        debug(`Modem ${modem.imei} enabled`);
+    if (!hasSim)
+        return debug("No sim!".red);
 
-        activeModems.set(modem.imei, { modem, accessPoint });
+    debug(`Modem ${modem.imei} enabled`);
 
+    activeModems.set(modem.imei, { modem, accessPoint });
+    modem.evtTerminate.attachOnce( error => {
+
+        debug("Modem evt terminate");
+
+        if( error ){
+            debug("terminate reason: ", error);
+        }
+
+        activeModems.delete(modem.imei);
 
     });
 
 });
-

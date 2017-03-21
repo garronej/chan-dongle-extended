@@ -77,16 +77,12 @@ activeModems.evtSet.attach(async ([{ modem }, imei]) => {
 
 });
 
-activeModems.evtDelete.attach(([_, imei]) => {
-
-    debug(`Modem terminate ${imei}`);
-
-    AmiService.postEvent(
+activeModems.evtDelete.attach(
+    ([_, imei]) => AmiService.postEvent(
         UserEvent.Event.DongleDisconnect.buildAction(
             imei
         )
-    );
-}
+    )
 );
 
 lockedModems.evtSet.attach(

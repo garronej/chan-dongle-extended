@@ -16,123 +16,148 @@ export interface DongleConf {
 
 export namespace ChanDongleConfManager {
 
-    const cluster= {};
+    const cluster = {};
 
-    export const addDongle = execStack(cluster ,"WRITE",
-        ({id, dataIfPath, audioIfPath}: DongleConf, callback?: () => void): void => {
+    export const addDongle = execStack(cluster, "WRITE",
+        async ({ id, dataIfPath, audioIfPath }: DongleConf, callback?: () => void): Promise<void> => {
 
             config[id] = {
                 "audio": audioIfPath,
                 "data": dataIfPath
             };
 
-            update(callback!);
+            await update();
 
-        });
+            callback!();
+            return null as any;
+
+        }
+    );
 
     export const removeDongle = execStack(cluster, "WRITE",
-        (dongleId: string, callback?: () => void): void => {
+        async (dongleId: string, callback?: () => void): Promise<void> => {
 
             delete config[dongleId];
 
-            update(callback!);
+            await update();
 
-        });
+            callback!();
+
+            return null as any;
+
+        }
+    );
 
 }
 
 const { port, host, user, secret } = AmiCredential.retrieve();
 const path = "/etc/asterisk/dongle.conf";
+const defaultConfig = {
+    "general": {
+        "interval": "1",
+        "jbenable": "yes",
+        "jbmaxsize": "100",
+        "jbimpl": "fixed"
+    },
+    "defaults": {
+        "context": "from-dongle",
+        "group": "0",
+        "rxgain": "0",
+        "txgain": "0",
+        "autodeletesms": "yes",
+        "resetdongle": "yes",
+        "u2diag": "-1",
+        "usecallingpres": "yes",
+        "callingpres": "allowed_passed_screen",
+        "disablesms": "yes",
+        "language": "en",
+        "smsaspdu": "yes",
+        "mindtmfgap": "45",
+        "mindtmfduration": "80",
+        "mindtmfinterval": "200",
+        "callwaiting": "auto",
+        "disable": "no",
+        "initstate": "start",
+        "exten": "+12345678987",
+        "dtmf": "relax"
+    }
+};
 
-let config;
+const config = (() => {
 
-try {
+    try {
 
-    config = ini.parseStripWhitespace(readFileSync(path, "utf8"))
+        let out = ini.parseStripWhitespace(readFileSync(path, "utf8"))
 
-    config.defaults.disablesms = "yes";
+        out.defaults.disablesms = "yes";
 
-    for (let key of Object.keys(config)) {
+        for (let key of Object.keys(out)) {
 
-        if (key === "general" || key === "defaults")
-            continue;
+            if (key === "general" || key === "defaults")
+                continue;
 
-        delete config[key];
+            delete out[key];
+
+        }
+
+        return out;
+
+    } catch (error) {
+
+        return defaultConfig;
 
     }
 
-} catch (error) {
+})();
 
-    config = {
-        "general": {
-            "interval": "1",
-            "jbenable": "yes",
-            "jbmaxsize": "100",
-            "jbimpl": "fixed"
-        },
-        "defaults": {
-            "context": "from-dongle",
-            "group": "0",
-            "rxgain": "0",
-            "txgain": "0",
-            "autodeletesms": "yes",
-            "resetdongle": "yes",
-            "u2diag": "-1",
-            "usecallingpres": "yes",
-            "callingpres": "allowed_passed_screen",
-            "disablesms": "yes",
-            "language": "en",
-            "smsaspdu": "yes",
-            "mindtmfgap": "45",
-            "mindtmfduration": "80",
-            "mindtmfinterval": "200",
-            "callwaiting": "auto",
-            "disable": "no",
-            "initstate": "start",
-            "exten": "+12345678987",
-            "dtmf": "relax"
-        }
-    };
-
-}
 
 ChanDongleConfManager.removeDongle("");
 
-function update(callback: () => void): void {
+function update(): Promise<void> {
 
-    writeFile(path, ini.stringify(config), {
-        "encoding": "utf8",
-        "flag": "w"
-    }, error => {
+    return new Promise<void>(
+        resolve => writeFile(
+            path,
+            ini.stringify(config),
+            { "encoding": "utf8", "flag": "w" },
+            async error => {
 
-        if (error) throw error;
+                if (error) throw error;
 
-        reloadChanDongle(callback);
+                await reloadChanDongle();
 
-    });
+                resolve();
+
+            }
+        )
+    );
 
 }
 
-function reloadChanDongle(callback: () => void): void {
+function reloadChanDongle(): Promise<void> {
 
-    let ami = new AstMan(port, host, user, secret, true);
+    return new Promise<void>(function callee(resolve) {
 
-    ami.once("close", hasError => {
-        if( hasError ) setTimeout(()=> reloadChanDongle(callback), 15000);
-    });
+        let ami = new AstMan(port, host, user, secret, true);
 
-    ami.once("connect", () => {
+        ami.once("close", hasError => {
+            if (hasError) setTimeout(() => callee(resolve), 15000);
+            else resolve();
+        });
 
-        let actionId = ami.action({
-            "action": "DongleReload",
-            "When": "when convenient"
-        }, (error, res) => {
+        ami.once("connect", () => {
 
-            if (error) throw error;
+            let actionId = ami.action({
+                "action": "DongleReload",
+                "When": "gracefully"
+            }, (error, res) => {
 
-            ami.disconnect();
+                if (error) throw error;
 
-            callback();
+                ami.disconnect();
+
+            });
+
 
         });
 
