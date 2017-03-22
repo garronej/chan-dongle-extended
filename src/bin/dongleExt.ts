@@ -323,4 +323,34 @@ program
 
     });
 
+program
+    .command("messages")
+    .description("Get received SMS")
+    .option("-i, --imei [imei]", "IMEI of the dongle")
+    .option("-f, --flush", "Whether or not erasing retrieved messages")
+    .action(async options => {
+
+        await assertServiceRunning();
+
+        let flush: boolean  = (options.flush === true);
+
+        let imei = await getImei(options);
+
+        let [ error, messages] = await AmiClient
+            .localhost()
+            .getMessages(imei, flush);
+
+        if (error) {
+            console.log(error.message.red);
+            process.exit(-1);
+            return;
+        }
+
+        console.log(JSON.stringify(messages!, null, 2));
+
+        process.exit(0);
+
+
+    });
+
 program.parse(process.argv);

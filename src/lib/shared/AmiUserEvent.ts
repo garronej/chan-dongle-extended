@@ -377,6 +377,43 @@ export namespace UserEvent {
 
 
 
+        export interface GetMessages extends Request {
+            command: typeof GetMessages.keyword;
+            imei: string;
+            flush: "true" | "false";
+        }
+
+        export namespace GetMessages {
+
+            export const keyword = "GetMessages";
+
+            export function matchEvt(evt: UserEvent): evt is GetMessages {
+                return (
+                    Request.matchEvt(evt) &&
+                    evt.command === keyword &&
+                    evt.hasOwnProperty("imei") &&
+                    (
+                        evt.flush === "true" ||
+                        evt.flush === "false"
+                    )
+                );
+            }
+
+            export function buildAction(
+                imei: string,
+                flush: "true" | "false"
+            ): GetMessages {
+                return {
+                    ...Request.buildAction(keyword),
+                    imei,
+                    flush
+                } as GetMessages;
+            }
+
+        }
+
+
+
 
         export interface SendMessage extends Request {
             command: typeof SendMessage.keyword;
@@ -389,7 +426,7 @@ export namespace UserEvent {
 
         export namespace SendMessage {
 
-            export const keyword= "SendMessage";
+            export const keyword = "SendMessage";
 
             export function matchEvt(evt: UserEvent): evt is SendMessage {
                 return (
@@ -449,7 +486,7 @@ export namespace UserEvent {
 
         export namespace GetLockedDongles {
 
-            export const keyword= "GetLockedDongles";
+            export const keyword = "GetLockedDongles";
 
             export function matchEvt(evt: UserEvent): evt is GetLockedDongles {
                 return (
@@ -473,7 +510,7 @@ export namespace UserEvent {
 
         export namespace GetActiveDongles {
 
-            export const keyword= "GetActiveDongles";
+            export const keyword = "GetActiveDongles";
 
             export function matchEvt(evt: UserEvent): evt is GetActiveDongles {
                 return (
@@ -502,7 +539,7 @@ export namespace UserEvent {
 
         export namespace UnlockDongle {
 
-            export const keyword= "UnlockDongle";
+            export const keyword = "UnlockDongle";
 
             export function matchEvt(evt: UserEvent): evt is UnlockDongle {
                 return (
@@ -549,7 +586,7 @@ export namespace UserEvent {
 
     export namespace Response {
 
-        export const keyword= "DongleExt Response";
+        export const keyword = "DongleExt Response";
 
         export function matchEvt(evt: UserEvent, actionid: string): evt is Response {
             return (
@@ -571,25 +608,24 @@ export namespace UserEvent {
 
 
 
+
         export interface SendMessage extends Response {
-            responseto: typeof SendMessage.keyword;
+            responseto: typeof Request.SendMessage.keyword;
             messageid: string;
         }
 
         export namespace SendMessage {
 
-            export const keyword= "SendMessage"
-
             export function matchEvt(evt: UserEvent, actionid: string): evt is SendMessage {
                 return (
                     Response.matchEvt(evt, actionid) &&
-                    evt.responseto === keyword
+                    evt.responseto === Request.SendMessage.keyword
                 );
             }
 
             export function buildAction(actionid: string, messageid: string): SendMessage {
                 return {
-                    ...Response.buildAction(keyword, actionid),
+                    ...Response.buildAction(Request.SendMessage.keyword, actionid),
                     messageid
                 } as SendMessage;
 
@@ -598,7 +634,7 @@ export namespace UserEvent {
 
 
         export interface CreateContact extends Response {
-            responseto: typeof CreateContact.keyword;
+            responseto: typeof Request.CreateContact.keyword;
             index: string;
             name: string;
             number: string;
@@ -606,18 +642,17 @@ export namespace UserEvent {
 
         export namespace CreateContact {
 
-            export const keyword= "CreateContact";
 
             export function matchEvt(evt: UserEvent, actionid: string): evt is CreateContact {
                 return (
                     Response.matchEvt(evt, actionid) &&
-                    evt.responseto === keyword
+                    evt.responseto === Request.CreateContact.keyword
                 );
             }
 
             export function buildAction(actionid: string, index: string, name: string, number: string): CreateContact {
                 return {
-                    ...Response.buildAction(keyword, actionid),
+                    ...Response.buildAction(Request.CreateContact.keyword, actionid),
                     index,
                     name,
                     number
@@ -627,8 +662,10 @@ export namespace UserEvent {
         }
 
 
+
+
         export interface GetSimPhonebook extends Response {
-            responseto: typeof GetSimPhonebook.keyword;
+            responseto: typeof Request.GetSimPhonebook.keyword;
             contactnamemaxlength: string;
             numbermaxlength: string;
             storageleft: string;
@@ -638,25 +675,24 @@ export namespace UserEvent {
 
         export namespace GetSimPhonebook {
 
-            export const keyword = "GetSimPhonebook";
 
             export function matchEvt(evt: UserEvent, actionid: string): evt is GetSimPhonebook {
                 return (
                     Response.matchEvt(evt, actionid) &&
-                    evt.responseto === keyword
+                    evt.responseto === Request.GetSimPhonebook.keyword
                 );
             }
 
             export function buildAction(
-                actionid: string, 
+                actionid: string,
                 contactnamemaxlength: string,
                 numbermaxlength: string,
                 storageleft: string,
                 contacts: string[]
-                ): GetSimPhonebook {
+            ): GetSimPhonebook {
 
                 let out = {
-                    ...Response.buildAction(keyword, actionid),
+                    ...Response.buildAction(Request.GetSimPhonebook.keyword, actionid),
                     contactnamemaxlength,
                     numbermaxlength,
                     storageleft,
@@ -685,23 +721,22 @@ export namespace UserEvent {
 
 
         export interface DeleteContact extends Response {
-            responseto: typeof DeleteContact.keyword;
+            responseto: typeof Request.DeleteContact.keyword;
         }
 
         export namespace DeleteContact {
 
-            export const keyword = "DeleteContact";
 
             export function matchEvt(evt: UserEvent, actionid: string): evt is DeleteContact {
                 return (
                     Response.matchEvt(evt, actionid) &&
-                    evt.responseto === keyword
+                    evt.responseto === Request.DeleteContact.keyword
                 );
             }
 
             export function buildAction(actionid: string): DeleteContact {
                 return {
-                    ...Response.buildAction(keyword, actionid),
+                    ...Response.buildAction(Request.DeleteContact.keyword, actionid),
                 } as DeleteContact;
             }
 
@@ -710,25 +745,24 @@ export namespace UserEvent {
 
 
         export interface GetLockedDongles extends Response {
-            responseto: typeof GetLockedDongles.keyword;
+            responseto: typeof Request.GetLockedDongles.keyword;
             donglecount: string;
             [donglen: string]: string | undefined;
         }
 
         export namespace GetLockedDongles {
 
-            export const keyword = "GetLockedDongles";
 
             export function matchEvt(evt: UserEvent, actionid: string): evt is GetLockedDongles {
                 return (
                     Response.matchEvt(evt, actionid) &&
-                    evt.responseto === keyword
+                    evt.responseto === Request.GetLockedDongles.keyword
                 );
             }
 
             export function buildAction(actionid: string, dongles: string[]): GetLockedDongles {
                 let out = {
-                    ...Response.buildAction(keyword, actionid),
+                    ...Response.buildAction(Request.GetLockedDongles.keyword, actionid),
                     "donglecount": dongles.length.toString()
                 } as GetLockedDongles;
 
@@ -750,31 +784,68 @@ export namespace UserEvent {
 
         }
 
+        export interface GetMessages extends Response {
+            responseto: typeof Request.GetMessages.keyword;
+            messagescount: string;
+            [messagen: string]: string | undefined;
+        }
+
+        export namespace GetMessages {
+
+            export function matchEvt(evt: UserEvent, actionid: string): evt is GetMessages {
+                return (
+                    Response.matchEvt(evt, actionid) &&
+                    evt.responseto === Request.GetMessages.keyword
+                );
+            }
+
+            export function buildAction(actionid: string, messages: string[]): GetMessages {
+                let out = {
+                    ...Response.buildAction(Request.GetMessages.keyword, actionid),
+                    "messagescount": messages.length.toString()
+                } as GetMessages;
+
+                for (let i = 0; i < messages.length; i++)
+                    out[`message${i}`] = messages[i];
+
+                return out;
+            }
+
+            export function reassembleMessage(evt: GetMessages): string[] {
+                let out: string[] = [];
+
+                for (let i = 0; i < parseInt(evt.messagescount); i++)
+                    out.push(evt[`message${i}`]!);
+
+                return out;
+
+            }
+
+        }
+
 
 
 
 
 
         export interface GetActiveDongles extends Response {
-            responseto: typeof GetActiveDongles.keyword;
+            responseto: typeof Request.GetActiveDongles.keyword;
             donglecount: string;
             [donglen: string]: string | undefined;
         }
 
         export namespace GetActiveDongles {
 
-            export const keyword = "GetActiveDongles";
-
             export function matchEvt(evt: UserEvent, actionid: string): evt is GetActiveDongles {
                 return (
                     Response.matchEvt(evt, actionid) &&
-                    evt.responseto === keyword
+                    evt.responseto === Request.GetActiveDongles.keyword
                 );
             }
 
             export function buildAction(actionid: string, dongles: string[]): GetActiveDongles {
                 let out = {
-                    ...Response.buildAction(keyword, actionid),
+                    ...Response.buildAction(Request.GetActiveDongles.keyword, actionid),
                     "donglecount": dongles.length.toString()
                 } as GetActiveDongles;
 

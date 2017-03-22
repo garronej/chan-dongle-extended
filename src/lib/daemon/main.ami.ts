@@ -57,20 +57,31 @@ activeModems.evtSet.attach(async ([{ modem }, imei]) => {
             )
     );
 
-    modem.evtMessage.attach(
-        ({
-            number,
-            date,
-            text
-        }) => AmiService.postEvent(
-                UserEvent.Event.NewMessage.buildAction(
-                    imei,
-                    number,
-                    date.toISOString(),
-                    text
-                )
+    modem.evtMessage.attach( async message => {
+
+        let data= await Storage.read();
+
+        let { imsi }= modem;
+
+        if( !data.messages[imsi] ) 
+            data.messages[imsi]= [];
+
+        data.messages[imsi].push(message);
+
+        await Storage.write(data);
+
+        let { number, date, text } = message;
+
+        AmiService.postEvent(
+            UserEvent.Event.NewMessage.buildAction(
+                imei,
+                number,
+                date.toISOString(),
+                text
             )
-    );
+        );
+
+    });
 
 
 });
@@ -123,7 +134,7 @@ lockedModems.evtSet.attach(
 );
 
 
-AmiService.evtRequest.attach(({ evtRequest, callback }) => {
+AmiService.evtRequest.attach( async ({ evtRequest, callback }) => {
 
     let { actionid, command } = evtRequest;
 
@@ -173,9 +184,34 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
         callback(
             UserEvent.Response.GetLockedDongles.buildAction(
                 actionid,
-                dongles.map( value => JSON.stringify(value) )
+                dongles.map(value => JSON.stringify(value))
             )
         );
+    } else if ( UserEvent.Request.GetMessages.matchEvt(evtRequest)) {
+
+        if (!activeModems.has(evtRequest.imei))
+            return replyError(`Dongle imei: ${evtRequest.imei} not found`);
+
+        let { imsi } = activeModems.get(evtRequest.imei)!.modem;
+
+        console.log("avant storage read", imsi);
+
+        let data = await Storage.read();
+
+        console.log(data.messages[imsi]);
+
+        callback(
+            UserEvent.Response.GetMessages.buildAction(
+                actionid,
+                (data.messages[imsi] || []).map( value => JSON.stringify(value) )
+            )
+        );
+
+        if( evtRequest.flush === "true" && data.messages[imsi] ){
+            delete data.messages[imsi];
+            Storage.write(data);
+        }
+
     } else if (UserEvent.Request.GetSimPhonebook.matchEvt(evtRequest)) {
 
         if (!activeModems.has(evtRequest.imei))
@@ -189,7 +225,7 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
                 modem.contactNameMaxLength.toString(),
                 modem.numberMaxLength.toString(),
                 modem.storageLeft.toString(),
-                modem.contacts.map( value => JSON.stringify( value ) )
+                modem.contacts.map(value => JSON.stringify(value))
             )
         );
     } else if (UserEvent.Request.CreateContact.matchEvt(evtRequest)) {
@@ -203,7 +239,7 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
 
         //TODO: validate params.
 
-        if( !modem.storageLeft )
+        if (!modem.storageLeft)
             return replyError(`No storage space left on SIM`);
 
         modem.createContact(number, name,
@@ -252,7 +288,7 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
         callback(
             UserEvent.Response.GetActiveDongles.buildAction(
                 evtRequest.actionid,
-                dongles.map( value => JSON.stringify( value ))
+                dongles.map(value => JSON.stringify(value))
             )
         );
 
