@@ -1,8 +1,6 @@
-
 import { activeModems, lockedModems } from "./main";
 import { AmiService } from "./lib/AmiService";
 import { UserEvent } from "../shared/AmiUserEvent";
-import { divide } from "../tools/divide";
 import { Storage } from "./lib/Storage";
 
 
@@ -77,13 +75,18 @@ activeModems.evtSet.attach(async ([{ modem }, imei]) => {
 
 });
 
+
 activeModems.evtDelete.attach(
-    ([_, imei]) => AmiService.postEvent(
+    ([{ modem }, imei]) => AmiService.postEvent(
         UserEvent.Event.DongleDisconnect.buildAction(
-            imei
+            imei,
+            modem.iccid,
+            modem.imsi,
+            modem.number || ""
         )
     )
 );
+
 
 lockedModems.evtSet.attach(
     async ([{ iccid, pinState, tryLeft, callback }, imei]) => {
@@ -170,7 +173,7 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
         callback(
             UserEvent.Response.GetLockedDongles.buildAction(
                 actionid,
-                JSON.stringify(dongles)
+                dongles.map( value => JSON.stringify(value) )
             )
         );
     } else if (UserEvent.Request.GetSimPhonebook.matchEvt(evtRequest)) {
@@ -180,18 +183,10 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
 
         let { modem } = activeModems.get(evtRequest.imei)!;
 
-        let contactsSplit = divide(900, JSON.stringify(modem.contacts));
-
-        let phonebookpart1 = contactsSplit[0];
-        let phonebookpart2 = contactsSplit[1] || "";
-        let phonebookpart3 = contactsSplit[2] || "";
-
         callback(
             UserEvent.Response.GetSimPhonebook.buildAction(
                 actionid,
-                phonebookpart1,
-                phonebookpart2,
-                phonebookpart3
+                modem.contacts.map( value => JSON.stringify( value ) )
             )
         );
     } else if (UserEvent.Request.CreateContact.matchEvt(evtRequest)) {
@@ -248,14 +243,13 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
 
         }
 
-        let donglesStr = dongles.map(value => JSON.stringify(value));
-
         callback(
             UserEvent.Response.GetActiveDongles.buildAction(
-                evtRequest.actionid!,
-                donglesStr
+                evtRequest.actionid,
+                dongles.map( value => JSON.stringify( value ))
             )
         );
+
     } else if (UserEvent.Request.UnlockDongle.matchEvt(evtRequest)) {
 
         let { imei } = evtRequest;

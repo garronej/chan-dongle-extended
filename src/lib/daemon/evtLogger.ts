@@ -9,6 +9,7 @@ let logger= (evtName: string)=> {
     return data => debug(`${evtName}: ${JSON.stringify(data, null, 2)}`);
 };
 
+
 amiClient.evtDongleDisconnect.attach(logger("evtDongleDisconnect"));
 amiClient.evtMessageStatusReport.attach(logger("evtMessageStatusReport"));
 amiClient.evtNewActiveDongle.attach(logger("evtNewActiveDongle"));

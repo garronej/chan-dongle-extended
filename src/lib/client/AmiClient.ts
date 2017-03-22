@@ -36,7 +36,7 @@ export class AmiClient {
     private readonly ami: any;
 
     public readonly evtMessageStatusReport = new SyncEvent<{ imei: string } & StatusReport>();
-    public readonly evtDongleDisconnect = new SyncEvent<{ imei: string}>();
+    public readonly evtDongleDisconnect = new SyncEvent<DongleActive>();
     public readonly evtNewActiveDongle = new SyncEvent<DongleActive>();
     public readonly evtRequestUnlockCode = new SyncEvent<LockedDongle>();
     public readonly evtNewMessage = new SyncEvent<{ imei: string } & Message>();
@@ -61,7 +61,10 @@ export class AmiClient {
                 });
             else if (UserEvent.Event.DongleDisconnect.matchEvt(evt))
                 this.evtDongleDisconnect.post({
-                    "imei": evt.imei
+                    "imei": evt.imei,
+                    "iccid": evt.iccid,
+                    "imsi": evt.imsi,
+                    "number": evt.number || undefined
                 });
             else if (UserEvent.Event.NewActiveDongle.matchEvt(evt))
                 this.evtNewActiveDongle.post({
@@ -113,15 +116,49 @@ export class AmiClient {
 
                 ami.removeListener("userevent", callee);
 
-                let lockedDongles: LockedDongle[]= JSON.parse(evt.dongles);
+                let out: LockedDongle[] = UserEvent.Response.GetLockedDongles
+                    .reassembleDongles(evt)
+                    .map(value => JSON.parse(value));
 
-                if( callback ) callback(lockedDongles);
-                resolve(lockedDongles);
+                if (callback) callback(out);
+                resolve(out);
 
             });
 
         });
 
+
+    }
+
+    public getActiveDongles(
+        callback?: (dongles: DongleActive[]) => void
+    ): Promise<DongleActive[]> {
+
+        return new Promise<DongleActive[]>(resolve => {
+
+            let ami = this.ami;
+
+            let actionid = ami.action(
+                UserEvent.Request.GetActiveDongles.buildAction()
+            );
+
+            ami.on("userevent", function callee(evt: UserEvent) {
+
+                if (!UserEvent.Response.GetActiveDongles.matchEvt(evt, actionid))
+                    return;
+
+                ami.removeListener("userevent", callee);
+
+                let out: DongleActive[] = UserEvent.Response.GetActiveDongles
+                    .reassembleDongles(evt)
+                    .map(value => JSON.parse(value));
+
+                if (callback) callback(out);
+                resolve(out);
+
+            });
+
+        });
 
     }
 
@@ -152,21 +189,21 @@ export class AmiClient {
                 let error: null | Error;
                 let messageId: number;
 
-                if( evt.error ){
+                if (evt.error) {
 
-                    error= new Error(evt.error);
+                    error = new Error(evt.error);
 
-                    messageId= NaN;
+                    messageId = NaN;
 
-                }else{
+                } else {
 
-                    error= null;
+                    error = null;
 
-                    messageId= parseInt(evt.messageid);
+                    messageId = parseInt(evt.messageid);
 
                 }
 
-                if( callback ) callback(error, messageId);
+                if (callback) callback(error, messageId);
                 resolve([error, messageId]);
 
 
@@ -212,9 +249,9 @@ export class AmiClient {
 
                     error = null;
 
-                    contacts = JSON.parse(
-                        evt.phonebookpart1 + evt.phonebookpart2 + evt.phonebookpart3
-                    );
+                    contacts = UserEvent.Response.GetSimPhonebook
+                        .reassembleContacts(evt)
+                        .map(value => JSON.parse(value));
 
                 }
 
@@ -319,38 +356,6 @@ export class AmiClient {
     }
 
 
-    public getActiveDongles(
-        callback?: (dongles: DongleActive[]) => void
-    ): Promise<DongleActive[]> {
-
-        return new Promise<DongleActive[]>(resolve => {
-
-            let ami = this.ami;
-
-            let actionid = ami.action(
-                UserEvent.Request.GetActiveDongles.buildAction()
-            );
-
-            ami.on("userevent", function callee(evt: UserEvent) {
-
-                if (!UserEvent.Response.GetActiveDongles.matchEvt(evt, actionid))
-                    return;
-
-                ami.removeListener("userevent", callee);
-
-                let out: DongleActive[] = [];
-
-                for (let dongleStr of UserEvent.Response.GetActiveDongles.reassembleDongles(evt))
-                    out.push(JSON.parse(dongleStr));
-
-                if (callback) callback(out);
-                resolve(out);
-
-            });
-
-        });
-
-    }
 
     public unlockDongle(imei: string, pin: string, callback?: (error: null | Error) => void): Promise<null | Error>;
     public unlockDongle(imei: string, puk: string, newPin: string, callback?: (error: null | Error) => void): Promise<null | Error>;

@@ -27,28 +27,30 @@ export namespace UserEvent {
     /*START EVENT*/
 
     export interface Event extends UserEvent {
-        userevent: "DongleExt Event",
+        userevent: typeof Event.keyword,
         dongleevent: string;
     }
 
     export namespace Event {
 
+        export const keyword= "DongleExt Event";
+
         export function matchEvt(evt: UserEvent): evt is Event {
             return (
-                evt.userevent === "DongleExt Event"
+                evt.userevent === keyword
             );
         }
 
         export function buildAction(dongleevent: string): Event {
             return {
-                ...UserEvent.buildAction("DongleExt Event"),
+                ...UserEvent.buildAction(keyword),
                 dongleevent
             } as Event;
         }
 
 
         export interface RequestUnlockCode extends Event {
-            dongleevent: "RequestUnlockCode";
+            dongleevent: typeof RequestUnlockCode.keyword;
             imei: string;
             iccid: string;
             pinstate: AtMessage.LockedPinState;
@@ -57,16 +59,23 @@ export namespace UserEvent {
 
         export namespace RequestUnlockCode {
 
+            export const keyword = "RequestUnlockCode";
+
             export function matchEvt(evt: UserEvent): evt is RequestUnlockCode {
                 return (
                     Event.matchEvt(evt) &&
-                    evt.dongleevent === "RequestUnlockCode"
+                    evt.dongleevent === keyword
                 )
             }
 
-            export function buildAction(imei: string, iccid: string, pinstate: AtMessage.LockedPinState, tryleft: string): RequestUnlockCode {
+            export function buildAction(
+                imei: string,
+                iccid: string,
+                pinstate: AtMessage.LockedPinState,
+                tryleft: string
+            ): RequestUnlockCode {
                 return {
-                    ...Event.buildAction("RequestUnlockCode"),
+                    ...Event.buildAction(keyword),
                     imei,
                     iccid,
                     pinstate,
@@ -77,7 +86,7 @@ export namespace UserEvent {
         }
 
         export interface NewMessage extends Event {
-            dongleevent: "NewMessage";
+            dongleevent: typeof NewMessage.keyword;
             imei: string;
             number: string;
             date: string;
@@ -85,47 +94,48 @@ export namespace UserEvent {
             [textn: string]: string;
         }
 
-        export namespace NewMessage{
+        export namespace NewMessage {
+
+            export const keyword = "NewMessage";
 
             export function matchEvt(evt: UserEvent): evt is NewMessage {
                 return (
                     Event.matchEvt(evt) &&
-                    evt.dongleevent === "NewMessage"
+                    evt.dongleevent === keyword
                 );
             }
 
             export function buildAction(imei: string, number: string, date: string, text: string): NewMessage {
 
-                let textParts= divide(500, text);
+                let textParts = divide(500, text);
 
-                let out= {
-                    ...Event.buildAction("NewMessage"),
+                let out = {
+                    ...Event.buildAction(keyword),
                     imei,
                     number,
                     date,
                     "textsplitcount": textParts.length.toString(),
                 } as NewMessage;
 
-                for( let i=0; i< textParts.length; i++ )
-                    out[`text${i}`]= JSON.stringify(textParts[i]);
-                
+                for (let i = 0; i < textParts.length; i++)
+                    out[`text${i}`] = JSON.stringify(textParts[i]);
+
                 return out;
             }
 
             export function reassembleText(evt: NewMessage): string {
-                let out= "";
-                for( let i=0; i< parseInt(evt.textsplitcount); i++)
-                    out+= JSON.parse(evt[`text${i}`]);
-                
+                let out = "";
+                for (let i = 0; i < parseInt(evt.textsplitcount); i++)
+                    out += JSON.parse(evt[`text${i}`]);
+
                 return out;
             }
 
         }
 
 
-        //TODO: provide more info
         export interface NewActiveDongle extends Event {
-            dongleevent: "NewActiveModem";
+            dongleevent: typeof NewActiveDongle.keyword;
             imei: string;
             iccid: string;
             imsi: string;
@@ -134,10 +144,12 @@ export namespace UserEvent {
 
         export namespace NewActiveDongle {
 
+            export const keyword = "NewActiveDongle";
+
             export function matchEvt(evt: UserEvent): evt is NewActiveDongle {
                 return (
                     Event.matchEvt(evt) &&
-                    evt.dongleevent === "NewActiveModem"
+                    evt.dongleevent === keyword
                 );
             }
 
@@ -148,7 +160,7 @@ export namespace UserEvent {
                 number: string
             ): NewActiveDongle {
                 return {
-                    ...Event.buildAction("NewActiveModem"),
+                    ...Event.buildAction(keyword),
                     imei,
                     iccid,
                     imsi,
@@ -159,32 +171,46 @@ export namespace UserEvent {
         }
 
         export interface DongleDisconnect extends Event {
-            dongleevent: "DongleDisconnect";
+            dongleevent: typeof DongleDisconnect.keyword;
             imei: string;
+            iccid: string;
+            imsi: string;
+            number: string;
         }
 
         export namespace DongleDisconnect {
 
+            export const keyword = "DongleDisconnect";
+
             export function matchEvt(evt: UserEvent): evt is DongleDisconnect {
                 return (
                     Event.matchEvt(evt) &&
-                    evt.dongleevent === "DongleDisconnect"
+                    evt.dongleevent === keyword
                 );
             }
 
-
-            export function buildAction(imei: string): DongleDisconnect {
+            export function buildAction(
+                imei: string,
+                iccid: string,
+                imsi: string,
+                number: string
+            ): DongleDisconnect {
                 return {
-                    ...Event.buildAction("DongleDisconnect"),
-                    imei
+                    ...Event.buildAction(keyword),
+                    imei,
+                    iccid,
+                    imsi,
+                    number
                 } as DongleDisconnect;
             }
+
         }
 
 
 
+
         export interface MessageStatusReport extends Event {
-            dongleevent: "MessageStatusReport";
+            dongleevent: typeof MessageStatusReport.keyword;
             imei: string;
             messageid: string;
             dischargetime: string;
@@ -194,11 +220,13 @@ export namespace UserEvent {
 
         export namespace MessageStatusReport {
 
+            export const keyword= "MessageStatusReport";
+
             export function matchEvt(evt: UserEvent): evt is MessageStatusReport {
 
                 return (
                     Event.matchEvt(evt) &&
-                    evt.dongleevent === "MessageStatusReport"
+                    evt.dongleevent === keyword
                 );
 
             }
@@ -212,7 +240,7 @@ export namespace UserEvent {
             ): MessageStatusReport {
 
                 return {
-                    ...Event.buildAction("MessageStatusReport"),
+                    ...Event.buildAction(keyword),
                     imei,
                     messageid,
                     dischargetime,
@@ -231,45 +259,49 @@ export namespace UserEvent {
     /*START REQUEST*/
 
     export interface Request extends UserEvent {
-        userevent: "DongleExt Request";
+        userevent: typeof Request.keyword;
         command: string;
     }
 
     export namespace Request {
 
+        export const keyword= "DongleExt Request";
+
         export function matchEvt(evt: UserEvent): evt is Request {
             return (
-                evt.userevent === "DongleExt Request" &&
+                evt.userevent === keyword &&
                 evt.hasOwnProperty("command")
             );
         }
 
         export function buildAction(command: string): Request {
             return {
-                ...UserEvent.buildAction("DongleExt Request"),
+                ...UserEvent.buildAction(keyword),
                 command
             } as Request;
         }
 
 
         export interface GetSimPhonebook extends Request {
-            command: "GetSimPhonebook";
+            command: typeof GetSimPhonebook.keyword;
             imei: string;
         }
 
         export namespace GetSimPhonebook {
 
+            export const keyword= "GetSimPhonebook";
+
             export function matchEvt(evt: UserEvent): evt is GetSimPhonebook {
                 return (
                     Request.matchEvt(evt) &&
-                    evt.command === "GetSimPhonebook" &&
+                    evt.command === keyword &&
                     evt.hasOwnProperty("imei")
                 );
             }
 
             export function buildAction(imei: string): GetSimPhonebook {
                 return {
-                    ...Request.buildAction("GetSimPhonebook"),
+                    ...Request.buildAction(keyword),
                     imei
                 } as GetSimPhonebook;
             }
@@ -279,7 +311,7 @@ export namespace UserEvent {
 
 
         export interface DeleteContact extends Request {
-            command: "DeleteContact";
+            command: typeof DeleteContact.keyword;
             imei: string;
             index: string;
         }
@@ -287,10 +319,12 @@ export namespace UserEvent {
 
         export namespace DeleteContact {
 
+            export const keyword= "DeleteContact";
+
             export function matchEvt(evt: UserEvent): evt is DeleteContact {
                 return (
                     Request.matchEvt(evt) &&
-                    evt.command === "DeleteContact" &&
+                    evt.command === keyword &&
                     evt.hasOwnProperty("imei") &&
                     evt.hasOwnProperty("index")
                 );
@@ -298,7 +332,7 @@ export namespace UserEvent {
 
             export function buildAction(imei: string, index: string): DeleteContact {
                 return {
-                    ...Request.buildAction("DeleteContact"),
+                    ...Request.buildAction(keyword),
                     imei,
                     index
                 } as DeleteContact;
@@ -309,7 +343,7 @@ export namespace UserEvent {
 
 
         export interface CreateContact extends Request {
-            command: "CreateContact";
+            command: typeof CreateContact.keyword;
             imei: string;
             name: string;
             number: string;
@@ -318,10 +352,12 @@ export namespace UserEvent {
 
         export namespace CreateContact {
 
+            export const keyword= "CreateContact";
+
             export function matchEvt(evt: UserEvent): evt is CreateContact {
                 return (
                     Request.matchEvt(evt) &&
-                    evt.command === "CreateContact" &&
+                    evt.command === keyword &&
                     evt.hasOwnProperty("imei") &&
                     evt.hasOwnProperty("name") &&
                     evt.hasOwnProperty("number")
@@ -330,7 +366,7 @@ export namespace UserEvent {
 
             export function buildAction(imei: string, name: string, number: string): CreateContact {
                 return {
-                    ...Request.buildAction("CreateContact"),
+                    ...Request.buildAction(keyword),
                     imei,
                     name,
                     number
@@ -343,7 +379,7 @@ export namespace UserEvent {
 
 
         export interface SendMessage extends Request {
-            command: "SendMessage";
+            command: typeof SendMessage.keyword;
             imei: string;
             number: string;
             text: string;
@@ -353,10 +389,12 @@ export namespace UserEvent {
 
         export namespace SendMessage {
 
+            export const keyword= "SendMessage";
+
             export function matchEvt(evt: UserEvent): evt is SendMessage {
                 return (
                     Request.matchEvt(evt) &&
-                    evt.command === "SendMessage" &&
+                    evt.command === keyword &&
                     evt.hasOwnProperty("imei") &&
                     evt.hasOwnProperty("number") &&
                     (
@@ -373,7 +411,7 @@ export namespace UserEvent {
                 let textParts = divide(500, text);
 
                 let out = {
-                    ...Request.buildAction("SendMessage"),
+                    ...Request.buildAction(keyword),
                     imei,
                     number,
                     "textsplitcount": textParts.length.toString()
@@ -388,10 +426,10 @@ export namespace UserEvent {
 
             export function reassembleText(evt: SendMessage): string {
 
-                if( evt.text ){
-                    try{
+                if (evt.text) {
+                    try {
                         return JSON.parse(evt.text);
-                    }catch(error){
+                    } catch (error) {
                         return evt.text;
                     }
                 }
@@ -406,21 +444,23 @@ export namespace UserEvent {
         }
 
         export interface GetLockedDongles extends Request {
-            command: "GetLockedDongles";
+            command: typeof GetLockedDongles.keyword;
         }
 
         export namespace GetLockedDongles {
 
+            export const keyword= "GetLockedDongles";
+
             export function matchEvt(evt: UserEvent): evt is GetLockedDongles {
                 return (
                     Request.matchEvt(evt) &&
-                    evt.command === "GetLockedDongles"
+                    evt.command === keyword
                 );
             }
 
             export function buildAction(): GetLockedDongles {
                 return {
-                    ...Request.buildAction("GetLockedDongles")
+                    ...Request.buildAction(keyword)
                 } as GetLockedDongles;
             }
 
@@ -428,21 +468,23 @@ export namespace UserEvent {
 
 
         export interface GetActiveDongles extends Request {
-            command: "GetActiveDongles";
+            command: typeof GetActiveDongles.keyword;
         }
 
         export namespace GetActiveDongles {
 
+            export const keyword= "GetActiveDongles";
+
             export function matchEvt(evt: UserEvent): evt is GetActiveDongles {
                 return (
                     Request.matchEvt(evt) &&
-                    evt.command === "GetActiveDongles"
+                    evt.command === keyword
                 );
             }
 
             export function buildAction(): GetActiveDongles {
                 return {
-                    ...Request.buildAction("GetActiveDongles")
+                    ...Request.buildAction(keyword)
                 } as GetActiveDongles;
             }
 
@@ -451,7 +493,7 @@ export namespace UserEvent {
 
 
         export interface UnlockDongle extends Request {
-            command: "UnlockDongle";
+            command: typeof UnlockDongle.keyword;
             imei: string;
             pin: string;
             puk: string;
@@ -460,10 +502,12 @@ export namespace UserEvent {
 
         export namespace UnlockDongle {
 
+            export const keyword= "UnlockDongle";
+
             export function matchEvt(evt: UserEvent): evt is UnlockDongle {
                 return (
                     Request.matchEvt(evt) &&
-                    evt.command === "UnlockDongle" &&
+                    evt.command === keyword &&
                     evt.hasOwnProperty("imei") &&
                     (
                         evt.hasOwnProperty("pin") !==
@@ -477,7 +521,7 @@ export namespace UserEvent {
             export function buildAction(...inputs: any[]): any {
 
                 let base = {
-                    ...Request.buildAction("UnlockDongle"),
+                    ...Request.buildAction(keyword),
                     "imei": inputs[0]
                 };
 
@@ -498,23 +542,25 @@ export namespace UserEvent {
     /*START RESPONSE*/
 
     export interface Response extends UserEvent {
-        userevent: "DongleExt Response";
+        userevent: typeof Response.keyword;
         responseto: string;
         error?: string
     }
 
     export namespace Response {
 
+        export const keyword= "DongleExt Response";
+
         export function matchEvt(evt: UserEvent, actionid: string): evt is Response {
             return (
                 evt.actionid === actionid &&
-                evt.userevent === "DongleExt Response"
+                evt.userevent === keyword
             );
         }
 
         export function buildAction(responseto: string, actionid: string, error?: string): Response {
             let out = {
-                ...UserEvent.buildAction("DongleExt Response", actionid),
+                ...UserEvent.buildAction(keyword, actionid),
                 responseto
             } as Response;
 
@@ -523,23 +569,27 @@ export namespace UserEvent {
             return out;
         }
 
+
+
         export interface SendMessage extends Response {
-            responseto: "SendMessage";
+            responseto: typeof SendMessage.keyword;
             messageid: string;
         }
 
         export namespace SendMessage {
 
+            export const keyword= "SendMessage"
+
             export function matchEvt(evt: UserEvent, actionid: string): evt is SendMessage {
                 return (
                     Response.matchEvt(evt, actionid) &&
-                    evt.responseto === "SendMessage"
+                    evt.responseto === keyword
                 );
             }
 
             export function buildAction(actionid: string, messageid: string): SendMessage {
                 return {
-                    ...Response.buildAction("SendMessage", actionid),
+                    ...Response.buildAction(keyword, actionid),
                     messageid
                 } as SendMessage;
 
@@ -548,7 +598,7 @@ export namespace UserEvent {
 
 
         export interface CreateContact extends Response {
-            responseto: "CreateContact";
+            responseto: typeof CreateContact.keyword;
             index: string;
             name: string;
             number: string;
@@ -556,16 +606,18 @@ export namespace UserEvent {
 
         export namespace CreateContact {
 
+            export const keyword= "CreateContact";
+
             export function matchEvt(evt: UserEvent, actionid: string): evt is CreateContact {
                 return (
                     Response.matchEvt(evt, actionid) &&
-                    evt.responseto === "CreateContact"
+                    evt.responseto === keyword
                 );
             }
 
             export function buildAction(actionid: string, index: string, name: string, number: string): CreateContact {
                 return {
-                    ...Response.buildAction("CreateContact", actionid),
+                    ...Response.buildAction(keyword, actionid),
                     index,
                     name,
                     number
@@ -574,34 +626,71 @@ export namespace UserEvent {
             }
         }
 
+
         export interface GetSimPhonebook extends Response {
-            responseto: "GetSimPhonebook";
-            phonebookpart1: string;
-            phonebookpart2: string;
-            phonebookpart3: string;
+            responseto: typeof GetSimPhonebook.keyword;
+            contactcount: string;
+            [contactn: string]: string | undefined;
         }
 
         export namespace GetSimPhonebook {
 
+            export const keyword= "GetSimPhonebook";
+
             export function matchEvt(evt: UserEvent, actionid: string): evt is GetSimPhonebook {
                 return (
                     Response.matchEvt(evt, actionid) &&
-                    evt.responseto === "GetSimPhonebook"
+                    evt.responseto === keyword
                 );
             }
 
-            export function buildAction(
-                actionid: string,
-                phonebookpart1: string,
-                phonebookpart2: string,
-                phonebookpart3: string
-            ): GetSimPhonebook {
-                return {
-                    ...Response.buildAction("GetSimPhonebook", actionid),
-                    phonebookpart1,
-                    phonebookpart2,
-                    phonebookpart3
+            export function buildAction( actionid: string, contacts: string[]): GetSimPhonebook {
+
+                let out= {
+                    ...Response.buildAction(keyword, actionid),
+                    "contactcount": contacts.length.toString()
                 } as GetSimPhonebook;
+
+                for( let i=0; i< contacts.length; i++)
+                    out[`contact${i}`] = contacts[i];
+                
+                return out;
+            }
+
+            export function reassembleContacts(evt: GetSimPhonebook): string[] {
+                let out: string[]= [];
+
+                for( let i=0; i< parseInt(evt.contactcount); i++)
+                    out.push(evt[`contact${i}`]!);
+                
+                return out;
+            }
+
+        }
+
+
+
+
+
+        export interface DeleteContact extends Response {
+            responseto: typeof DeleteContact.keyword;
+        }
+
+        export namespace DeleteContact {
+            
+            export const keyword= "DeleteContact";
+
+            export function matchEvt(evt: UserEvent, actionid: string): evt is DeleteContact {
+                return (
+                    Response.matchEvt(evt, actionid) &&
+                    evt.responseto === keyword
+                );
+            }
+
+            export function buildAction(actionid: string): DeleteContact {
+                return {
+                    ...Response.buildAction(keyword, actionid),
+                } as DeleteContact;
             }
 
         }
@@ -609,84 +698,86 @@ export namespace UserEvent {
 
 
         export interface GetLockedDongles extends Response {
-            responseto: "GetLockedDongles";
-            dongles: string;
+            responseto: typeof GetLockedDongles.keyword;
+            donglecount: string;
+            [donglen: string]: string | undefined;
         }
 
         export namespace GetLockedDongles {
 
+            export const keyword= "GetLockedDongles";
+
             export function matchEvt(evt: UserEvent, actionid: string): evt is GetLockedDongles {
                 return (
                     Response.matchEvt(evt, actionid) &&
-                    evt.responseto === "GetLockedDongles"
+                    evt.responseto === keyword
                 );
             }
 
-            export function buildAction(actionid: string, dongles: string): GetLockedDongles {
-                return {
-                    ...Response.buildAction("GetLockedDongles", actionid),
-                    dongles
+            export function buildAction(actionid: string, dongles: string[]): GetLockedDongles {
+                let out = {
+                    ...Response.buildAction(keyword, actionid),
+                    "donglecount": dongles.length.toString()
                 } as GetLockedDongles;
+
+                for (let i = 0; i < dongles.length; i++)
+                    out[`dongle${i}`] = dongles[i];
+
+                return out;
+            }
+
+            export function reassembleDongles(evt: GetLockedDongles): string[] {
+                let out: string[] = [];
+
+                for (let i = 0; i < parseInt(evt.donglecount); i++)
+                    out.push(evt[`dongle${i}`]!);
+
+                return out;
+
             }
 
         }
 
 
-        export interface DeleteContact extends Response {
-            responseto: "DeleteContact";
-        }
 
-        export namespace DeleteContact {
 
-            export function matchEvt(evt: UserEvent, actionid: string): evt is DeleteContact {
-                return (
-                    Response.matchEvt(evt, actionid) &&
-                    evt.responseto === "DeleteContact"
-                );
-            }
-
-            export function buildAction(actionid: string): DeleteContact {
-                return {
-                    ...Response.buildAction("DeleteContact", actionid),
-                } as DeleteContact;
-            }
-
-        }
 
 
         export interface GetActiveDongles extends Response {
-            responseto: "GetActiveDongles";
+            responseto: typeof GetActiveDongles.keyword;
             donglecount: string;
-            [donglen: string ]: string | undefined;
+            [donglen: string]: string | undefined;
         }
 
         export namespace GetActiveDongles {
 
+            export const keyword= "GetActiveDongles";
+
             export function matchEvt(evt: UserEvent, actionid: string): evt is GetActiveDongles {
                 return (
                     Response.matchEvt(evt, actionid) &&
-                    evt.responseto === "GetActiveDongles"
+                    evt.responseto === keyword
                 );
             }
 
             export function buildAction(actionid: string, dongles: string[]): GetActiveDongles {
-                let out= {
-                    ...Response.buildAction("GetActiveDongles", actionid),
+                let out = {
+                    ...Response.buildAction(keyword, actionid),
                     "donglecount": dongles.length.toString()
                 } as GetActiveDongles;
 
-                for( let i=0; i< dongles.length; i++ )
-                    out[`dongle${i}`]= dongles[i];
-                
+                for (let i = 0; i < dongles.length; i++)
+                    out[`dongle${i}`] = dongles[i];
+
                 return out;
             }
 
             export function reassembleDongles(evt: GetActiveDongles): string[] {
-                let out: string[]= [];
+                let out: string[] = [];
 
-                for( let i= 0; i < parseInt(evt.donglecount); i++)
+                for (let i = 0; i < parseInt(evt.donglecount); i++)
                     out.push(evt[`dongle${i}`]!);
-                
+
                 return out;
 
             }
