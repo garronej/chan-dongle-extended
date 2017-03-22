@@ -629,13 +629,16 @@ export namespace UserEvent {
 
         export interface GetSimPhonebook extends Response {
             responseto: typeof GetSimPhonebook.keyword;
+            contactnamemaxlength: string;
+            numbermaxlength: string;
+            storageleft: string;
             contactcount: string;
             [contactn: string]: string | undefined;
         }
 
         export namespace GetSimPhonebook {
 
-            export const keyword= "GetSimPhonebook";
+            export const keyword = "GetSimPhonebook";
 
             export function matchEvt(evt: UserEvent, actionid: string): evt is GetSimPhonebook {
                 return (
@@ -644,25 +647,34 @@ export namespace UserEvent {
                 );
             }
 
-            export function buildAction( actionid: string, contacts: string[]): GetSimPhonebook {
+            export function buildAction(
+                actionid: string, 
+                contactnamemaxlength: string,
+                numbermaxlength: string,
+                storageleft: string,
+                contacts: string[]
+                ): GetSimPhonebook {
 
-                let out= {
+                let out = {
                     ...Response.buildAction(keyword, actionid),
+                    contactnamemaxlength,
+                    numbermaxlength,
+                    storageleft,
                     "contactcount": contacts.length.toString()
                 } as GetSimPhonebook;
 
-                for( let i=0; i< contacts.length; i++)
+                for (let i = 0; i < contacts.length; i++)
                     out[`contact${i}`] = contacts[i];
-                
+
                 return out;
             }
 
             export function reassembleContacts(evt: GetSimPhonebook): string[] {
-                let out: string[]= [];
+                let out: string[] = [];
 
-                for( let i=0; i< parseInt(evt.contactcount); i++)
+                for (let i = 0; i < parseInt(evt.contactcount); i++)
                     out.push(evt[`contact${i}`]!);
-                
+
                 return out;
             }
 
@@ -677,8 +689,8 @@ export namespace UserEvent {
         }
 
         export namespace DeleteContact {
-            
-            export const keyword= "DeleteContact";
+
+            export const keyword = "DeleteContact";
 
             export function matchEvt(evt: UserEvent, actionid: string): evt is DeleteContact {
                 return (
@@ -705,7 +717,7 @@ export namespace UserEvent {
 
         export namespace GetLockedDongles {
 
-            export const keyword= "GetLockedDongles";
+            export const keyword = "GetLockedDongles";
 
             export function matchEvt(evt: UserEvent, actionid: string): evt is GetLockedDongles {
                 return (
@@ -751,7 +763,7 @@ export namespace UserEvent {
 
         export namespace GetActiveDongles {
 
-            export const keyword= "GetActiveDongles";
+            export const keyword = "GetActiveDongles";
 
             export function matchEvt(evt: UserEvent, actionid: string): evt is GetActiveDongles {
                 return (

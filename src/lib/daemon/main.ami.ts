@@ -186,6 +186,9 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
         callback(
             UserEvent.Response.GetSimPhonebook.buildAction(
                 actionid,
+                modem.contactNameMaxLength.toString(),
+                modem.numberMaxLength.toString(),
+                modem.storageLeft.toString(),
                 modem.contacts.map( value => JSON.stringify( value ) )
             )
         );
@@ -199,6 +202,9 @@ AmiService.evtRequest.attach(({ evtRequest, callback }) => {
         let { name, number } = evtRequest;
 
         //TODO: validate params.
+
+        if( !modem.storageLeft )
+            return replyError(`No storage space left on SIM`);
 
         modem.createContact(number, name,
             contact => callback(

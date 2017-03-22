@@ -128,7 +128,7 @@ program
 
         await storage.setItem("cli_imei", imei);
 
-        console.log(`Dongle ${imei} selected`.green);
+        console.log(`Dongle ${imei} selected`);
 
         process.exit(0);
 
@@ -235,16 +235,89 @@ program
 
         let imei = await getImei(options);
 
-        let [error, contacts] = await AmiClient
+        let [error, phonebook] = await AmiClient
             .localhost()
             .getSimPhonebook(imei);
 
         if (error) {
             console.log(error.message.red);
             process.exit(-1);
+            return;
         }
 
-        console.log(JSON.stringify(contacts, null, 2));
+        console.log(JSON.stringify(phonebook!, null, 2));
+
+        process.exit(0);
+
+    });
+
+program
+    .command("new-contact")
+    .description("Store new contact in phonebook memory")
+    .option("-i, --imei [imei]", "IMEI of the dongle")
+    .option("--name [name]", "Contact's name")
+    .option("--number [number]", "Contact's number")
+    .action(async options => {
+
+        await assertServiceRunning();
+
+        let { name, number } = options;
+
+        if (!name || !number) {
+            console.log("Error: command malformed".red);
+            console.log(options.optionHelp());
+            process.exit(-1);
+        }
+
+        let imei = await getImei(options);
+
+        let [error, contact] = await AmiClient
+            .localhost()
+            .createContact(imei, name, number);
+
+        if (error) {
+            console.log(error.message.red);
+            process.exit(-1);
+            return;
+        }
+
+        console.log(JSON.stringify(contact!, null, 2));
+
+        process.exit(0);
+
+    });
+
+
+program
+    .command("delete-contact")
+    .description("Delete a contact from phonebook memory")
+    .option("-i, --imei [imei]", "IMEI of the dongle")
+    .option("--index [index]", "Contact's index")
+    .action(async options => {
+
+        await assertServiceRunning();
+
+        let { index } = options;
+
+        if (!index) {
+            console.log("Error: command malformed".red);
+            console.log(options.optionHelp());
+            process.exit(-1);
+        }
+
+        let imei = await getImei(options);
+
+        let error = await AmiClient
+            .localhost()
+            .deleteContact(imei, parseInt(index));
+
+        if (error) {
+            console.log(error.message.red);
+            process.exit(-1);
+            return;
+        }
+
+        console.log(`Contact index: ${index} successfully deleted`);
 
         process.exit(0);
 

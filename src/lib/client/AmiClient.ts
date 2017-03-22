@@ -21,6 +21,17 @@ export interface DongleActive extends DongleBase {
     number: string | undefined;
 }
 
+
+export type Phonebook = {
+    infos: {
+        contactNameMaxLength: number;
+        numberMaxLength: number;
+        storageLeft: number;
+    };
+    contacts: Contact[];
+};
+
+
 export class AmiClient {
 
     private static localClient: AmiClient | undefined = undefined;
@@ -216,12 +227,13 @@ export class AmiClient {
 
     }
 
+
     public getSimPhonebook(
         imei: string,
-        callback?: (error: null | Error, phonebook: Contact[]) => void
-    ): Promise<[Error | null, Contact[]]> {
+        callback?: (error: null | Error, phonebook: Phonebook | null) => void
+    ): Promise<[null | Error, Phonebook | null]> {
 
-        return new Promise<[Error | null, Contact[]]>(resolve => {
+        return new Promise<[null | Error, Phonebook | null]>(resolve => {
 
             let ami = this.ami;
 
@@ -237,26 +249,35 @@ export class AmiClient {
                 ami.removeListener("userevent", callee);
 
                 let error: null | Error;
-                let contacts: Contact[];
+                let phonebook: Phonebook | null;
 
                 if (evt.error) {
 
                     error = new Error(evt.error);
 
-                    contacts = [];
+                    phonebook = null;
 
                 } else {
 
                     error = null;
 
-                    contacts = UserEvent.Response.GetSimPhonebook
+                    let contacts: Contact[] = UserEvent.Response.GetSimPhonebook
                         .reassembleContacts(evt)
                         .map(value => JSON.parse(value));
 
+                    phonebook= {
+                        "infos": {
+                            "contactNameMaxLength": parseInt(evt.contactnamemaxlength),
+                            "numberMaxLength": parseInt(evt.numbermaxlength),
+                            "storageLeft": parseInt(evt.storageleft)
+                        },
+                        contacts
+                    };
+
                 }
 
-                if (callback) callback(null, contacts);
-                resolve([null, contacts]);
+                if (callback) callback(error, phonebook);
+                resolve([error, phonebook]);
 
             });
 

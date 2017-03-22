@@ -47,4 +47,8 @@ ami.on("userevent", (evt: UserEvent): void => {
 
 });
 
-ami.on("userevent", ({ actionid, event, action, userevent, privilege, ...prettyEvt }: UserEvent) => debug(prettyEvt));
+ami.on("userevent", ({ actionid, event, action, userevent, privilege, ...prettyEvt }: UserEvent) => {
+    if (userevent === UserEvent.Event.keyword) return;
+
+    debug(prettyEvt)
+});
