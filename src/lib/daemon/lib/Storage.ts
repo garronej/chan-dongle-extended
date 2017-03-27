@@ -1,37 +1,65 @@
 import * as storage from "node-persist";
 import * as path from "path";
 import { Message } from "../../../../../ts-gsm-modem/dist/lib/index";
-import { JSON_parse_WithDate } from "../../client/AmiClient";
+import { execQueue, ExecQueue } from "ts-exec-queue";
 
-export interface StorageData {
+export const JSON_parse_WithDate= (str: string) => JSON.parse(
+        str,
+        (_, value) =>
+            (
+                typeof value === "string" &&
+                value.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/)
+            ) ? new Date(value) : value
+);
+
+export type StorageData = {
     pins: {
         [iccidOrImei: string]: string;
     };
     messages: {
         [imsi: string]: Message[];
-    }
+    };
 }
+
+const defaultStorageData: StorageData= {
+    "pins": {},
+    "messages": {}
+};
+
 
 export namespace Storage {
 
-    export async function read(): Promise<StorageData> {
-        return await storage.getItem("storageData") || storageDataDefault;
-    }
+    const cluster= {};
 
-    export async function write(storageData: StorageData): Promise<void> {
-        await storage.setItem("storageData", storageData);
+    const queue = execQueue(cluster, "WRITE",
+        (provider: (storageData: StorageData & { readonly release: ()=> Promise<void> }) => void, callback: () => void): void => {
+
+            storage.getItem("storageData", (error, value) => {
+
+                let storageData:StorageData = value || defaultStorageData;
+
+                provider({
+                    ...storageData,
+                    "release": async (): Promise<void>=> {
+                        await storage.setItem("storageData", storageData);
+                        callback();
+                    }
+                });
+
+            });
+
+        }
+    );
+
+    export function read(): Promise<StorageData & { readonly release: ()=> Promise<void> }> {
+
+        return new Promise<any>( resolve => queue( resolve, ()=> {}));
+
     }
 
 }
-
 
 storage.initSync({
     "dir": path.join(__dirname, "..", "..", "..", "..", ".node-persist", "storage"),
     "parse": JSON_parse_WithDate
 });
-
-
-const storageDataDefault: StorageData = {
-    pins: {},
-    messages: {}
-};

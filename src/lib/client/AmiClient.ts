@@ -9,14 +9,6 @@ import { SyncEvent } from "ts-events-extended";
 
 import { StatusReport, AtMessage, Message, Contact } from "../../../../ts-gsm-modem/dist/lib/index";
 
-export const JSON_parse_WithDate= (str: string) => JSON.parse(
-        str,
-        (_, value) =>
-            (
-                typeof value === "string" &&
-                value.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/)
-            ) ? new Date(value) : value
-);
 
 
 export interface DongleBase {
@@ -366,59 +358,55 @@ export class AmiClient {
 
     }
 
-    public getMessages(
+    public async getMessages(
         imei: string,
         flush: boolean,
         callback?: (error: null | Error, messages: Message[] | null) => void
     ): Promise<[null | Error, Message[] | null]> {
 
-        /*
+        let { actionid }= this.postUserEventAction(
+            Request.GetMessages.buildAction(
+                imei,
+                flush? "true":"false"
+            )
+        );
 
-        return new Promise<[null | Error, Message[] | null]>(resolve => {
+        let evt= await this.evtAmiUserEvent.waitFor(
+            Response.GetMessages.Infos.matchEvt(actionid),
+                10000
+        );
 
-            let ami = this.ami;
+        if( evt.error ){
 
-            let actionId = ami.action(
-                UserEvent.Request.GetMessages.buildAction(
-                    imei,
-                    flush ? "true" : "false"
-                )
+            let error= new Error(evt.error);
+
+            if( callback ) callback(error, null);
+            return [ error, null ];
+
+        }
+
+        let messagesCount= parseInt(evt.messagescount);
+
+        let messages: Message[]= [];
+
+        while( messages.length !== messagesCount ){
+
+            let evt= await this.evtAmiUserEvent.waitFor(
+                Response.GetMessages.Entry.matchEvt(actionid),
+                10000
             );
 
-            ami.on("userevent", function callee(evt: UserEvent) {
-
-                if (!UserEvent.Response.GetMessages.matchEvt(evt, actionId))
-                    return;
-
-                ami.removeListener("userevent", callee);
-
-
-                let error: null | Error;
-                let messages: Message[] | null;
-
-                if (evt.error) {
-                    error = new Error(evt.error);
-                    messages = null;
-                } else {
-                    error = null;
-                    messages = UserEvent.Response.GetMessages
-                        .reassembleMessage(evt)
-                        .map(value => JSON_parse_WithDate(value))
-                        .sort(
-                        (message1: Message, message2: Message) => message1.date.getTime() - message2.date.getTime()
-                        );
-                }
-
-
-                if (callback) callback(error, messages);
-                resolve([error, messages]);
-
+            messages.push({
+                "number": evt.number,
+                "date": new Date(evt.date),
+                "text": Response.GetMessages.Entry.reassembleText(evt)
             });
 
-        });
-        */
+        }
 
-        return null as any;
+        if( callback ) callback( null, messages );
+        return [ null, messages ];
+
 
     }
 

@@ -426,20 +426,47 @@ var UserEvent;
                 };
             }
             GetMessages.matchEvt = matchEvt;
-            function buildAction(actionid, messages) {
-                var out = __assign({}, Response.buildAction(Request.GetMessages.keyword, actionid), { "messagescount": messages.length.toString() });
-                for (var i = 0; i < messages.length; i++)
-                    out["message" + i] = messages[i];
-                return out;
-            }
-            GetMessages.buildAction = buildAction;
-            function reassembleMessage(evt) {
-                var out = [];
-                for (var i = 0; i < parseInt(evt.messagescount); i++)
-                    out.push(evt["message" + i]);
-                return out;
-            }
-            GetMessages.reassembleMessage = reassembleMessage;
+            var Infos;
+            (function (Infos) {
+                function matchEvt(actionid) {
+                    return function (evt) {
+                        return (Response.GetMessages.matchEvt(actionid)(evt) &&
+                            (evt.hasOwnProperty("messagescount") ||
+                                evt.hasOwnProperty("error")));
+                    };
+                }
+                Infos.matchEvt = matchEvt;
+                function buildAction(actionid, messagescount) {
+                    return __assign({}, Response.buildAction(Request.GetMessages.keyword, actionid), { messagescount: messagescount });
+                }
+                Infos.buildAction = buildAction;
+            })(Infos = GetMessages.Infos || (GetMessages.Infos = {}));
+            var Entry;
+            (function (Entry) {
+                function matchEvt(actionid) {
+                    return function (evt) {
+                        return (Response.GetMessages.matchEvt(actionid)(evt) &&
+                            !Response.GetMessages.Infos.matchEvt(actionid)(evt));
+                    };
+                }
+                Entry.matchEvt = matchEvt;
+                function buildAction(actionid, number, date, text) {
+                    var textParts = divide_1.divide(500, text);
+                    var out = __assign({}, Response.buildAction(Request.GetMessages.keyword, actionid), { number: number,
+                        date: date, "textsplitcount": textParts.length.toString() });
+                    for (var i = 0; i < textParts.length; i++)
+                        out["text" + i] = JSON.stringify(textParts[i]);
+                    return out;
+                }
+                Entry.buildAction = buildAction;
+                function reassembleText(evt) {
+                    var out = "";
+                    for (var i = 0; i < parseInt(evt.textsplitcount); i++)
+                        out += JSON.parse(evt["text" + i]);
+                    return out;
+                }
+                Entry.reassembleText = reassembleText;
+            })(Entry = GetMessages.Entry || (GetMessages.Entry = {}));
         })(GetMessages = Response.GetMessages || (Response.GetMessages = {}));
         var GetActiveDongles;
         (function (GetActiveDongles) {

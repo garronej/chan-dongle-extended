@@ -1,4 +1,12 @@
 "use strict";
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -37,40 +45,42 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var storage = require("node-persist");
 var path = require("path");
-var AmiClient_1 = require("../../client/AmiClient");
+var ts_exec_queue_1 = require("ts-exec-queue");
+exports.JSON_parse_WithDate = function (str) { return JSON.parse(str, function (_, value) {
+    return (typeof value === "string" &&
+        value.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/)) ? new Date(value) : value;
+}); };
+var defaultStorageData = {
+    "pins": {},
+    "messages": {}
+};
 var Storage;
 (function (Storage) {
-    function read() {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, storage.getItem("storageData")];
-                    case 1: return [2 /*return*/, (_a.sent()) || storageDataDefault];
-                }
-            });
+    var _this = this;
+    var cluster = {};
+    var queue = ts_exec_queue_1.execQueue(cluster, "WRITE", function (provider, callback) {
+        storage.getItem("storageData", function (error, value) {
+            var storageData = value || defaultStorageData;
+            provider(__assign({}, storageData, { "release": function () { return __awaiter(_this, void 0, void 0, function () {
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0: return [4 /*yield*/, storage.setItem("storageData", storageData)];
+                            case 1:
+                                _a.sent();
+                                callback();
+                                return [2 /*return*/];
+                        }
+                    });
+                }); } }));
         });
+    });
+    function read() {
+        return new Promise(function (resolve) { return queue(resolve, function () { }); });
     }
     Storage.read = read;
-    function write(storageData) {
-        return __awaiter(this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0: return [4 /*yield*/, storage.setItem("storageData", storageData)];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    }
-    Storage.write = write;
 })(Storage = exports.Storage || (exports.Storage = {}));
 storage.initSync({
     "dir": path.join(__dirname, "..", "..", "..", "..", ".node-persist", "storage"),
-    "parse": AmiClient_1.JSON_parse_WithDate
+    "parse": exports.JSON_parse_WithDate
 });
-var storageDataDefault = {
-    pins: {},
-    messages: {}
-};
 //# sourceMappingURL=Storage.js.map

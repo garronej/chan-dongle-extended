@@ -69,7 +69,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
             switch (_a.label) {
                 case 0:
                     debug("New active modem " + imei);
-                    if (!modem.pin) return [3 /*break*/, 3];
+                    if (!modem.pin) return [3 /*break*/, 2];
                     debug("Persistent storing of pin: " + modem.pin);
                     if (modem.iccidAvailableBeforeUnlock)
                         debug("for SIM ICCID: " + modem.iccid);
@@ -79,11 +79,9 @@ main_1.activeModems.evtSet.attach(function (_a) {
                 case 1:
                     data = _a.sent();
                     data.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
-                    return [4 /*yield*/, Storage_1.Storage.write(data)];
+                    data.release();
+                    _a.label = 2;
                 case 2:
-                    _a.sent();
-                    _a.label = 3;
-                case 3:
                     amiClient.postUserEventAction(Event.NewActiveDongle.buildAction(imei, modem.iccid, modem.imsi, modem.number || ""));
                     modem.evtMessageStatusReport.attach(function (_a) {
                         var messageId = _a.messageId, dischargeTime = _a.dischargeTime, isDelivered = _a.isDelivered, status = _a.status;
@@ -100,9 +98,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                                     if (!data.messages[imsi])
                                         data.messages[imsi] = [];
                                     data.messages[imsi].push(message);
-                                    return [4 /*yield*/, Storage_1.Storage.write(data)];
-                                case 2:
-                                    _a.sent();
+                                    data.release();
                                     number = message.number, date = message.date, text = message.text;
                                     amiClient.postUserEventAction(AmiUserEvent_1.UserEvent.Event.NewMessage.buildAction(imei, number, date.toISOString(), text));
                                     return [2 /*return*/];
@@ -130,13 +126,9 @@ main_1.lockedModems.evtSet.attach(function (_a) {
                 case 1:
                     data = _a.sent();
                     pin = data.pins[iccid || imei];
-                    if (!pin) return [3 /*break*/, 3];
-                    delete data.pins[iccid || imei];
-                    return [4 /*yield*/, Storage_1.Storage.write(data)];
-                case 2:
-                    _a.sent();
-                    _a.label = 3;
-                case 3:
+                    if (pin)
+                        delete data.pins[iccid || imei];
+                    data.release();
                     if (pin && pinState === "SIM PIN" && tryLeft === 3) {
                         debug("Using stored pin " + pin + " for unlocking dongle");
                         main_1.lockedModems.delete(imei);
@@ -150,9 +142,9 @@ main_1.lockedModems.evtSet.attach(function (_a) {
     });
 });
 amiClient.evtAmiUserEvent.attach(Request.matchEvt, function (evtRequest) { return __awaiter(_this, void 0, void 0, function () {
-    var actionid, command, replyError, modem, text, messageId, _i, _a, imei, _b, iccid, pinState, tryLeft, imsi, data, modem, contacts, _c, contacts_1, _d, index, name_1, number, modem, name_2, number, contact, modem, index, _e, _f, imei, modem, iccid, imsi, number, imei, lockedModem, pinState, tryLeft, unlockCallback, pin, puk, newpin;
-    return __generator(this, function (_g) {
-        switch (_g.label) {
+    var actionid, command, replyError, modem, text, messageId, _i, _a, imei, _b, iccid, pinState, tryLeft, imsi, data, messages, _c, messages_1, _d, number, date, text, modem, contacts, _e, contacts_1, _f, index, name_1, number, modem, name_2, number, contact, modem, index, _g, _h, imei, modem, iccid, imsi, number, imei, lockedModem, pinState, tryLeft, unlockCallback, pin, puk, newpin;
+    return __generator(this, function (_j) {
+        switch (_j.label) {
             case 0:
                 actionid = evtRequest.actionid, command = evtRequest.command;
                 replyError = function (errorMessage) { return amiClient.postUserEventAction(Response.buildAction(command, actionid, errorMessage)); };
@@ -163,78 +155,82 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, function (evtRequest) { retur
                 text = Request.SendMessage.reassembleText(evtRequest);
                 return [4 /*yield*/, modem.sendMessage(evtRequest.number, text)];
             case 1:
-                messageId = _g.sent();
+                messageId = _j.sent();
                 if (isNaN(messageId))
                     return [2 /*return*/, replyError("Message not send")];
                 amiClient.postUserEventAction(Response.SendMessage.buildAction(actionid, messageId.toString()));
-                return [3 /*break*/, 27];
+                return [3 /*break*/, 32];
             case 2:
                 if (!Request.GetLockedDongles.matchEvt(evtRequest)) return [3 /*break*/, 8];
                 return [4 /*yield*/, amiClient.postUserEventAction(Response.GetLockedDongles.Infos.buildAction(actionid, main_1.lockedModems.size.toString())).promise];
             case 3:
-                _g.sent();
+                _j.sent();
                 _i = 0, _a = main_1.lockedModems.keysAsArray();
-                _g.label = 4;
+                _j.label = 4;
             case 4:
                 if (!(_i < _a.length)) return [3 /*break*/, 7];
                 imei = _a[_i];
                 _b = main_1.lockedModems.get(imei), iccid = _b.iccid, pinState = _b.pinState, tryLeft = _b.tryLeft;
                 return [4 /*yield*/, amiClient.postUserEventAction(Response.GetLockedDongles.Entry.buildAction(actionid, imei, iccid, pinState, tryLeft.toString())).promise];
             case 5:
-                _g.sent();
-                _g.label = 6;
+                _j.sent();
+                _j.label = 6;
             case 6:
                 _i++;
                 return [3 /*break*/, 4];
-            case 7: return [3 /*break*/, 27];
+            case 7: return [3 /*break*/, 32];
             case 8:
-                if (!Request.GetMessages.matchEvt(evtRequest)) return [3 /*break*/, 10];
+                if (!Request.GetMessages.matchEvt(evtRequest)) return [3 /*break*/, 15];
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 imsi = main_1.activeModems.get(evtRequest.imei).modem.imsi;
-                console.log("before storage read", imsi);
                 return [4 /*yield*/, Storage_1.Storage.read()];
             case 9:
-                data = _g.sent();
-                console.log(data.messages[imsi]);
-                //TODO
-                /*
-                callback(
-                    UserEvent.Response.GetMessages.buildAction(
-                        actionid,
-                        (data.messages[imsi] || []).map(value => JSON.stringify(value))
-                    )
-                );
-                */
-                if (evtRequest.flush === "true" && data.messages[imsi]) {
+                data = _j.sent();
+                messages = data.messages[imsi] || [];
+                if (evtRequest.flush === "true" && messages.length)
                     delete data.messages[imsi];
-                    Storage_1.Storage.write(data);
-                }
-                return [3 /*break*/, 27];
+                data.release();
+                return [4 /*yield*/, amiClient.postUserEventAction(Response.GetMessages.Infos.buildAction(actionid, messages.length.toString())).promise];
             case 10:
-                if (!Request.GetSimPhonebook.matchEvt(evtRequest)) return [3 /*break*/, 16];
+                _j.sent();
+                _c = 0, messages_1 = messages;
+                _j.label = 11;
+            case 11:
+                if (!(_c < messages_1.length)) return [3 /*break*/, 14];
+                _d = messages_1[_c], number = _d.number, date = _d.date, text = _d.text;
+                return [4 /*yield*/, amiClient.postUserEventAction(Response.GetMessages.Entry.buildAction(actionid, number, date.toISOString(), text)).promise];
+            case 12:
+                _j.sent();
+                _j.label = 13;
+            case 13:
+                _c++;
+                return [3 /*break*/, 11];
+            case 14: return [3 /*break*/, 32];
+            case 15:
+                if (!Request.GetSimPhonebook.matchEvt(evtRequest)) return [3 /*break*/, 21];
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 modem = main_1.activeModems.get(evtRequest.imei).modem;
                 contacts = modem.contacts;
                 return [4 /*yield*/, amiClient.postUserEventAction(Response.GetSimPhonebook.Infos.buildAction(actionid, modem.contactNameMaxLength.toString(), modem.numberMaxLength.toString(), modem.storageLeft.toString(), contacts.length.toString())).promise];
-            case 11:
-                _g.sent();
-                _c = 0, contacts_1 = contacts;
-                _g.label = 12;
-            case 12:
-                if (!(_c < contacts_1.length)) return [3 /*break*/, 15];
-                _d = contacts_1[_c], index = _d.index, name_1 = _d.name, number = _d.number;
-                return [4 /*yield*/, amiClient.postUserEventAction(Response.GetSimPhonebook.Entry.buildAction(actionid, index.toString(), name_1, number)).promise];
-            case 13:
-                _g.sent();
-                _g.label = 14;
-            case 14:
-                _c++;
-                return [3 /*break*/, 12];
-            case 15: return [3 /*break*/, 27];
             case 16:
-                if (!Request.CreateContact.matchEvt(evtRequest)) return [3 /*break*/, 18];
+                _j.sent();
+                _e = 0, contacts_1 = contacts;
+                _j.label = 17;
+            case 17:
+                if (!(_e < contacts_1.length)) return [3 /*break*/, 20];
+                _f = contacts_1[_e], index = _f.index, name_1 = _f.name, number = _f.number;
+                return [4 /*yield*/, amiClient.postUserEventAction(Response.GetSimPhonebook.Entry.buildAction(actionid, index.toString(), name_1, number)).promise];
+            case 18:
+                _j.sent();
+                _j.label = 19;
+            case 19:
+                _e++;
+                return [3 /*break*/, 17];
+            case 20: return [3 /*break*/, 32];
+            case 21:
+                if (!Request.CreateContact.matchEvt(evtRequest)) return [3 /*break*/, 23];
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 modem = main_1.activeModems.get(evtRequest.imei).modem;
@@ -243,12 +239,12 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, function (evtRequest) { retur
                 if (!modem.storageLeft)
                     return [2 /*return*/, replyError("No storage space left on SIM")];
                 return [4 /*yield*/, modem.createContact(number, name_2)];
-            case 17:
-                contact = _g.sent();
+            case 22:
+                contact = _j.sent();
                 amiClient.postUserEventAction(Response.CreateContact.buildAction(actionid, contact.index.toString(), contact.name, contact.number));
-                return [3 /*break*/, 27];
-            case 18:
-                if (!Request.DeleteContact.matchEvt(evtRequest)) return [3 /*break*/, 20];
+                return [3 /*break*/, 32];
+            case 23:
+                if (!Request.DeleteContact.matchEvt(evtRequest)) return [3 /*break*/, 25];
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 modem = main_1.activeModems.get(evtRequest.imei).modem;
@@ -256,31 +252,31 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, function (evtRequest) { retur
                 if (!modem.getContact(index))
                     return [2 /*return*/, replyError("Contact index " + index + " does not exist")];
                 return [4 /*yield*/, modem.deleteContact(index)];
-            case 19:
-                _g.sent();
+            case 24:
+                _j.sent();
                 amiClient.postUserEventAction(Response.buildAction(Request.DeleteContact.keyword, actionid));
-                return [3 /*break*/, 27];
-            case 20:
-                if (!Request.GetActiveDongles.matchEvt(evtRequest)) return [3 /*break*/, 26];
+                return [3 /*break*/, 32];
+            case 25:
+                if (!Request.GetActiveDongles.matchEvt(evtRequest)) return [3 /*break*/, 31];
                 return [4 /*yield*/, amiClient.postUserEventAction(Response.GetActiveDongles.Infos.buildAction(actionid, main_1.activeModems.size.toString())).promise];
-            case 21:
-                _g.sent();
-                _e = 0, _f = main_1.activeModems.keysAsArray();
-                _g.label = 22;
-            case 22:
-                if (!(_e < _f.length)) return [3 /*break*/, 25];
-                imei = _f[_e];
+            case 26:
+                _j.sent();
+                _g = 0, _h = main_1.activeModems.keysAsArray();
+                _j.label = 27;
+            case 27:
+                if (!(_g < _h.length)) return [3 /*break*/, 30];
+                imei = _h[_g];
                 modem = main_1.activeModems.get(imei).modem;
                 iccid = modem.iccid, imsi = modem.imsi, number = modem.number;
                 return [4 /*yield*/, amiClient.postUserEventAction(Response.GetActiveDongles.Entry.buildAction(actionid, imei, iccid, imsi, number || "")).promise];
-            case 23:
-                _g.sent();
-                _g.label = 24;
-            case 24:
-                _e++;
-                return [3 /*break*/, 22];
-            case 25: return [3 /*break*/, 27];
-            case 26:
+            case 28:
+                _j.sent();
+                _j.label = 29;
+            case 29:
+                _g++;
+                return [3 /*break*/, 27];
+            case 30: return [3 /*break*/, 32];
+            case 31:
                 if (Request.UnlockDongle.matchEvt(evtRequest)) {
                     imei = evtRequest.imei;
                     lockedModem = main_1.lockedModems.get(imei);
@@ -307,8 +303,8 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, function (evtRequest) { retur
                 }
                 else
                     return [2 /*return*/, replyError("Unknown command " + command)];
-                _g.label = 27;
-            case 27: return [2 /*return*/];
+                _j.label = 32;
+            case 32: return [2 /*return*/];
         }
     });
 }); });

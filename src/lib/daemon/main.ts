@@ -63,11 +63,14 @@ Monitor.evtModemConnect.attach(async accessPoint => {
             else
                 debug(`for dongle IMEI: ${modem.imei}, because SIM ICCID is not readable with this dongle when SIM is locked`);
 
+            console.log("lock");
             let data = await Storage.read();
 
             data.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
 
-            await Storage.write(data);
+            console.log("unlock");
+            data.release();
+
 
         }
 

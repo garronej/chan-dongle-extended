@@ -42,10 +42,6 @@ var Event = AmiUserEvent_1.UserEvent.Event;
 var AmiCredential_1 = require("../shared/AmiCredential");
 var AstMan = require("asterisk-manager");
 var ts_events_extended_1 = require("ts-events-extended");
-exports.JSON_parse_WithDate = function (str) { return JSON.parse(str, function (_, value) {
-    return (typeof value === "string" &&
-        value.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/)) ? new Date(value) : value;
-}); };
 process.on("unhandledRejection", function (error) {
     console.log("INTERNAL ERROR AMI CLIENT".red);
     console.log(error);
@@ -289,52 +285,42 @@ var AmiClient = (function () {
         });
     };
     AmiClient.prototype.getMessages = function (imei, flush, callback) {
-        /*
-
-        return new Promise<[null | Error, Message[] | null]>(resolve => {
-
-            let ami = this.ami;
-
-            let actionId = ami.action(
-                UserEvent.Request.GetMessages.buildAction(
-                    imei,
-                    flush ? "true" : "false"
-                )
-            );
-
-            ami.on("userevent", function callee(evt: UserEvent) {
-
-                if (!UserEvent.Response.GetMessages.matchEvt(evt, actionId))
-                    return;
-
-                ami.removeListener("userevent", callee);
-
-
-                let error: null | Error;
-                let messages: Message[] | null;
-
-                if (evt.error) {
-                    error = new Error(evt.error);
-                    messages = null;
-                } else {
-                    error = null;
-                    messages = UserEvent.Response.GetMessages
-                        .reassembleMessage(evt)
-                        .map(value => JSON_parse_WithDate(value))
-                        .sort(
-                        (message1: Message, message2: Message) => message1.date.getTime() - message2.date.getTime()
-                        );
+        return __awaiter(this, void 0, void 0, function () {
+            var actionid, evt, error, messagesCount, messages, evt_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        actionid = this.postUserEventAction(Request.GetMessages.buildAction(imei, flush ? "true" : "false")).actionid;
+                        return [4 /*yield*/, this.evtAmiUserEvent.waitFor(Response.GetMessages.Infos.matchEvt(actionid), 10000)];
+                    case 1:
+                        evt = _a.sent();
+                        if (evt.error) {
+                            error = new Error(evt.error);
+                            if (callback)
+                                callback(error, null);
+                            return [2 /*return*/, [error, null]];
+                        }
+                        messagesCount = parseInt(evt.messagescount);
+                        messages = [];
+                        _a.label = 2;
+                    case 2:
+                        if (!(messages.length !== messagesCount)) return [3 /*break*/, 4];
+                        return [4 /*yield*/, this.evtAmiUserEvent.waitFor(Response.GetMessages.Entry.matchEvt(actionid), 10000)];
+                    case 3:
+                        evt_2 = _a.sent();
+                        messages.push({
+                            "number": evt_2.number,
+                            "date": new Date(evt_2.date),
+                            "text": Response.GetMessages.Entry.reassembleText(evt_2)
+                        });
+                        return [3 /*break*/, 2];
+                    case 4:
+                        if (callback)
+                            callback(null, messages);
+                        return [2 /*return*/, [null, messages]];
                 }
-
-
-                if (callback) callback(error, messages);
-                resolve([error, messages]);
-
             });
-
         });
-        */
-        return null;
     };
     AmiClient.prototype.deleteContact = function (imei, index, callback) {
         return __awaiter(this, void 0, void 0, function () {

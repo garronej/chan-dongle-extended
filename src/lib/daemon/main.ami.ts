@@ -36,7 +36,7 @@ activeModems.evtSet.attach(async ([{ modem }, imei]) => {
 
         data.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
 
-        await Storage.write(data);
+        data.release();
 
 
     }
@@ -78,7 +78,7 @@ activeModems.evtSet.attach(async ([{ modem }, imei]) => {
 
         data.messages[imsi].push(message);
 
-        await Storage.write(data);
+        data.release();
 
         let { number, date, text } = message;
 
@@ -118,13 +118,10 @@ lockedModems.evtSet.attach(
 
         let pin = data.pins[iccid || imei];
 
-        if (pin) {
-
+        if (pin) 
             delete data.pins[iccid || imei];
 
-            await Storage.write(data);
-
-        }
+        data.release();
 
         if (pin && pinState === "SIM PIN" && tryLeft === 3) {
             debug(`Using stored pin ${pin} for unlocking dongle`);
@@ -214,26 +211,32 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
 
         let { imsi } = activeModems.get(evtRequest.imei)!.modem;
 
-        console.log("before storage read", imsi);
-
         let data = await Storage.read();
 
-        console.log(data.messages[imsi]);
+        let messages = data.messages[imsi] || [];
 
-        //TODO
-        /*
-        callback(
-            UserEvent.Response.GetMessages.buildAction(
-                actionid,
-                (data.messages[imsi] || []).map(value => JSON.stringify(value))
-            )
-        );
-        */
-
-        if (evtRequest.flush === "true" && data.messages[imsi]) {
+        if (evtRequest.flush === "true" && messages.length)
             delete data.messages[imsi];
-            Storage.write(data);
-        }
+
+        data.release();
+
+        await amiClient.postUserEventAction(
+            Response.GetMessages.Infos.buildAction(
+                actionid,
+                messages.length.toString()
+            )
+        ).promise;
+
+        for (let { number, date, text } of messages)
+            await amiClient.postUserEventAction(
+                Response.GetMessages.Entry.buildAction(
+                    actionid,
+                    number,
+                    date.toISOString(),
+                    text
+                )
+            ).promise;
+
 
     } else if (Request.GetSimPhonebook.matchEvt(evtRequest)) {
 
@@ -278,16 +281,16 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
 
         if (!modem.storageLeft)
             return replyError(`No storage space left on SIM`);
-        
-        let contact= await modem.createContact(number, name);
+
+        let contact = await modem.createContact(number, name);
 
         amiClient.postUserEventAction(
-                Response.CreateContact.buildAction(
-                    actionid,
-                    contact.index.toString(),
-                    contact.name,
-                    contact.number
-                )
+            Response.CreateContact.buildAction(
+                actionid,
+                contact.index.toString(),
+                contact.name,
+                contact.number
+            )
         );
 
     } else if (Request.DeleteContact.matchEvt(evtRequest)) {

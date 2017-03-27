@@ -247,13 +247,27 @@ export declare namespace UserEvent {
         }
         interface GetMessages extends Response {
             responseto: typeof Request.GetMessages.keyword;
-            messagescount: string;
-            [messagen: string]: string | undefined;
         }
         namespace GetMessages {
             function matchEvt(actionid: string): (evt: UserEvent) => evt is GetMessages;
-            function buildAction(actionid: string, messages: string[]): GetMessages;
-            function reassembleMessage(evt: GetMessages): string[];
+            interface Infos extends GetMessages {
+                messagescount: string;
+            }
+            namespace Infos {
+                function matchEvt(actionid: string): (evt: UserEvent) => evt is Infos;
+                function buildAction(actionid: string, messagescount: string): Infos;
+            }
+            interface Entry extends GetMessages {
+                number: string;
+                date: string;
+                textsplitcount: string;
+                [textn: string]: string | undefined;
+            }
+            namespace Entry {
+                function matchEvt(actionid: string): (evt: UserEvent) => evt is Entry;
+                function buildAction(actionid: string, number: string, date: string, text: string): Entry;
+                function reassembleText(evt: Entry): string;
+            }
         }
         interface GetActiveDongles extends Response {
             responseto: typeof Request.GetActiveDongles.keyword;

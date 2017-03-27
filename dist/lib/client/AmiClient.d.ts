@@ -2,7 +2,6 @@ import { UserEvent } from "../shared/AmiUserEvent";
 import { Credential } from "../shared/AmiCredential";
 import { SyncEvent } from "ts-events-extended";
 import { StatusReport, AtMessage, Message, Contact } from "../../../../ts-gsm-modem/dist/lib/index";
-export declare const JSON_parse_WithDate: (str: string) => any;
 export interface DongleBase {
     imei: string;
     iccid: string;

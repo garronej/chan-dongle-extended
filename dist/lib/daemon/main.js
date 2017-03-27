@@ -64,26 +64,26 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
                     })];
             case 1:
                 _a = _b.sent(), error = _a[0], modem = _a[1], hasSim = _a[2];
-                if (!error) return [3 /*break*/, 5];
+                if (!error) return [3 /*break*/, 4];
                 debug("Initialization error".red, error);
-                if (!modem.pin) return [3 /*break*/, 4];
+                if (!modem.pin) return [3 /*break*/, 3];
                 debug("Still unlock was successful so, Persistent storing of pin: " + modem.pin);
                 if (modem.iccidAvailableBeforeUnlock)
                     debug("for SIM ICCID: " + modem.iccid);
                 else
                     debug("for dongle IMEI: " + modem.imei + ", because SIM ICCID is not readable with this dongle when SIM is locked");
+                console.log("lock");
                 return [4 /*yield*/, Storage_1.Storage.read()];
             case 2:
                 data = _b.sent();
                 data.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
-                return [4 /*yield*/, Storage_1.Storage.write(data)];
+                console.log("unlock");
+                data.release();
+                _b.label = 3;
             case 3:
-                _b.sent();
-                _b.label = 4;
-            case 4:
                 exports.lockedModems.delete(modem.imei);
                 return [2 /*return*/];
-            case 5:
+            case 4:
                 if (!hasSim)
                     return [2 /*return*/, debug("No sim!".red)];
                 exports.activeModems.set(modem.imei, { modem: modem, accessPoint: accessPoint });

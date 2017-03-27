@@ -842,8 +842,6 @@ export namespace UserEvent {
 
         export interface GetMessages extends Response {
             responseto: typeof Request.GetMessages.keyword;
-            messagescount: string;
-            [messagen: string]: string | undefined;
         }
 
         export namespace GetMessages {
@@ -853,28 +851,83 @@ export namespace UserEvent {
                     Response.matchEvt(Request.GetMessages.keyword, actionid)(evt);
             }
 
-
-            export function buildAction(actionid: string, messages: string[]): GetMessages {
-                let out = {
-                    ...Response.buildAction(Request.GetMessages.keyword, actionid),
-                    "messagescount": messages.length.toString()
-                } as GetMessages;
-
-                for (let i = 0; i < messages.length; i++)
-                    out[`message${i}`] = messages[i];
-
-                return out;
+            export interface Infos extends GetMessages {
+                messagescount: string;
             }
 
-            export function reassembleMessage(evt: GetMessages): string[] {
-                let out: string[] = [];
+            export namespace Infos {
 
-                for (let i = 0; i < parseInt(evt.messagescount); i++)
-                    out.push(evt[`message${i}`]!);
+                export function matchEvt( actionid: string) {
+                    return (evt: UserEvent): evt is Infos =>
+                        (
+                            Response.GetMessages.matchEvt(actionid)(evt) &&
+                            (
+                                evt.hasOwnProperty("messagescount") ||
+                                evt.hasOwnProperty("error")
+                            )
+                        );
+                }
 
-                return out;
+                export function buildAction( actionid: string, messagescount: string): Infos {
+                    return {
+                        ...Response.buildAction(Request.GetMessages.keyword, actionid),
+                        messagescount
+                    } as Infos;
+                }
 
             }
+
+            export interface Entry extends GetMessages {
+                number: string;
+                date: string;
+                textsplitcount: string;
+                [textn: string]: string | undefined;
+            }
+
+            export namespace Entry {
+
+                export function matchEvt(actionid: string) {
+                    return (evt: UserEvent): evt is Entry =>
+                        (
+                            Response.GetMessages.matchEvt(actionid)(evt) &&
+                            !Response.GetMessages.Infos.matchEvt(actionid)(evt)
+                        );
+                }
+
+
+                export function buildAction(
+                    actionid: string,
+                    number: string,
+                    date: string,
+                    text: string
+                ): Entry {
+
+                    let textParts = divide(500, text);
+
+                    let out = {
+                        ...Response.buildAction(Request.GetMessages.keyword, actionid),
+                        number,
+                        date,
+                        "textsplitcount": textParts.length.toString(),
+                    } as Entry;
+
+                    for (let i = 0; i < textParts.length; i++)
+                        out[`text${i}`] = JSON.stringify(textParts[i]);
+
+                    return out;
+                }
+
+                export function reassembleText(evt: Entry): string {
+                    let out = "";
+                    for (let i = 0; i < parseInt(evt.textsplitcount); i++)
+                        out += JSON.parse(evt[`text${i}`]!);
+
+                    return out;
+                }
+
+            }
+
+
 
         }
 
