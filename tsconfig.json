@@ -9,7 +9,7 @@
                     "es2015"
             ],
         "declaration": true,
-        "outDir": "./out",
+        "outDir": "./dist",
         "strictNullChecks": true,
         "sourceMap": true
     },

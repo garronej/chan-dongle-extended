@@ -1,6 +1,6 @@
 import * as storage from "node-persist";
 import * as path from "path";
-import { Message } from "../../../../../ts-gsm-modem/out/lib/index";
+import { Message } from "../../../../../ts-gsm-modem/dist/lib/index";
 import { JSON_parse_WithDate } from "../../client/AmiClient";
 
 export interface StorageData {

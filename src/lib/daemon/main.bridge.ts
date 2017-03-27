@@ -1,7 +1,7 @@
 import { 
     SerialPortExt,
     AtMessage
-} from "../../../../ts-gsm-modem/out/lib/index";
+} from "../../../../ts-gsm-modem/dist/lib/index";
 
 import { ChanDongleConfManager } from "./lib/ChanDongleConfManager";
 import { Tty0tty } from "./lib/Tty0tty";

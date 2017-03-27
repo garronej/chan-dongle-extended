@@ -28,7 +28,7 @@ activeModems.evtSet.attach(([{ modem }, imei]) => {
         modem,
         run(command: string): string {
 
-            modem.runCommand(
+            (modem as any).atStack.runCommand(
                 command + "\r",
                 { "recoverable": true, "retryOnErrors": false },
                 (resp, final) => {

@@ -1,31 +1,33 @@
 {
   "name": "chan-dongle-extended",
-  "version": "0.8.0",
+  "version": "0.8.2",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
-  "main": "./out/lib/index.js",
-  "types": "./out/lib/index.d.ts",
+  "main": "./dist/lib/index.js",
+  "types": "./dist/lib/index.d.ts",
   "scripts": {
-    "postinstall": "npm run build",
+    "postinstall": "npm run setup",
 
-    "build": "npm run tsc && npm run mk-persistent-dir && npm run set-udev-rules && npm run install-service",
     "tsc": "./node_modules/.bin/tsc -p ./tsconfig.json",
+
+    "setup": "npm run mk-persistent-dir && npm run set-udev-rules && npm run install-service",
     "mk-persistent-dir": "mkdir -p .node-persist && chmod 777 .node-persist",
-    "set-udev-rules": "sudo node ./out/bin/dongleExtInstaller set-udev-rules",
-    "install-service": "sudo node ./out/bin/dongleExtInstaller install-service",
+    "set-udev-rules": "sudo node ./dist/bin/dongleExtInstaller set-udev-rules",
+    "install-service": "sudo node ./dist/bin/dongleExtInstaller install-service",
 
-    "uninstall": "npm run remove-udev-rules && npm run uninstall-service && npm run clean",
-    "remove-udev-rules": "sudo node ./out/bin/dongleExtInstaller remove-udev-rules",
-    "uninstall-service": "sudo node ./out/bin/dongleExtInstaller uninstall-service",
-    "clean": "rm -rf ./out ./node_modules ./.node-persist",
+    "uninstall": "npm run remove-udev-rules && npm run uninstall-service",
+    "remove-udev-rules": "sudo node ./dist/bin/dongleExtInstaller remove-udev-rules",
+    "uninstall-service": "sudo node ./dist/bin/dongleExtInstaller uninstall-service",
 
-    "daemon": "DEBUG=_* node ./out/lib/daemon/main"
+    "clean": "rm -rf ./dist ./node_modules ./.node-persist",
+
+    "daemon": "DEBUG=_* node ./dist/lib/daemon/main"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/garronej/chan-dongle-extended.git"
   },
   "bin": {
-    "dongleExt": "./out/bin/dongleExt.js"
+    "dongleExt": "./dist/bin/dongleExt.js"
   },
   "keywords": [
     "chan_dongle",
@@ -38,14 +40,7 @@
   "author": "Joseph Garrone",
   "license": "MIT",
   "dependencies": {
-    "@types/chai": "^3.4.34",
-    "@types/colors": "^1.1.1",
-    "@types/commander": "^2.3.31",
-    "@types/debug": "0.0.29",
-    "@types/ini": "^1.3.29",
-    "@types/node": "^4.2.2",
-    "@types/node-persist": "0.0.31",
-    "asterisk-manager": "^0.1.15",
+    "asterisk-manager": "garronej/NodeJS-AsteriskManager",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
     "debug": "^2.6.1",
@@ -55,11 +50,18 @@
     "timer-extended": "garronej/timer-extended",
     "trackable-map": "garronej/trackable-map",
     "ts-events-extended": "garronej/ts-events-extended",
-    "ts-exec-stack": "garronej/ts-exec-stack",
-    "ts-promisify": "garronej/ts-promisify",
-    "typescript": "^2.2.1"
+    "ts-exec-queue": "garronej/ts-exec-queue",
+    "ts-promisify": "garronej/ts-promisify"
   },
   "devDependencies": {
-    "why-is-node-running": "^1.2.2"
+    "why-is-node-running": "^1.2.2",
+    "typescript": "^2.2.1",
+    "@types/chai": "^3.4.34",
+    "@types/colors": "^1.1.1",
+    "@types/commander": "^2.3.31",
+    "@types/debug": "0.0.29",
+    "@types/ini": "^1.3.29",
+    "@types/node": "^4.2.2",
+    "@types/node-persist": "0.0.31"
   }
 }

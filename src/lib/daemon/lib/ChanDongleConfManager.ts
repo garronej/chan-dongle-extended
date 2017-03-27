@@ -1,6 +1,6 @@
 import * as AstMan from "asterisk-manager";
 import { writeFile, readFileSync } from "fs";
-import { execStack, ExecStack } from "ts-exec-stack";
+import { execQueue, ExecQueue } from "ts-exec-queue";
 import { ini } from "../../tools/iniExt";
 import { AmiCredential } from "../../shared/AmiCredential";
 
@@ -18,7 +18,7 @@ export namespace ChanDongleConfManager {
 
     const cluster = {};
 
-    export const addDongle = execStack(cluster, "WRITE",
+    export const addDongle = execQueue(cluster, "WRITE",
         async ({ id, dataIfPath, audioIfPath }: DongleConf, callback?: () => void): Promise<void> => {
 
             config[id] = {
@@ -34,7 +34,7 @@ export namespace ChanDongleConfManager {
         }
     );
 
-    export const removeDongle = execStack(cluster, "WRITE",
+    export const removeDongle = execQueue(cluster, "WRITE",
         async (dongleId: string, callback?: () => void): Promise<void> => {
 
             delete config[dongleId];

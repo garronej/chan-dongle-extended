@@ -2,7 +2,7 @@ import {
     Modem,
     UnlockCodeProviderCallback,
     AtMessage
-} from "../../../../ts-gsm-modem/out/lib/index";
+} from "../../../../ts-gsm-modem/dist/lib/index";
 import { Monitor, AccessPoint } from "gsm-modem-connection";
 import { TrackableMap } from "trackable-map";
 import { Storage } from "./lib/Storage";
@@ -11,11 +11,6 @@ import * as _debug from "debug";
 let debug = _debug("_main");
 
 
-process.on("unhandledRejection", error => {
-    console.log("INTERNAL ERROR".red);
-    console.log(error);
-    throw error;
-});
 
 
 export const activeModems = new TrackableMap<string, {
@@ -30,10 +25,18 @@ export const lockedModems = new TrackableMap<string, {
     callback: UnlockCodeProviderCallback;
 }>();
 
+namespace Validation {
+    export interface StringValidator {
+        isAcceptable(s: string): boolean;
+    }
+}
+
+
 if (process.env["NODE_ENV"] !== "production") require("./repl");
 require("./evtLogger");
-require("./main.ami");
-require("./main.bridge");
+
+import "./main.ami";
+import "./main.bridge";
 
 Monitor.evtModemDisconnect.attach(accessPoint => debug(`DISCONNECT: ${accessPoint.toString()}`));
 
@@ -75,7 +78,7 @@ Monitor.evtModemConnect.attach(async accessPoint => {
     if (!hasSim)
         return debug("No sim!".red);
 
-    debug(`Modem ${modem.imei} enabled`);
+
 
     activeModems.set(modem.imei, { modem, accessPoint });
     modem.evtTerminate.attachOnce( error => {

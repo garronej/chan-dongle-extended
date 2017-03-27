@@ -3,7 +3,6 @@
 import * as program from "commander";
 import { AmiClient } from "../lib/index";
 import { spawn } from "child_process";
-import * as pr from "ts-promisify";
 import * as storage from "node-persist";
 
 require("colors");

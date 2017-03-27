@@ -1,6 +1,6 @@
 import {
     AtMessage
-} from "../../../../ts-gsm-modem/out/lib/index";
+} from "../../../../ts-gsm-modem/dist/lib/index";
 
 import { divide } from "../tools/divide";
 
@@ -10,11 +10,15 @@ export interface UserEvent {
     [key: string]: string | undefined;
 }
 
+
+let counter= Date.now();
+
 export namespace UserEvent {
+
 
     export function buildAction(userevent: string, actionid?: string): UserEvent {
 
-        actionid= actionid || Date.now().toString();
+        actionid= actionid || (counter++).toString();
 
         return {
             "action": "UserEvent",
@@ -105,7 +109,12 @@ export namespace UserEvent {
                 );
             }
 
-            export function buildAction(imei: string, number: string, date: string, text: string): NewMessage {
+            export function buildAction(
+                imei: string,
+                number: string,
+                date: string,
+                text: string
+            ): NewMessage {
 
                 let textParts = divide(500, text);
 
@@ -220,7 +229,7 @@ export namespace UserEvent {
 
         export namespace MessageStatusReport {
 
-            export const keyword= "MessageStatusReport";
+            export const keyword = "MessageStatusReport";
 
             export function matchEvt(evt: UserEvent): evt is MessageStatusReport {
 
@@ -265,7 +274,7 @@ export namespace UserEvent {
 
     export namespace Request {
 
-        export const keyword= "DongleExt Request";
+        export const keyword = "DongleExt Request";
 
         export function matchEvt(evt: UserEvent): evt is Request {
             return (
@@ -289,7 +298,7 @@ export namespace UserEvent {
 
         export namespace GetSimPhonebook {
 
-            export const keyword= "GetSimPhonebook";
+            export const keyword = "GetSimPhonebook";
 
             export function matchEvt(evt: UserEvent): evt is GetSimPhonebook {
                 return (
@@ -319,7 +328,7 @@ export namespace UserEvent {
 
         export namespace DeleteContact {
 
-            export const keyword= "DeleteContact";
+            export const keyword = "DeleteContact";
 
             export function matchEvt(evt: UserEvent): evt is DeleteContact {
                 return (
@@ -352,7 +361,7 @@ export namespace UserEvent {
 
         export namespace CreateContact {
 
-            export const keyword= "CreateContact";
+            export const keyword = "CreateContact";
 
             export function matchEvt(evt: UserEvent): evt is CreateContact {
                 return (
@@ -588,11 +597,14 @@ export namespace UserEvent {
 
         export const keyword = "DongleExt Response";
 
-        export function matchEvt(evt: UserEvent, actionid: string): evt is Response {
-            return (
-                evt.actionid === actionid &&
-                evt.userevent === keyword
-            );
+        export function matchEvt(responseto: string, actionid: string) {
+            return (evt: UserEvent): evt is Response => {
+                return (
+                    evt.actionid === actionid &&
+                    evt.userevent === keyword &&
+                    evt.responseto === responseto
+                );
+            }
         }
 
         export function buildAction(responseto: string, actionid: string, error?: string): Response {
@@ -616,12 +628,11 @@ export namespace UserEvent {
 
         export namespace SendMessage {
 
-            export function matchEvt(evt: UserEvent, actionid: string): evt is SendMessage {
-                return (
-                    Response.matchEvt(evt, actionid) &&
-                    evt.responseto === Request.SendMessage.keyword
-                );
+            export function matchEvt(actionid: string) {
+                return (evt: UserEvent): evt is SendMessage =>
+                    Response.matchEvt(Request.SendMessage.keyword, actionid)(evt);
             }
+
 
             export function buildAction(actionid: string, messageid: string): SendMessage {
                 return {
@@ -642,12 +653,9 @@ export namespace UserEvent {
 
         export namespace CreateContact {
 
-
-            export function matchEvt(evt: UserEvent, actionid: string): evt is CreateContact {
-                return (
-                    Response.matchEvt(evt, actionid) &&
-                    evt.responseto === Request.CreateContact.keyword
-                );
+            export function matchEvt(actionid: string) {
+                return (evt: UserEvent): evt is CreateContact =>
+                    Response.matchEvt(Request.CreateContact.keyword, actionid)(evt);
             }
 
             export function buildAction(actionid: string, index: string, name: string, number: string): CreateContact {
@@ -666,122 +674,170 @@ export namespace UserEvent {
 
         export interface GetSimPhonebook extends Response {
             responseto: typeof Request.GetSimPhonebook.keyword;
-            contactnamemaxlength: string;
-            numbermaxlength: string;
-            storageleft: string;
-            contactcount: string;
-            [contactn: string]: string | undefined;
         }
+
+
 
         export namespace GetSimPhonebook {
 
-
-            export function matchEvt(evt: UserEvent, actionid: string): evt is GetSimPhonebook {
-                return (
-                    Response.matchEvt(evt, actionid) &&
-                    evt.responseto === Request.GetSimPhonebook.keyword
-                );
+            export function matchEvt(actionid: string) {
+                return (evt: UserEvent): evt is GetSimPhonebook =>
+                    Response.matchEvt(Request.GetSimPhonebook.keyword, actionid)(evt);
             }
 
-            export function buildAction(
-                actionid: string,
-                contactnamemaxlength: string,
-                numbermaxlength: string,
-                storageleft: string,
-                contacts: string[]
-            ): GetSimPhonebook {
 
-                let out = {
-                    ...Response.buildAction(Request.GetSimPhonebook.keyword, actionid),
-                    contactnamemaxlength,
-                    numbermaxlength,
-                    storageleft,
-                    "contactcount": contacts.length.toString()
-                } as GetSimPhonebook;
-
-                for (let i = 0; i < contacts.length; i++)
-                    out[`contact${i}`] = contacts[i];
-
-                return out;
+            export interface Infos extends GetSimPhonebook {
+                contactnamemaxlength: string;
+                numbermaxlength: string;
+                storageleft: string;
+                contactcount: string;
             }
 
-            export function reassembleContacts(evt: GetSimPhonebook): string[] {
-                let out: string[] = [];
+            export namespace Infos {
 
-                for (let i = 0; i < parseInt(evt.contactcount); i++)
-                    out.push(evt[`contact${i}`]!);
+                export function matchEvt(actionid: string) {
+                    return (evt: UserEvent): evt is Infos => {
+                        return (
+                            Response.GetSimPhonebook.matchEvt(actionid)(evt) &&
+                            (
+                                evt.hasOwnProperty("contactcount") ||
+                                evt.hasOwnProperty("error")
+                            )
+                        );
+                    };
+                }
 
-                return out;
+
+                export function buildAction(
+                    actionid: string,
+                    contactnamemaxlength: string,
+                    numbermaxlength: string,
+                    storageleft: string,
+                    contactcount: string
+                ): Infos {
+
+                    return {
+                        ...Response.buildAction(Request.GetSimPhonebook.keyword, actionid),
+                        contactnamemaxlength,
+                        numbermaxlength,
+                        storageleft,
+                        contactcount
+                    } as Infos;
+
+                }
+
             }
+
+            export interface Entry extends GetSimPhonebook {
+                index: string;
+                name: string;
+                number: string;
+            }
+
+            export namespace Entry {
+
+                export function matchEvt(actionid: string) {
+                    return (evt: UserEvent): evt is Entry => {
+                        return (
+                            Response.GetSimPhonebook.matchEvt(actionid)(evt) &&
+                            evt.hasOwnProperty("index")
+                        );
+                    };
+                }
+
+                export function buildAction(
+                    actionid: string,
+                    index: string,
+                    name: string,
+                    number: string
+                ): Entry {
+                    return {
+                        ...Response.buildAction(Request.GetSimPhonebook.keyword, actionid),
+                        index,
+                        name,
+                        number
+                    } as Entry;
+                }
+            }
+
 
         }
 
 
 
-
-
-        export interface DeleteContact extends Response {
-            responseto: typeof Request.DeleteContact.keyword;
-        }
-
-        export namespace DeleteContact {
-
-
-            export function matchEvt(evt: UserEvent, actionid: string): evt is DeleteContact {
-                return (
-                    Response.matchEvt(evt, actionid) &&
-                    evt.responseto === Request.DeleteContact.keyword
-                );
-            }
-
-            export function buildAction(actionid: string): DeleteContact {
-                return {
-                    ...Response.buildAction(Request.DeleteContact.keyword, actionid),
-                } as DeleteContact;
-            }
-
-        }
 
 
 
         export interface GetLockedDongles extends Response {
             responseto: typeof Request.GetLockedDongles.keyword;
-            donglecount: string;
-            [donglen: string]: string | undefined;
         }
 
         export namespace GetLockedDongles {
 
-
-            export function matchEvt(evt: UserEvent, actionid: string): evt is GetLockedDongles {
-                return (
-                    Response.matchEvt(evt, actionid) &&
-                    evt.responseto === Request.GetLockedDongles.keyword
-                );
+            export function matchEvt(actionid: string) {
+                return (evt: UserEvent): evt is GetLockedDongles =>
+                    Response.matchEvt(Request.GetLockedDongles.keyword, actionid)(evt);
             }
 
-            export function buildAction(actionid: string, dongles: string[]): GetLockedDongles {
-                let out = {
-                    ...Response.buildAction(Request.GetLockedDongles.keyword, actionid),
-                    "donglecount": dongles.length.toString()
-                } as GetLockedDongles;
-
-                for (let i = 0; i < dongles.length; i++)
-                    out[`dongle${i}`] = dongles[i];
-
-                return out;
+            export interface Infos extends GetLockedDongles {
+                donglecount: string;
             }
 
-            export function reassembleDongles(evt: GetLockedDongles): string[] {
-                let out: string[] = [];
+            export namespace Infos {
 
-                for (let i = 0; i < parseInt(evt.donglecount); i++)
-                    out.push(evt[`dongle${i}`]!);
+                export function matchEvt(actionid: string) {
+                    return (evt: UserEvent): evt is Infos =>
+                        (
+                            GetLockedDongles.matchEvt(actionid)(evt) &&
+                            evt.hasOwnProperty("donglecount")
+                        );
+                }
 
-                return out;
+                export function buildAction(actionid: string, donglecount: string): Infos {
+                    return {
+                        ...Response.buildAction(Request.GetLockedDongles.keyword, actionid),
+                        donglecount
+                    } as Infos;
+                }
 
             }
 
+
+            export interface Entry extends GetLockedDongles {
+                imei: string;
+                iccid: string;
+                pinstate: string;
+                tryleft: string;
+            }
+
+            export namespace Entry {
+
+                export function matchEvt(actionid: string) {
+                    return (evt: UserEvent): evt is Entry =>
+                        (
+                            GetLockedDongles.matchEvt(actionid)(evt) &&
+                            !GetLockedDongles.Infos.matchEvt(actionid)(evt)
+                        );
+                }
+
+                export function buildAction(
+                    actionid: string,
+                    imei: string,
+                    iccid: string,
+                    pinstate: string,
+                    tryleft: string
+                ): Entry {
+                    return {
+                        ...Response.buildAction(Request.GetLockedDongles.keyword, actionid),
+                        imei,
+                        iccid,
+                        pinstate,
+                        tryleft
+                    } as Entry;
+
+                }
+
+            }
         }
 
         export interface GetMessages extends Response {
@@ -792,12 +848,11 @@ export namespace UserEvent {
 
         export namespace GetMessages {
 
-            export function matchEvt(evt: UserEvent, actionid: string): evt is GetMessages {
-                return (
-                    Response.matchEvt(evt, actionid) &&
-                    evt.responseto === Request.GetMessages.keyword
-                );
+            export function matchEvt(actionid: string) {
+                return (evt: UserEvent): evt is GetMessages =>
+                    Response.matchEvt(Request.GetMessages.keyword, actionid)(evt);
             }
+
 
             export function buildAction(actionid: string, messages: string[]): GetMessages {
                 let out = {
@@ -825,47 +880,73 @@ export namespace UserEvent {
 
 
 
-
-
-
         export interface GetActiveDongles extends Response {
             responseto: typeof Request.GetActiveDongles.keyword;
-            donglecount: string;
-            [donglen: string]: string | undefined;
         }
 
         export namespace GetActiveDongles {
 
-            export function matchEvt(evt: UserEvent, actionid: string): evt is GetActiveDongles {
-                return (
-                    Response.matchEvt(evt, actionid) &&
-                    evt.responseto === Request.GetActiveDongles.keyword
-                );
+            export function matchEvt(actionid: string) {
+                return (evt: UserEvent): evt is GetActiveDongles =>
+                    Response.matchEvt(Request.GetActiveDongles.keyword, actionid)(evt);
             }
 
-            export function buildAction(actionid: string, dongles: string[]): GetActiveDongles {
-                let out = {
-                    ...Response.buildAction(Request.GetActiveDongles.keyword, actionid),
-                    "donglecount": dongles.length.toString()
-                } as GetActiveDongles;
-
-                for (let i = 0; i < dongles.length; i++)
-                    out[`dongle${i}`] = dongles[i];
-
-                return out;
+            export interface Infos extends GetActiveDongles {
+                donglecount: string;
             }
 
-            export function reassembleDongles(evt: GetActiveDongles): string[] {
-                let out: string[] = [];
+            export namespace Infos {
 
-                for (let i = 0; i < parseInt(evt.donglecount); i++)
-                    out.push(evt[`dongle${i}`]!);
+                export function matchEvt(actionid: string) {
+                    return (evt: UserEvent): evt is Infos =>
+                        (
+                            GetActiveDongles.matchEvt(actionid)(evt) &&
+                            evt.hasOwnProperty("donglecount")
+                        );
+                }
 
-                return out;
+                export function buildAction(actionid: string, donglecount: string): Infos {
+                    return {
+                        ...Response.buildAction(Request.GetActiveDongles.keyword, actionid),
+                        donglecount
+                    } as Infos;
+                }
+
+            }
+
+
+            export interface Entry extends GetActiveDongles {
+                imei: string;
+                iccid: string;
+                imsi: string;
+                number: string;
+            }
+
+            export namespace Entry {
+
+                export function matchEvt(actionid: string) {
+                    return (evt: UserEvent): evt is Entry =>
+                        (
+                            GetActiveDongles.matchEvt(actionid)(evt) &&
+                            !GetActiveDongles.Infos.matchEvt(actionid)(evt)
+                        );
+                }
+
+                export function buildAction(actionid: string, imei: string, iccid: string, imsi: string, number: string): Entry {
+                    return {
+                        ...Response.buildAction(Request.GetActiveDongles.keyword, actionid),
+                        imei,
+                        iccid,
+                        imsi,
+                        number
+                    } as Entry;
+
+                }
 
             }
 
         }
+
 
 
     }
