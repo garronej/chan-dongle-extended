@@ -18,12 +18,17 @@ $ sudo apt-get install build-essential python-pip libudev-dev && sudo pip instal
 ````
 
 * Installing tty0tty: 
-Folow the instructions on: https://github.com/garronej/tty0tty
+Follow the instructions on: https://github.com/garronej/tty0tty
 
-* Instaling node: 
+* Instating Node.js: 
 Follow the instructions on: http://node-arm.herokuapp.com/
 
 * Install the module
 ``` bash
 $ sudo npm install --unsafe-perm -g garronej/chan-dongle-extended
+```
+
+#Uninstall
+``` bash
+$ sudo npm install --unsafe-perm -g chan-dongle-extended
 ```

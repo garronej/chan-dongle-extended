@@ -1,14 +1,13 @@
 {
   "name": "chan-dongle-extended",
-  "version": "0.9.3",
+  "version": "0.9.4",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
   "scripts": {
-    "preinstall": "npm run check-dependencies",
-    "check-dependencies": "sudo node ./dist/bin/dongleExtInstaller check-dependencies",
-    "postinstall": "npm run setup",
     "tsc": "./node_modules/.bin/tsc -p ./tsconfig.json",
+    "postinstall": "npm run check-dependencies && npm run setup",
+    "check-dependencies": "sudo node ./dist/bin/dongleExtInstaller check-dependencies",
     "setup": "npm run mk-persistent-dir && npm run set-udev-rules && npm run enable-manager && npm run install-service",
     "mk-persistent-dir": "mkdir -p .node-persist && chmod 777 .node-persist",
     "set-udev-rules": "sudo node ./dist/bin/dongleExtInstaller set-udev-rules",
