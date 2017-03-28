@@ -80,7 +80,7 @@ var Storage;
     Storage.read = read;
 })(Storage = exports.Storage || (exports.Storage = {}));
 storage.initSync({
-    "dir": path.join(__dirname, "..", "..", "..", "..", ".node-persist", "storage"),
+    "dir": path.join(__dirname, "..", "..", ".node-persist", "storage"),
     "parse": exports.JSON_parse_WithDate
 });
 //# sourceMappingURL=Storage.js.map

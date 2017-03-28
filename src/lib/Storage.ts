@@ -60,6 +60,6 @@ export namespace Storage {
 }
 
 storage.initSync({
-    "dir": path.join(__dirname, "..", "..", "..", "..", ".node-persist", "storage"),
+    "dir": path.join(__dirname, "..", "..", ".node-persist", "storage"),
     "parse": JSON_parse_WithDate
 });
