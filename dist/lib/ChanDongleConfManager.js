@@ -44,10 +44,26 @@ var chan_dongle_extended_client_2 = require("chan-dongle-extended-client");
 var _debug = require("debug");
 var debug = _debug("_ChanDongleConfManager");
 exports.dongleConfPath = path.join(chan_dongle_extended_client_2.asteriskConfDirPath, "dongle.conf");
+var config = undefined;
 var ChanDongleConfManager;
 (function (ChanDongleConfManager) {
     var _this = this;
     var cluster = {};
+    ChanDongleConfManager.init = ts_exec_queue_1.execQueue(cluster, "WRITE", function (callback) { return __awaiter(_this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (config)
+                        return [2 /*return*/, callback()];
+                    config = loadConfig();
+                    return [4 /*yield*/, update()];
+                case 1:
+                    _a.sent();
+                    callback();
+                    return [2 /*return*/];
+            }
+        });
+    }); });
     ChanDongleConfManager.addDongle = ts_exec_queue_1.execQueue(cluster, "WRITE", function (_a, callback) {
         var id = _a.id, dataIfPath = _a.dataIfPath, audioIfPath = _a.audioIfPath;
         return __awaiter(_this, void 0, void 0, function () {
@@ -62,7 +78,7 @@ var ChanDongleConfManager;
                     case 1:
                         _a.sent();
                         callback();
-                        return [2 /*return*/, null];
+                        return [2 /*return*/];
                 }
             });
         });
@@ -76,58 +92,11 @@ var ChanDongleConfManager;
                 case 1:
                     _a.sent();
                     callback();
-                    return [2 /*return*/, null];
+                    return [2 /*return*/];
             }
         });
     }); });
 })(ChanDongleConfManager = exports.ChanDongleConfManager || (exports.ChanDongleConfManager = {}));
-var defaultConfig = {
-    "general": {
-        "interval": "1",
-        "jbenable": "yes",
-        "jbmaxsize": "100",
-        "jbimpl": "fixed"
-    },
-    "defaults": {
-        "context": "from-dongle",
-        "group": "0",
-        "rxgain": "0",
-        "txgain": "0",
-        "autodeletesms": "yes",
-        "resetdongle": "yes",
-        "u2diag": "-1",
-        "usecallingpres": "yes",
-        "callingpres": "allowed_passed_screen",
-        "disablesms": "yes",
-        "language": "en",
-        "smsaspdu": "yes",
-        "mindtmfgap": "45",
-        "mindtmfduration": "80",
-        "mindtmfinterval": "200",
-        "callwaiting": "auto",
-        "disable": "no",
-        "initstate": "start",
-        "exten": "+12345678987",
-        "dtmf": "relax"
-    }
-};
-var config = (function () {
-    try {
-        var out = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(exports.dongleConfPath, "utf8"));
-        out.defaults.disablesms = "yes";
-        for (var _i = 0, _a = Object.keys(out); _i < _a.length; _i++) {
-            var key = _a[_i];
-            if (key === "general" || key === "defaults")
-                continue;
-            delete out[key];
-        }
-        return out;
-    }
-    catch (error) {
-        return defaultConfig;
-    }
-})();
-ChanDongleConfManager.removeDongle("");
 function update() {
     var _this = this;
     return new Promise(function (resolve) { return fs_1.writeFile(exports.dongleConfPath, ini_extended_1.ini.stringify(config), { "encoding": "utf8", "flag": "w" }, function (error) { return __awaiter(_this, void 0, void 0, function () {
@@ -160,5 +129,44 @@ function reloadChanDongle() {
             }
         });
     });
+}
+function loadConfig() {
+    try {
+        var _a = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(exports.dongleConfPath, "utf8")), general = _a.general, defaults = _a.defaults;
+        defaults.disablesms = "yes";
+        return { general: general, defaults: defaults };
+    }
+    catch (error) {
+        return {
+            "general": {
+                "interval": "1",
+                "jbenable": "yes",
+                "jbmaxsize": "100",
+                "jbimpl": "fixed"
+            },
+            "defaults": {
+                "context": "from-dongle",
+                "group": "0",
+                "rxgain": "0",
+                "txgain": "0",
+                "autodeletesms": "yes",
+                "resetdongle": "yes",
+                "u2diag": "-1",
+                "usecallingpres": "yes",
+                "callingpres": "allowed_passed_screen",
+                "disablesms": "yes",
+                "language": "en",
+                "smsaspdu": "yes",
+                "mindtmfgap": "45",
+                "mindtmfduration": "80",
+                "mindtmfinterval": "200",
+                "callwaiting": "auto",
+                "disable": "no",
+                "initstate": "start",
+                "exten": "+12345678987",
+                "dtmf": "relax"
+            }
+        };
+    }
 }
 //# sourceMappingURL=ChanDongleConfManager.js.map

@@ -8,7 +8,6 @@ import { asteriskConfDirPath } from "chan-dongle-extended-client";
 import * as _debug from "debug";
 let debug= _debug("_ChanDongleConfManager");
 
-
 export const dongleConfPath = path.join(asteriskConfDirPath, "dongle.conf");
 
 export interface DongleConf {
@@ -17,9 +16,26 @@ export interface DongleConf {
     audioIfPath: string;
 }
 
+let config: any = undefined;
+
 export namespace ChanDongleConfManager {
 
     const cluster = {};
+
+    export const init= execQueue(cluster, "WRITE",
+        async (callback?: ()=> void): Promise<void> => {
+
+            if( config ) 
+                return callback!();
+
+            config= loadConfig();
+
+            await update();
+
+            callback!();
+
+        }
+    );
 
     export const addDongle = execQueue(cluster, "WRITE",
         async ({ id, dataIfPath, audioIfPath }: DongleConf, callback?: () => void): Promise<void> => {
@@ -32,7 +48,6 @@ export namespace ChanDongleConfManager {
             await update();
 
             callback!();
-            return null as any;
 
         }
     );
@@ -46,73 +61,10 @@ export namespace ChanDongleConfManager {
 
             callback!();
 
-            return null as any;
-
         }
     );
 
 }
-
-const defaultConfig = {
-    "general": {
-        "interval": "1",
-        "jbenable": "yes",
-        "jbmaxsize": "100",
-        "jbimpl": "fixed"
-    },
-    "defaults": {
-        "context": "from-dongle",
-        "group": "0",
-        "rxgain": "0",
-        "txgain": "0",
-        "autodeletesms": "yes",
-        "resetdongle": "yes",
-        "u2diag": "-1",
-        "usecallingpres": "yes",
-        "callingpres": "allowed_passed_screen",
-        "disablesms": "yes",
-        "language": "en",
-        "smsaspdu": "yes",
-        "mindtmfgap": "45",
-        "mindtmfduration": "80",
-        "mindtmfinterval": "200",
-        "callwaiting": "auto",
-        "disable": "no",
-        "initstate": "start",
-        "exten": "+12345678987",
-        "dtmf": "relax"
-    }
-};
-
-const config = (() => {
-
-    try {
-
-        let out = ini.parseStripWhitespace(readFileSync(dongleConfPath, "utf8"))
-
-        out.defaults.disablesms = "yes";
-
-        for (let key of Object.keys(out)) {
-
-            if (key === "general" || key === "defaults")
-                continue;
-
-            delete out[key];
-
-        }
-
-        return out;
-
-    } catch (error) {
-
-        return defaultConfig;
-
-    }
-
-})();
-
-
-ChanDongleConfManager.removeDongle("");
 
 function update(): Promise<void> {
 
@@ -144,4 +96,52 @@ async function reloadChanDongle(): Promise<void> {
 
     debug("update chan_dongle config");
 
+}
+
+function loadConfig(): any {
+
+    try {
+
+        let { general, defaults } = ini.parseStripWhitespace(
+            readFileSync(dongleConfPath, "utf8")
+        );
+
+        defaults.disablesms = "yes";
+
+        return { general, defaults };
+
+    } catch (error) {
+
+        return {
+            "general": {
+                "interval": "1",
+                "jbenable": "yes",
+                "jbmaxsize": "100",
+                "jbimpl": "fixed"
+            },
+            "defaults": {
+                "context": "from-dongle",
+                "group": "0",
+                "rxgain": "0",
+                "txgain": "0",
+                "autodeletesms": "yes",
+                "resetdongle": "yes",
+                "u2diag": "-1",
+                "usecallingpres": "yes",
+                "callingpres": "allowed_passed_screen",
+                "disablesms": "yes",
+                "language": "en",
+                "smsaspdu": "yes",
+                "mindtmfgap": "45",
+                "mindtmfduration": "80",
+                "mindtmfinterval": "200",
+                "callwaiting": "auto",
+                "disable": "no",
+                "initstate": "start",
+                "exten": "+12345678987",
+                "dtmf": "relax"
+            }
+        };
+
+    }
 }

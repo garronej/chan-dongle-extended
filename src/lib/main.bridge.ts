@@ -1,3 +1,6 @@
+/*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
+/*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
+
 import { 
     SerialPortExt,
     AtMessage
@@ -12,8 +15,7 @@ import * as pr from "ts-promisify";
 import * as _debug from "debug";
 let debug = _debug("_main.bridge");
 
-/*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
-/*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
+ChanDongleConfManager.init();
 
 activeModems.evtSet.attach(async ([{ modem, accessPoint }]) => {
 

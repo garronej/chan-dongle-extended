@@ -1,3 +1,5 @@
+/*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
+/*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -43,8 +45,7 @@ var main_1 = require("./main");
 var pr = require("ts-promisify");
 var _debug = require("debug");
 var debug = _debug("_main.bridge");
-/*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
-/*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
+ChanDongleConfManager_1.ChanDongleConfManager.init();
 main_1.activeModems.evtSet.attach(function (_a) {
     var _b = _a[0], modem = _b.modem, accessPoint = _b.accessPoint;
     return __awaiter(_this, void 0, void 0, function () {

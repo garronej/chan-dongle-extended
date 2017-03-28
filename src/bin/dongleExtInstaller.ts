@@ -13,6 +13,7 @@ import {
 import { dongleConfPath } from "../lib/ChanDongleConfManager";
 import "colors";
 
+
 const vendorIds = Object.keys(recordIfNum);
 const systemdServicePath = path.join("/etc", "systemd", "system", "dongleExt.service");
 const udevRulesPath = path.join("/etc", "udev", "rules.d", "99-dongleExt.rules");
@@ -31,8 +32,6 @@ program
     .description("check that asterisk and chan_dongles are installed")
     .action(async () => {
         
-        console.log("Running check-dependencies");
-
         let code = await runShellCommand("which asterisk");
 
         if (code) {
@@ -53,21 +52,20 @@ program
         process.exit(0);
     });
 
+
 program
     .command("enable-manager")
     .description("Enable asterisk manager if necessary and give write access to dongle.config")
     .action(async () => {
 
-        console.log("Running enable-manager");
-
-        let general = {
+        const general = {
             "enabled": "yes",
             "port": "5038",
             "bindaddr": "127.0.0.1",
             "displayconnects": "no"
         };
 
-        let dongle_ext_user = {
+        const dongle_ext_user = {
             "secret": "foo_bar_baz",
             "deny": "0.0.0.0/0.0.0.0",
             "permit": "0.0.0.0/0.0.0.0",
@@ -120,13 +118,10 @@ program
 
     });
 
-
 program
     .command("install-service")
     .description("Install dongleExt as a systemd service")
     .action(async () => {
-
-        console.log("Running install-service");
 
         const node_execpath = process.argv[0];
 
@@ -183,8 +178,6 @@ program
     .description("Remove dongleExt service from systemd ")
     .action(async () => {
 
-        console.log("Running uninstall-service");
-
         await runShellCommand("systemctl stop dongleExt.service");
 
         await runShellCommand("systemctl disable dongleExt.service");
@@ -200,13 +193,10 @@ program
 
     });
 
-
 program
     .command("set-udev-rules")
     .description("Set udev rules to automatically give write/write access to the connected dongles")
     .action(async () => {
-
-        console.log("Running set-udev-rules");
 
         let rules = "";
 
@@ -235,12 +225,11 @@ program
 
     });
 
+
 program
     .command("remove-udev-rules")
     .description("remove udev rules for changing permission on connected dongles")
     .action(async () => {
-
-        console.log("Running remove-udev-rules");
 
         try { unlinkSync(udevRulesPath); } catch (error) { }
 
@@ -251,6 +240,7 @@ program
         process.exit(0);
 
     });
+
 
 program.parse(process.argv);
 
