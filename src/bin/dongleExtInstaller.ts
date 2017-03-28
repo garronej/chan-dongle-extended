@@ -1,17 +1,121 @@
 import { spawn } from "child_process";
 import * as readline from "readline";
-import { writeFile, unlinkSync } from "fs";
+import { readFileSync, writeFile, unlinkSync, existsSync, chmodSync } from "fs";
 import * as program from "commander";
 import * as path from "path";
 import { recordIfNum } from "gsm-modem-connection";
-const vendorIds= Object.keys(recordIfNum);
-require("colors");
+import { ini } from "ini-extended";
+import {
+    AmiCredential,
+    asteriskConfDirPath,
+    managerConfPath
+} from "chan-dongle-extended-client";
+import { dongleConfPath } from "../lib/ChanDongleConfManager";
+import "colors";
 
-const systemdServicePath = "/etc/systemd/system/dongleExt.service";
-const udevRulesPath = "/etc/udev/rules.d/99-dongleExt.rules";
+const vendorIds = Object.keys(recordIfNum);
+const systemdServicePath = path.join("/etc", "systemd", "system", "dongleExt.service");
+const udevRulesPath = path.join("/etc", "udev", "rules.d", "99-dongleExt.rules");
+
+process.on("unhandledRejection", error => {
+    console.log("INTERNAL ERROR INSTALLER");
+    console.log(error);
+    throw error;
+});
 
 program
     .version('0.0.1')
+
+program
+    .command("check-dependencies")
+    .description("check that asterisk and chan_dongles are installed")
+    .action(async () => {
+
+        let code = await runShellCommand("which asterisk");
+
+        if (code) {
+            console.log(`Error: Seems like asterisk is not installed`.red);
+            process.exit(-1);
+        }
+
+        if (!existsSync(asteriskConfDirPath)) {
+            console.log(`Error: ${asteriskConfDirPath} does not exist`.red);
+            process.exit(-1);
+        }
+
+        if (!existsSync(dongleConfPath)) {
+            console.log(`Error: Seems like chan_dongle is not installed, ${dongleConfPath} does not exist`.red);
+            process.exit(-1);
+        }
+
+        process.exit(0);
+    });
+
+program
+    .command("enable-manager")
+    .description("Enable asterisk manager if necessary and give write access to dongle.config")
+    .action(async () => {
+
+        let general = {
+            "enabled": "yes",
+            "port": "5038",
+            "bindaddr": "127.0.0.1",
+            "displayconnects": "no"
+        };
+
+        let dongle_ext_user = {
+            "secret": "foo_bar_baz",
+            "deny": "0.0.0.0/0.0.0.0",
+            "permit": "0.0.0.0/0.0.0.0",
+            "read": "system,user,config",
+            "write": "system,user,config",
+            "writetimeout": "5000"
+        };
+
+        let needReload = false;
+
+        try {
+            AmiCredential.retrieve();
+        } catch (error) {
+
+            needReload = true;
+
+            let config: any;
+
+            switch (error.message) {
+                case "NO_FILE":
+                    config = { general, dongle_ext_user };
+                    break;
+                case "NO_USER":
+                    config = {
+                        ...ini.parseStripWhitespace(readFileSync(managerConfPath, "utf8")),
+                        dongle_ext_user
+                    };
+                    config.general.enabled = "yes";
+                    break;
+                case "NOT_ENABLED":
+                    config = ini.parseStripWhitespace(readFileSync(managerConfPath, "utf8"));
+                    config.general.enabled = "yes";
+                    break;
+            }
+
+            await writeFileAssertSuccess(managerConfPath, ini.stringify(config));
+
+        }
+
+        chmodSync(managerConfPath, "775");
+        chmodSync(dongleConfPath, "777");
+
+        if (needReload) {
+            await runShellCommandAssertSuccess(`asterisk -rx`, ["core reload"]);
+            console.log("Asterisk Manager successfully enabled");
+        } else
+            console.log("Asterisk Manager was well configured already");
+
+        process.exit(0);
+
+    });
+
 
 program
     .command("install-service")
@@ -22,13 +126,11 @@ program
 
         console.log([
             "Now you will be ask to choose the user that will run the service\n",
-            "Be aware that this user need read access to /ect/asterisk/manager.conf",
-            " and read/write access to /etc/asterisk/dongles.conf"
         ].join("").yellow);
 
-        const user = await ask("User? (default root)");
+        const user = await ask("User? (press enter for root)");
 
-        const group = await ask("Group? (default root)");
+        const group = await ask("Group? (press enter for root)");
 
         let service = [
             `[Unit]`,
@@ -140,21 +242,19 @@ program
 
 program.parse(process.argv);
 
-function runShellCommand(cmd: string): Promise<number> {
+function runShellCommand(cmd: string, extraArgs?: string[]): Promise<number> {
 
     let [prog, ...args] = cmd.split(" ");
 
-    return new Promise<number>(resolve => {
+    if (extraArgs) args = [...args, ...extraArgs];
 
-        spawn(prog, args).once("close", resolve);
-
-    });
+    return new Promise<number>(resolve => spawn(prog, args).once("close", resolve));
 
 }
 
-async function runShellCommandAssertSuccess(cmd: string): Promise<void> {
+async function runShellCommandAssertSuccess(cmd: string, extraArgs?: string[]): Promise<void> {
 
-    let code = await runShellCommand(cmd);
+    let code = await runShellCommand(cmd, extraArgs);
 
     if (code !== 0) {
         console.log(`Error: ${cmd} fail`.red);
@@ -204,4 +304,3 @@ function writeFileAssertSuccess(filename: string, data: string): Promise<void> {
     );
 
 }
-

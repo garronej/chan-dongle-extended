@@ -1,55 +1,19 @@
 #!/usr/bin/env node
-
 import * as program from "commander";
 import { AmiClient } from "chan-dongle-extended-client";
 import { spawn } from "child_process";
 import * as storage from "node-persist";
-
-require("colors");
 import * as path from "path";
+import "colors";
 
 const persistDir = path.join(__dirname, "..", "..", ".node-persist", "storage");
 
+process.on("unhandledRejection", error => {
+    console.log("INTERNAL ERROR AMI CLIENT");
+    console.log(error);
+    throw error;
+});
 
-function assertServiceRunning(): Promise<void> {
-
-    //return new Promise<void>(resolve => resolve());
-
-    return new Promise<void>(resolve => {
-        spawn("systemctl", ["status", "dongleExt.service"])
-            .stdout
-            .once("data", data => {
-
-                let line = data.toString("utf8").split("\n")[2];
-
-                if (!line || !line.match(/^\ *Active:\ *active/)) {
-                    console.log("Error: dongleExt service is not running!".red);
-                    console.log("run: sudo systemctl start dongleExt");
-                    process.exit(-1);
-                }
-
-                resolve();
-            });
-    });
-
-}
-
-async function getImei(options: { imei: string | undefined }): Promise<string> {
-
-    if (options.imei) return options.imei;
-
-    await storage.init({ "dir": persistDir });
-
-    let imei = await storage.getItem("cli_imei");
-
-    if (!imei) {
-        console.log("Error: No dongle selected");
-        process.exit(-1);
-    }
-
-    return imei;
-
-}
 
 
 program
@@ -88,8 +52,6 @@ program
 
 
     });
-
-//.command("select", "Select a dongle for the subsequent calls")
 
 program
     .command("select [imei]")
@@ -384,3 +346,43 @@ program
     });
 
 program.parse(process.argv);
+
+function assertServiceRunning(): Promise<void> {
+
+    //return new Promise<void>(resolve => resolve());
+
+    return new Promise<void>(resolve => {
+        spawn("systemctl", ["status", "dongleExt.service"])
+            .stdout
+            .once("data", data => {
+
+                let line = data.toString("utf8").split("\n")[2];
+
+                if (!line || !line.match(/^\ *Active:\ *active/)) {
+                    console.log("Error: dongleExt service is not running!".red);
+                    console.log("run: sudo systemctl start dongleExt");
+                    process.exit(-1);
+                }
+
+                resolve();
+            });
+    });
+
+}
+
+async function getImei(options: { imei: string | undefined }): Promise<string> {
+
+    if (options.imei) return options.imei;
+
+    await storage.init({ "dir": persistDir });
+
+    let imei = await storage.getItem("cli_imei");
+
+    if (!imei) {
+        console.log("Error: No dongle selected");
+        process.exit(-1);
+    }
+
+    return imei;
+
+}

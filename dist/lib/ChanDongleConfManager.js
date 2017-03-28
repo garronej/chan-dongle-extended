@@ -39,8 +39,11 @@ var fs_1 = require("fs");
 var ini_extended_1 = require("ini-extended");
 var ts_exec_queue_1 = require("ts-exec-queue");
 var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
+var path = require("path");
+var chan_dongle_extended_client_2 = require("chan-dongle-extended-client");
 var _debug = require("debug");
 var debug = _debug("_ChanDongleConfManager");
+exports.dongleConfPath = path.join(chan_dongle_extended_client_2.asteriskConfDirPath, "dongle.conf");
 var ChanDongleConfManager;
 (function (ChanDongleConfManager) {
     var _this = this;
@@ -78,7 +81,6 @@ var ChanDongleConfManager;
         });
     }); });
 })(ChanDongleConfManager = exports.ChanDongleConfManager || (exports.ChanDongleConfManager = {}));
-var path = "/etc/asterisk/dongle.conf";
 var defaultConfig = {
     "general": {
         "interval": "1",
@@ -111,7 +113,7 @@ var defaultConfig = {
 };
 var config = (function () {
     try {
-        var out = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(path, "utf8"));
+        var out = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(exports.dongleConfPath, "utf8"));
         out.defaults.disablesms = "yes";
         for (var _i = 0, _a = Object.keys(out); _i < _a.length; _i++) {
             var key = _a[_i];
@@ -128,7 +130,7 @@ var config = (function () {
 ChanDongleConfManager.removeDongle("");
 function update() {
     var _this = this;
-    return new Promise(function (resolve) { return fs_1.writeFile(path, ini_extended_1.ini.stringify(config), { "encoding": "utf8", "flag": "w" }, function (error) { return __awaiter(_this, void 0, void 0, function () {
+    return new Promise(function (resolve) { return fs_1.writeFile(exports.dongleConfPath, ini_extended_1.ini.stringify(config), { "encoding": "utf8", "flag": "w" }, function (error) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:

@@ -41,48 +41,14 @@ var program = require("commander");
 var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
 var child_process_1 = require("child_process");
 var storage = require("node-persist");
-require("colors");
 var path = require("path");
+require("colors");
 var persistDir = path.join(__dirname, "..", "..", ".node-persist", "storage");
-function assertServiceRunning() {
-    //return new Promise<void>(resolve => resolve());
-    return new Promise(function (resolve) {
-        child_process_1.spawn("systemctl", ["status", "dongleExt.service"])
-            .stdout
-            .once("data", function (data) {
-            var line = data.toString("utf8").split("\n")[2];
-            if (!line || !line.match(/^\ *Active:\ *active/)) {
-                console.log("Error: dongleExt service is not running!".red);
-                console.log("run: sudo systemctl start dongleExt");
-                process.exit(-1);
-            }
-            resolve();
-        });
-    });
-}
-function getImei(options) {
-    return __awaiter(this, void 0, void 0, function () {
-        var imei;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    if (options.imei)
-                        return [2 /*return*/, options.imei];
-                    return [4 /*yield*/, storage.init({ "dir": persistDir })];
-                case 1:
-                    _a.sent();
-                    return [4 /*yield*/, storage.getItem("cli_imei")];
-                case 2:
-                    imei = _a.sent();
-                    if (!imei) {
-                        console.log("Error: No dongle selected");
-                        process.exit(-1);
-                    }
-                    return [2 /*return*/, imei];
-            }
-        });
-    });
-}
+process.on("unhandledRejection", function (error) {
+    console.log("INTERNAL ERROR AMI CLIENT");
+    console.log(error);
+    throw error;
+});
 program
     .version('0.0.1');
 program
@@ -125,7 +91,6 @@ program
         }
     });
 }); });
-//.command("select", "Select a dongle for the subsequent calls")
 program
     .command("select [imei]")
     .description([
@@ -451,4 +416,43 @@ program
     });
 }); });
 program.parse(process.argv);
+function assertServiceRunning() {
+    //return new Promise<void>(resolve => resolve());
+    return new Promise(function (resolve) {
+        child_process_1.spawn("systemctl", ["status", "dongleExt.service"])
+            .stdout
+            .once("data", function (data) {
+            var line = data.toString("utf8").split("\n")[2];
+            if (!line || !line.match(/^\ *Active:\ *active/)) {
+                console.log("Error: dongleExt service is not running!".red);
+                console.log("run: sudo systemctl start dongleExt");
+                process.exit(-1);
+            }
+            resolve();
+        });
+    });
+}
+function getImei(options) {
+    return __awaiter(this, void 0, void 0, function () {
+        var imei;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (options.imei)
+                        return [2 /*return*/, options.imei];
+                    return [4 /*yield*/, storage.init({ "dir": persistDir })];
+                case 1:
+                    _a.sent();
+                    return [4 /*yield*/, storage.getItem("cli_imei")];
+                case 2:
+                    imei = _a.sent();
+                    if (!imei) {
+                        console.log("Error: No dongle selected");
+                        process.exit(-1);
+                    }
+                    return [2 /*return*/, imei];
+            }
+        });
+    });
+}
 //# sourceMappingURL=dongleExt.js.map

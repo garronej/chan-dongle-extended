@@ -2,10 +2,14 @@ import { writeFile, readFileSync } from "fs";
 import { ini } from "ini-extended";
 import { execQueue, ExecQueue } from "ts-exec-queue";
 import { AmiClient } from "chan-dongle-extended-client";
+import * as path from "path";
+import { asteriskConfDirPath } from "chan-dongle-extended-client";
 
 import * as _debug from "debug";
 let debug= _debug("_ChanDongleConfManager");
 
+
+export const dongleConfPath = path.join(asteriskConfDirPath, "dongle.conf");
 
 export interface DongleConf {
     id: string;
@@ -49,7 +53,6 @@ export namespace ChanDongleConfManager {
 
 }
 
-const path = "/etc/asterisk/dongle.conf";
 const defaultConfig = {
     "general": {
         "interval": "1",
@@ -85,7 +88,7 @@ const config = (() => {
 
     try {
 
-        let out = ini.parseStripWhitespace(readFileSync(path, "utf8"))
+        let out = ini.parseStripWhitespace(readFileSync(dongleConfPath, "utf8"))
 
         out.defaults.disablesms = "yes";
 
@@ -115,7 +118,7 @@ function update(): Promise<void> {
 
     return new Promise<void>(
         resolve => writeFile(
-            path,
+            dongleConfPath,
             ini.stringify(config),
             { "encoding": "utf8", "flag": "w" },
             async error => {

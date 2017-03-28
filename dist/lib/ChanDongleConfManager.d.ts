@@ -1,4 +1,5 @@
 import { ExecQueue } from "ts-exec-queue";
+export declare const dongleConfPath: string;
 export interface DongleConf {
     id: string;
     dataIfPath: string;
