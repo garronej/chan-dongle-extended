@@ -33,10 +33,10 @@ program
         let service = [
             `[Unit]`,
             `Description=chan dongle extended service`,
-            `Requires=After=asterisk.service`,
+            `After=network.target`,
             ``,
             `[Service]`,
-            `ExecStart=${node_execpath} ${process.cwd()}/out/lib/daemon/main`,
+            `ExecStart=${node_execpath} ${process.cwd()}/dist/lib/main`,
             `WorkingDirectory=${process.cwd()}`,
             `Restart=always`,
             `RestartSec=10`,
@@ -106,7 +106,7 @@ program
                 `ENV{ID_USB_INTERFACE_NUM}=="[0-9]*", `
             ].join("");
 
-            rules += match + `${match}ACTION=="add" MODE="0666", GROUP="root"\n`;
+            rules += `${match}ACTION=="add" MODE="0666", GROUP="root"\n`;
 
 
         }

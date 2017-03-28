@@ -1,40 +1,36 @@
 #!/usr/bin/env node
 
 import * as program from "commander";
-import { AmiClient } from "../lib/index";
+import { AmiClient } from "chan-dongle-extended-client";
 import { spawn } from "child_process";
 import * as storage from "node-persist";
 
 require("colors");
 import * as path from "path";
 
-const persistDir= path.join(__dirname, "..", "..", ".node-persist", "storage");
+const persistDir = path.join(__dirname, "..", "..", ".node-persist", "storage");
 
 
 function assertServiceRunning(): Promise<void> {
 
-    return new Promise<void>(resolve => resolve());
+    //return new Promise<void>(resolve => resolve());
 
-    /*
     return new Promise<void>(resolve => {
         spawn("systemctl", ["status", "dongleExt.service"])
             .stdout
-            .once("data",
-            data => {
+            .once("data", data => {
 
                 let line = data.toString("utf8").split("\n")[2];
 
-                if( !line || !line.match(/^\ *Active:\ *active/) ){
+                if (!line || !line.match(/^\ *Active:\ *active/)) {
                     console.log("Error: dongleExt service is not running!".red);
                     console.log("run: sudo systemctl start dongleExt");
                     process.exit(-1);
                 }
 
                 resolve();
-            }
-            );
+            });
     });
-    */
 
 }
 
@@ -42,7 +38,7 @@ async function getImei(options: { imei: string | undefined }): Promise<string> {
 
     if (options.imei) return options.imei;
 
-    await storage.init({"dir": persistDir});
+    await storage.init({ "dir": persistDir });
 
     let imei = await storage.getItem("cli_imei");
 
@@ -50,7 +46,7 @@ async function getImei(options: { imei: string | undefined }): Promise<string> {
         console.log("Error: No dongle selected");
         process.exit(-1);
     }
-    
+
     return imei;
 
 }
@@ -64,15 +60,15 @@ program
     .description("List active dongle")
     .action(async options => {
 
-            await assertServiceRunning();
+        await assertServiceRunning();
 
-            let client = AmiClient.localhost();
+        let client = AmiClient.localhost();
 
-            let dongles= await client.getActiveDongles();
+        let dongles = await client.getActiveDongles();
 
-            console.log(JSON.stringify(dongles, null, 2));
+        console.log(JSON.stringify(dongles, null, 2));
 
-            process.exit(0);
+        process.exit(0);
 
     });
 
@@ -110,12 +106,12 @@ program
 
         let client = AmiClient.localhost();
 
-        let arrImei: string[]= [];
+        let arrImei: string[] = [];
 
-        for( let { imei } of await client.getActiveDongles())
+        for (let { imei } of await client.getActiveDongles())
             arrImei.push(imei);
 
-        for( let { imei } of await client.getLockedDongles() )
+        for (let { imei } of await client.getLockedDongles())
             arrImei.push(imei);
 
         if (arrImei.indexOf(imei) < 0) {
@@ -286,6 +282,41 @@ program
 
     });
 
+program
+    .command("update-number")
+    .description("Re write subscriber phone number on SIM card")
+    .option("-i, --imei [imei]", "IMEI of the dongle")
+    .option("--number [number]", "SIM card phone number")
+    .action(async options => {
+
+        await assertServiceRunning();
+
+        let { number } = options;
+
+        if (!number) {
+            console.log("Error: command malformed".red);
+            console.log(options.optionHelp());
+            process.exit(-1);
+        }
+
+        let imei = await getImei(options);
+
+        let error = await AmiClient
+            .localhost()
+            .updateNumber(imei, number);
+
+        if (error) {
+            console.log(error.message.red);
+            process.exit(-1);
+            return;
+        }
+
+        console.log("done");
+
+        process.exit(0);
+
+    });
+
 
 program
     .command("delete-contact")
@@ -331,11 +362,11 @@ program
 
         await assertServiceRunning();
 
-        let flush: boolean  = (options.flush === true);
+        let flush: boolean = (options.flush === true);
 
         let imei = await getImei(options);
 
-        let [ error, messages] = await AmiClient
+        let [error, messages] = await AmiClient
             .localhost()
             .getMessages(imei, flush);
 
