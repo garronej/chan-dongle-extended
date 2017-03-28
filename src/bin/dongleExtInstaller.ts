@@ -30,6 +30,8 @@ program
     .command("check-dependencies")
     .description("check that asterisk and chan_dongles are installed")
     .action(async () => {
+        
+        console.log("Running check-dependencies");
 
         let code = await runShellCommand("which asterisk");
 
@@ -55,6 +57,8 @@ program
     .command("enable-manager")
     .description("Enable asterisk manager if necessary and give write access to dongle.config")
     .action(async () => {
+
+        console.log("Running enable-manager");
 
         let general = {
             "enabled": "yes",
@@ -122,6 +126,8 @@ program
     .description("Install dongleExt as a systemd service")
     .action(async () => {
 
+        console.log("Running install-service");
+
         const node_execpath = process.argv[0];
 
         console.log([
@@ -177,6 +183,8 @@ program
     .description("Remove dongleExt service from systemd ")
     .action(async () => {
 
+        console.log("Running uninstall-service");
+
         await runShellCommand("systemctl stop dongleExt.service");
 
         await runShellCommand("systemctl disable dongleExt.service");
@@ -197,6 +205,8 @@ program
     .command("set-udev-rules")
     .description("Set udev rules to automatically give write/write access to the connected dongles")
     .action(async () => {
+
+        console.log("Running set-udev-rules");
 
         let rules = "";
 
@@ -229,6 +239,8 @@ program
     .command("remove-udev-rules")
     .description("remove udev rules for changing permission on connected dongles")
     .action(async () => {
+
+        console.log("Running remove-udev-rules");
 
         try { unlinkSync(udevRulesPath); } catch (error) { }
 

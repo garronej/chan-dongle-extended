@@ -71,7 +71,9 @@ program
     var code;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, runShellCommand("which asterisk")];
+            case 0:
+                console.log("Running check-dependencies");
+                return [4 /*yield*/, runShellCommand("which asterisk")];
             case 1:
                 code = _a.sent();
                 if (code) {
@@ -99,6 +101,7 @@ program
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
+                console.log("Running enable-manager");
                 general = {
                     "enabled": "yes",
                     "port": "5038",
@@ -166,6 +169,7 @@ program
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
+                console.log("Running install-service");
                 node_execpath = process.argv[0];
                 console.log([
                     "Now you will be ask to choose the user that will run the service\n",
@@ -222,7 +226,9 @@ program
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, runShellCommand("systemctl stop dongleExt.service")];
+            case 0:
+                console.log("Running uninstall-service");
+                return [4 /*yield*/, runShellCommand("systemctl stop dongleExt.service")];
             case 1:
                 _a.sent();
                 return [4 /*yield*/, runShellCommand("systemctl disable dongleExt.service")];
@@ -249,6 +255,7 @@ program
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
+                console.log("Running set-udev-rules");
                 rules = "";
                 for (_i = 0, vendorIds_1 = vendorIds; _i < vendorIds_1.length; _i++) {
                     vendorId = vendorIds_1[_i];
@@ -278,6 +285,7 @@ program
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
+                console.log("Running remove-udev-rules");
                 try {
                     fs_1.unlinkSync(udevRulesPath);
                 }
