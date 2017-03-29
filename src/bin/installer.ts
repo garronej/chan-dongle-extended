@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 import { spawn } from "child_process";
 import * as readline from "readline";
 import { readFileSync, writeFile, unlinkSync, existsSync, chmodSync } from "fs";

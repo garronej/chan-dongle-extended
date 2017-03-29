@@ -30,5 +30,5 @@ $ sudo npm install --unsafe-perm -g garronej/chan-dongle-extended
 
 #Uninstall
 ``` bash
-$ sudo npm uninstall --unsafe-perm -g chan-dongle-extended
+$ sudo dongle-installer remove-udev-rules && sudo dongle-installer uninstall-service && npm uninstall --unsafe-perm -g chan-dongle-extended
 ```
