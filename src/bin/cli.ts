@@ -14,7 +14,6 @@ process.on("unhandledRejection", error => {
     throw error;
 });
 
-
 program
     .version('0.0.1')
 
@@ -351,15 +350,15 @@ function assertServiceRunning(): Promise<void> {
     //return new Promise<void>(resolve => resolve());
 
     return new Promise<void>(resolve => {
-        spawn("systemctl", ["status", "dongleExt.service"])
+        spawn("systemctl", ["status", "dongle-extended.service"])
             .stdout
             .once("data", data => {
 
                 let line = data.toString("utf8").split("\n")[2];
 
                 if (!line || !line.match(/^\ *Active:\ *active/)) {
-                    console.log("Error: dongleExt service is not running!".red);
-                    console.log("run: sudo systemctl start dongleExt");
+                    console.log("Error: dongle-extended service is not running!".red);
+                    console.log("run: sudo systemctl start dongle-extended");
                     process.exit(-1);
                 }
 

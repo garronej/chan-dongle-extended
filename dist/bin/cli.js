@@ -419,13 +419,13 @@ program.parse(process.argv);
 function assertServiceRunning() {
     //return new Promise<void>(resolve => resolve());
     return new Promise(function (resolve) {
-        child_process_1.spawn("systemctl", ["status", "dongleExt.service"])
+        child_process_1.spawn("systemctl", ["status", "dongle-extended.service"])
             .stdout
             .once("data", function (data) {
             var line = data.toString("utf8").split("\n")[2];
             if (!line || !line.match(/^\ *Active:\ *active/)) {
-                console.log("Error: dongleExt service is not running!".red);
-                console.log("run: sudo systemctl start dongleExt");
+                console.log("Error: dongle-extended service is not running!".red);
+                console.log("run: sudo systemctl start dongle-extended");
                 process.exit(-1);
             }
             resolve();
@@ -455,4 +455,4 @@ function getImei(options) {
         });
     });
 }
-//# sourceMappingURL=dongleExt.js.map
+//# sourceMappingURL=cli.js.map

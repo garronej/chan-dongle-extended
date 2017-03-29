@@ -55,8 +55,8 @@ var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
 var ChanDongleConfManager_1 = require("../lib/ChanDongleConfManager");
 require("colors");
 var vendorIds = Object.keys(gsm_modem_connection_1.recordIfNum);
-var systemdServicePath = path.join("/etc", "systemd", "system", "dongleExt.service");
-var udevRulesPath = path.join("/etc", "udev", "rules.d", "99-dongleExt.rules");
+var systemdServicePath = path.join("/etc", "systemd", "system", "dongle-extended.service");
+var udevRulesPath = path.join("/etc", "udev", "rules.d", "99-dongle-extended.rules");
 process.on("unhandledRejection", function (error) {
     console.log("INTERNAL ERROR INSTALLER");
     console.log(error);
@@ -160,7 +160,7 @@ program
 }); });
 program
     .command("install-service")
-    .description("Install dongleExt as a systemd service")
+    .description("Install dongle-extended as a systemd service")
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
     var node_execpath, user, group, service;
     return __generator(this, function (_a) {
@@ -207,9 +207,9 @@ program
                     "Chan dongle extended service installed!".green,
                     systemdServicePath + ": \n\n " + service,
                     "To run the service:".yellow,
-                    "sudo systemctl start dongleExt.service",
+                    "sudo systemctl start dongle-extended",
                     "To automatically start the service on boot:".yellow,
-                    "sudo systemctl enable dongleExt.service",
+                    "sudo systemctl enable dongle-extended",
                 ].join("\n"));
                 process.exit(0);
                 return [2 /*return*/];
@@ -218,14 +218,14 @@ program
 }); });
 program
     .command("uninstall-service")
-    .description("Remove dongleExt service from systemd ")
+    .description("Remove dongle-extended service from systemd ")
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, runShellCommand("systemctl stop dongleExt.service")];
+            case 0: return [4 /*yield*/, runShellCommand("systemctl stop dongle-extended.service")];
             case 1:
                 _a.sent();
-                return [4 /*yield*/, runShellCommand("systemctl disable dongleExt.service")];
+                return [4 /*yield*/, runShellCommand("systemctl disable dongle-extended.service")];
             case 2:
                 _a.sent();
                 try {
@@ -235,7 +235,7 @@ program
                 return [4 /*yield*/, runShellCommandAssertSuccess("systemctl daemon-reload")];
             case 3:
                 _a.sent();
-                console.log("dongleExt.service removed from systemd".green);
+                console.log("dongle-extended.service removed from systemd".green);
                 process.exit(0);
                 return [2 /*return*/];
         }
@@ -336,4 +336,4 @@ function writeFileAssertSuccess(filename, data) {
         resolve();
     }); });
 }
-//# sourceMappingURL=dongleExtInstaller.js.map
+//# sourceMappingURL=installer.js.map

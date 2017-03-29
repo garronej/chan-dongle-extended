@@ -15,8 +15,8 @@ import "colors";
 
 
 const vendorIds = Object.keys(recordIfNum);
-const systemdServicePath = path.join("/etc", "systemd", "system", "dongleExt.service");
-const udevRulesPath = path.join("/etc", "udev", "rules.d", "99-dongleExt.rules");
+const systemdServicePath = path.join("/etc", "systemd", "system", "dongle-extended.service");
+const udevRulesPath = path.join("/etc", "udev", "rules.d", "99-dongle-extended.rules");
 
 process.on("unhandledRejection", error => {
     console.log("INTERNAL ERROR INSTALLER");
@@ -120,7 +120,7 @@ program
 
 program
     .command("install-service")
-    .description("Install dongleExt as a systemd service")
+    .description("Install dongle-extended as a systemd service")
     .action(async () => {
 
         const node_execpath = process.argv[0];
@@ -163,9 +163,9 @@ program
             `Chan dongle extended service installed!`.green,
             `${systemdServicePath}: \n\n ${service}`,
             `To run the service:`.yellow,
-            `sudo systemctl start dongleExt.service`,
+            `sudo systemctl start dongle-extended`,
             `To automatically start the service on boot:`.yellow,
-            `sudo systemctl enable dongleExt.service`,
+            `sudo systemctl enable dongle-extended`,
         ].join("\n"));
 
         process.exit(0);
@@ -175,18 +175,18 @@ program
 
 program
     .command("uninstall-service")
-    .description("Remove dongleExt service from systemd ")
+    .description("Remove dongle-extended service from systemd ")
     .action(async () => {
 
-        await runShellCommand("systemctl stop dongleExt.service");
+        await runShellCommand("systemctl stop dongle-extended.service");
 
-        await runShellCommand("systemctl disable dongleExt.service");
+        await runShellCommand("systemctl disable dongle-extended.service");
 
         try { unlinkSync(systemdServicePath); } catch (error) { }
 
         await runShellCommandAssertSuccess("systemctl daemon-reload");
 
-        console.log("dongleExt.service removed from systemd".green);
+        console.log("dongle-extended.service removed from systemd".green);
 
         process.exit(0);
 

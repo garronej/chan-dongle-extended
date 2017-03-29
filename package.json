@@ -1,30 +1,29 @@
 {
   "name": "chan-dongle-extended",
-  "version": "0.9.6",
+  "version": "0.9.7",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
   "scripts": {
     "tsc": "./node_modules/.bin/tsc -p ./tsconfig.json",
     "postinstall": "npm run check-dependencies && npm run setup",
-    "check-dependencies": "node ./dist/bin/dongleExtInstaller check-dependencies",
+    "check-dependencies": "node ./dist/bin/installer check-dependencies",
     "setup": "npm run mk-persistent-dir && npm run set-udev-rules && npm run enable-manager && npm run install-service",
     "mk-persistent-dir": "mkdir -p .node-persist && chmod 777 .node-persist",
-    "set-udev-rules": "node ./dist/bin/dongleExtInstaller set-udev-rules",
-    "enable-manager": "node ./dist/bin/dongleExtInstaller enable-manager",
-    "install-service": "node ./dist/bin/dongleExtInstaller install-service",
-    "preuninstall": "npm run remove-udev-rules && npm run uninstall-service",
-    "remove-udev-rules": "node ./dist/bin/dongleExtInstaller remove-udev-rules",
-    "uninstall-service": "node ./dist/bin/dongleExtInstaller uninstall-service",
-    "clean": "rm -rf ./dist ./node_modules ./.node-persist",
-    "daemon": "DEBUG=_* node ./dist/lib/main"
+    "set-udev-rules": "node ./dist/bin/installer set-udev-rules",
+    "enable-manager": "node ./dist/bin/installer enable-manager",
+    "install-service": "node ./dist/bin/installer install-service",
+    "preuninstall": "echo pre && npm run remove-udev-rules && npm run uninstall-service",
+    "remove-udev-rules": "node ./dist/bin/installer remove-udev-rules",
+    "uninstall-service": "node ./dist/bin/installer uninstall-service",
+    "start": "DEBUG=_* node ./dist/lib/main"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/garronej/chan-dongle-extended.git"
   },
   "bin": {
-    "dongleExt": "./dist/bin/dongleExt.js"
+    "dongle": "./dist/bin/cli.js"
   },
   "keywords": [
     "chan_dongle",
