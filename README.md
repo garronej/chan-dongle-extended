@@ -1,5 +1,5 @@
 # chan-dongle-extended
-An extension for chan_dongle: PIN codes, multipart SMS, contacts.
+An extension for chan_dongle: PIN codes, multipart SMS, contacts and auto configuration of the GSM dongle on connect.
 
 #Requirement
 
@@ -30,5 +30,5 @@ $ sudo npm install --unsafe-perm -g garronej/chan-dongle-extended
 
 #Uninstall
 ``` bash
-$ sudo dongle-installer remove-udev-rules && sudo dongle-installer uninstall-service && npm uninstall --unsafe-perm -g chan-dongle-extended
+$ sudo dongle-installer remove-udev-rules && sudo dongle-installer uninstall-service && sudo npm uninstall --unsafe-perm -g chan-dongle-extended
 ```
