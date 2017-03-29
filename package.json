@@ -13,7 +13,7 @@
     "set-udev-rules": "node ./dist/bin/installer set-udev-rules",
     "enable-manager": "node ./dist/bin/installer enable-manager",
     "install-service": "node ./dist/bin/installer install-service",
-    "preuninstall": "echo pre && npm run remove-udev-rules && npm run uninstall-service",
+    "full-uninstall": "npm run remove-udev-rules && npm run uninstall-service && npm --unsafe-perm uninstall -g",
     "remove-udev-rules": "node ./dist/bin/installer remove-udev-rules",
     "uninstall-service": "node ./dist/bin/installer uninstall-service",
     "start": "DEBUG=_* node ./dist/lib/main"
