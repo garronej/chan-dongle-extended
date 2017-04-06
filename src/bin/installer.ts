@@ -59,7 +59,7 @@ program
     .description("Enable asterisk manager if necessary and give write access to dongle.config")
     .action(async () => {
 
-        const general = {
+        let general = {
             "enabled": "yes",
             "port": "5038",
             "bindaddr": "127.0.0.1",
@@ -67,53 +67,30 @@ program
         };
 
         const dongle_ext_user = {
-            "secret": "foo_bar_baz",
+            "secret": Date.now().toString(),
             "deny": "0.0.0.0/0.0.0.0",
             "permit": "0.0.0.0/0.0.0.0",
-            "read": "system,user,config",
-            "write": "system,user,config",
+            "read": "system,user,config,agi",
+            "write": "system,user,config,agi",
             "writetimeout": "5000"
         };
 
-        let needReload = false;
 
-        try {
-            AmiCredential.retrieve();
-        } catch (error) {
-
-            needReload = true;
-
-            let config: any;
-
-            switch (error.message) {
-                case "NO_FILE":
-                    config = { general, dongle_ext_user };
-                    break;
-                case "NO_USER":
-                    config = {
-                        ...ini.parseStripWhitespace(readFileSync(managerConfPath, "utf8")),
-                        dongle_ext_user
-                    };
-                    config.general.enabled = "yes";
-                    break;
-                case "NOT_ENABLED":
-                    config = ini.parseStripWhitespace(readFileSync(managerConfPath, "utf8"));
-                    config.general.enabled = "yes";
-                    break;
-            }
-
-            await writeFileAssertSuccess(managerConfPath, ini.stringify(config));
-
+        if (existsSync(managerConfPath)) {
+            try {
+                general = ini.parseStripWhitespace(readFileSync(managerConfPath, "utf8")).general;
+                general.enabled = "yes";
+            } catch (error) { }
         }
+
+        await writeFileAssertSuccess(managerConfPath, ini.stringify({ general, dongle_ext_user }));
 
         chmodSync(managerConfPath, "775");
         chmodSync(dongleConfPath, "777");
 
-        if (needReload) {
-            await runShellCommandAssertSuccess(`asterisk -rx`, ["core reload"]);
-            console.log("Asterisk Manager successfully enabled");
-        } else
-            console.log("Asterisk Manager was well configured already");
+        await runShellCommand(`asterisk -rx`, ["core reload"]);
+
+        console.log("Asterisk Manager successfully enabled");
 
         process.exit(0);
 

@@ -1,6 +1,6 @@
 {
   "name": "chan-dongle-extended",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
@@ -34,6 +34,7 @@
   "author": "Joseph Garrone",
   "license": "MIT",
   "dependencies": {
+    "chan-dongle-extended-client": "garronej/chan-dongle-extended-client",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
     "debug": "^2.6.1",
@@ -44,13 +45,12 @@
     "trackable-map": "garronej/trackable-map",
     "ts-events-extended": "garronej/ts-events-extended",
     "ts-exec-queue": "garronej/ts-exec-queue",
-    "ts-promisify": "garronej/ts-promisify",
     "ts-gsm-modem": "garronej/ts-gsm-modem",
-    "chan-dongle-extended-client": "garronej/chan-dongle-extended-client"
+    "ts-promisify": "garronej/ts-promisify"
   },
   "devDependencies": {
     "why-is-node-running": "^1.2.2",
-    "typescript": "^2.2.1",
+    "typescript": "^2.2.2",
     "@types/chai": "^3.4.34",
     "@types/colors": "^1.1.1",
     "@types/commander": "^2.3.31",

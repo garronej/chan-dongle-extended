@@ -51,6 +51,7 @@ require("./main.ami");
 require("./main.bridge");
 gsm_modem_connection_1.Monitor.evtModemDisconnect.attach(function (accessPoint) { return debug("DISCONNECT: " + accessPoint.toString()); });
 gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { return __awaiter(_this, void 0, void 0, function () {
+    var _this = this;
     var _a, error, modem, hasSim, data;
     return __generator(this, function (_b) {
         switch (_b.label) {
@@ -87,13 +88,35 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
                 if (!hasSim)
                     return [2 /*return*/, debug("No sim!".red)];
                 exports.activeModems.set(modem.imei, { modem: modem, accessPoint: accessPoint });
-                modem.evtTerminate.attachOnce(function (error) {
-                    debug("Modem evt terminate");
-                    if (error) {
-                        debug("terminate reason: ", error);
-                    }
-                    exports.activeModems.delete(modem.imei);
-                });
+                modem.evtTerminate.attachOnce(function (error) { return __awaiter(_this, void 0, void 0, function () {
+                    var timeout_1;
+                    return __generator(this, function (_a) {
+                        switch (_a.label) {
+                            case 0:
+                                debug("Modem evt terminate");
+                                if (error) {
+                                    debug("terminate reason: ", error);
+                                }
+                                exports.activeModems.delete(modem.imei);
+                                if (!(gsm_modem_connection_1.Monitor.connectedModems.indexOf(accessPoint) >= 0)) return [3 /*break*/, 4];
+                                debug("Modem still connected");
+                                _a.label = 1;
+                            case 1:
+                                _a.trys.push([1, 3, , 4]);
+                                return [4 /*yield*/, gsm_modem_connection_1.Monitor.evtModemDisconnect.waitFor(function (ac) { return ac === accessPoint; }, 5000)];
+                            case 2:
+                                _a.sent();
+                                debug("Modem as really disconnected");
+                                return [3 /*break*/, 4];
+                            case 3:
+                                timeout_1 = _a.sent();
+                                debug("Modem still here, re-initializing");
+                                gsm_modem_connection_1.Monitor.evtModemConnect.post(accessPoint);
+                                return [3 /*break*/, 4];
+                            case 4: return [2 /*return*/];
+                        }
+                    });
+                }); });
                 return [2 /*return*/];
         }
     });

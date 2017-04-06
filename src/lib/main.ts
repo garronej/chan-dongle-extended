@@ -84,7 +84,7 @@ Monitor.evtModemConnect.attach(async accessPoint => {
 
 
     activeModems.set(modem.imei, { modem, accessPoint });
-    modem.evtTerminate.attachOnce( error => {
+    modem.evtTerminate.attachOnce( async error => {
 
         debug("Modem evt terminate");
 
@@ -93,6 +93,28 @@ Monitor.evtModemConnect.attach(async accessPoint => {
         }
 
         activeModems.delete(modem.imei);
+
+        if( Monitor.connectedModems.indexOf( accessPoint ) >= 0 ){
+
+            debug("Modem still connected");
+
+            try{
+
+                await Monitor.evtModemDisconnect.waitFor(ac => ac === accessPoint, 5000);
+
+                debug("Modem as really disconnected");
+                
+            }catch(timeout){
+
+                debug("Modem still here, re-initializing");
+
+                Monitor.evtModemConnect.post(accessPoint);
+
+            }
+
+        }
+
+
 
     });
 

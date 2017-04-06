@@ -1,13 +1,5 @@
 #!/usr/bin/env node
 "use strict";
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -96,7 +88,7 @@ program
     .command("enable-manager")
     .description("Enable asterisk manager if necessary and give write access to dongle.config")
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
-    var general, dongle_ext_user, needReload, error_1, config;
+    var general, dongle_ext_user;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -107,53 +99,29 @@ program
                     "displayconnects": "no"
                 };
                 dongle_ext_user = {
-                    "secret": "foo_bar_baz",
+                    "secret": Date.now().toString(),
                     "deny": "0.0.0.0/0.0.0.0",
                     "permit": "0.0.0.0/0.0.0.0",
-                    "read": "system,user,config",
-                    "write": "system,user,config",
+                    "read": "system,user,config,agi",
+                    "write": "system,user,config,agi",
                     "writetimeout": "5000"
                 };
-                needReload = false;
-                _a.label = 1;
-            case 1:
-                _a.trys.push([1, 2, , 4]);
-                chan_dongle_extended_client_1.AmiCredential.retrieve();
-                return [3 /*break*/, 4];
-            case 2:
-                error_1 = _a.sent();
-                needReload = true;
-                config = void 0;
-                switch (error_1.message) {
-                    case "NO_FILE":
-                        config = { general: general, dongle_ext_user: dongle_ext_user };
-                        break;
-                    case "NO_USER":
-                        config = __assign({}, ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(chan_dongle_extended_client_1.managerConfPath, "utf8")), { dongle_ext_user: dongle_ext_user });
-                        config.general.enabled = "yes";
-                        break;
-                    case "NOT_ENABLED":
-                        config = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(chan_dongle_extended_client_1.managerConfPath, "utf8"));
-                        config.general.enabled = "yes";
-                        break;
+                if (fs_1.existsSync(chan_dongle_extended_client_1.managerConfPath)) {
+                    try {
+                        general = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(chan_dongle_extended_client_1.managerConfPath, "utf8")).general;
+                        general.enabled = "yes";
+                    }
+                    catch (error) { }
                 }
-                return [4 /*yield*/, writeFileAssertSuccess(chan_dongle_extended_client_1.managerConfPath, ini_extended_1.ini.stringify(config))];
-            case 3:
+                return [4 /*yield*/, writeFileAssertSuccess(chan_dongle_extended_client_1.managerConfPath, ini_extended_1.ini.stringify({ general: general, dongle_ext_user: dongle_ext_user }))];
+            case 1:
                 _a.sent();
-                return [3 /*break*/, 4];
-            case 4:
                 fs_1.chmodSync(chan_dongle_extended_client_1.managerConfPath, "775");
                 fs_1.chmodSync(ChanDongleConfManager_1.dongleConfPath, "777");
-                if (!needReload) return [3 /*break*/, 6];
-                return [4 /*yield*/, runShellCommandAssertSuccess("asterisk -rx", ["core reload"])];
-            case 5:
+                return [4 /*yield*/, runShellCommand("asterisk -rx", ["core reload"])];
+            case 2:
                 _a.sent();
                 console.log("Asterisk Manager successfully enabled");
-                return [3 /*break*/, 7];
-            case 6:
-                console.log("Asterisk Manager was well configured already");
-                _a.label = 7;
-            case 7:
                 process.exit(0);
                 return [2 /*return*/];
         }
