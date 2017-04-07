@@ -141,25 +141,27 @@ program
                 ].join("").yellow);
                 return [4 /*yield*/, ask("User? (press enter for root)")];
             case 1:
-                user = _a.sent();
+                user = (_a.sent()) || "root";
                 return [4 /*yield*/, ask("Group? (press enter for root)")];
             case 2:
-                group = _a.sent();
+                group = (_a.sent()) || "root";
                 service = [
                     "[Unit]",
                     "Description=chan dongle extended service",
                     "After=network.target",
                     "",
                     "[Service]",
+                    "ExecStartPre=/bin/sh " + process.cwd() + "/src/bin/chown_tty0tty.sh " + user + " " + group,
                     "ExecStart=" + node_execpath + " " + process.cwd() + "/dist/lib/main",
+                    "PermissionsStartOnly=true",
                     "WorkingDirectory=" + process.cwd(),
                     "Restart=always",
                     "RestartSec=10",
                     "StandardOutput=syslog",
                     "StandardError=syslog",
                     "SyslogIdentifier=DongleExt",
-                    "User=" + (user || "root"),
-                    "Group=" + (group || "root"),
+                    "User=" + user,
+                    "Group=" + group,
                     "Environment=NODE_ENV=production DEBUG=_*",
                     "",
                     "[Install]",

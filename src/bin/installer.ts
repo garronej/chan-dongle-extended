@@ -107,9 +107,9 @@ program
             "Now you will be ask to choose the user that will run the service\n",
         ].join("").yellow);
 
-        const user = await ask("User? (press enter for root)");
+        const user = (await ask("User? (press enter for root)")) || "root";
 
-        const group = await ask("Group? (press enter for root)");
+        const group = (await ask("Group? (press enter for root)")) || "root";
 
         let service = [
             `[Unit]`,
@@ -117,15 +117,17 @@ program
             `After=network.target`,
             ``,
             `[Service]`,
+            `ExecStartPre=/bin/sh ${process.cwd()}/src/bin/chown_tty0tty.sh ${user} ${group}`,
             `ExecStart=${node_execpath} ${process.cwd()}/dist/lib/main`,
+            `PermissionsStartOnly=true`,
             `WorkingDirectory=${process.cwd()}`,
             `Restart=always`,
             `RestartSec=10`,
             `StandardOutput=syslog`,
             `StandardError=syslog`,
             `SyslogIdentifier=DongleExt`,
-            `User=${user || "root"}`,
-            `Group=${group || "root"}`,
+            `User=${user}`,
+            `Group=${group}`,
             `Environment=NODE_ENV=production DEBUG=_*`,
             ``,
             `[Install]`,
