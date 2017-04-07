@@ -21,7 +21,7 @@ $ sudo apt-get install build-essential python-pip libudev-dev && sudo pip instal
 Follow the instructions on: https://github.com/garronej/tty0tty
 
 * Instating Node.js: 
-Follow the instructions on: http://node-arm.herokuapp.com/
+Follow the instructions on: https://gist.github.com/garronej/6a1eecb9dde9d9184014c5d25a9b6d1c
 
 * Install the module
 ``` bash
