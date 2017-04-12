@@ -1,3 +1,5 @@
+require("rejection-tracker")(__dirname, "..", "..");
+
 import {
     Modem,
     UnlockCodeProviderCallback,
@@ -16,6 +18,7 @@ let debug = _debug("_main");
 export const activeModems = new TrackableMap<string, {
     modem: Modem;
     accessPoint: AccessPoint;
+    chanDongleDeviceName: string;
 }>();
 
 export const lockedModems = new TrackableMap<string, {
@@ -83,7 +86,11 @@ Monitor.evtModemConnect.attach(async accessPoint => {
 
 
 
-    activeModems.set(modem.imei, { modem, accessPoint });
+    let chanDongleDeviceName = "Dongle" + modem.imei.substring(0, 3) + modem.imei.substring(modem.imei.length - 3);
+
+    activeModems.set(modem.imei, { modem, accessPoint, chanDongleDeviceName });
+
+
     modem.evtTerminate.attachOnce( async error => {
 
         debug("Modem evt terminate");

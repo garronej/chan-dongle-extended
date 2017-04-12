@@ -4,12 +4,16 @@ import {
     AmiClient, 
     UserEvent, 
     DongleActive, 
-    LockedDongle 
+    LockedDongle,
+    strDivide
 } from "chan-dongle-extended-client";
 
 import Event= UserEvent.Event;
 import Response= UserEvent.Response;
 import Request= UserEvent.Request;
+
+import { ChanDongleConfManager } from "./ChanDongleConfManager";
+const dialplanContext= ChanDongleConfManager.getContext();
 
 
 import * as _debug from "debug";
@@ -17,11 +21,94 @@ let debug = _debug("_main.ami");
 
 const amiClient= AmiClient.localhost();
 
-//ami.keepConnected();
+
+async function addDialplanExtension(
+    extension: string,
+    priority: number,
+    application: string,
+    context: string,
+    replace?: boolean
+): Promise<any> {
+
+    let rawCommand = `dialplan add extension ${extension},${priority},${application} `;
+    rawCommand += `into ${context}${(replace !== false) ? " replace" : ""}`;
+
+    return await amiClient.postAction({
+        "action": "Command",
+        "Command": rawCommand
+    });
+
+}
+
+const smsExt= "reassembled-sms";
+const initSmsExt = "init-" + smsExt;
+
+
+async function dialplanNotifySms(
+    dongleId: string,
+    number: string,
+    spn: string,
+    imei: string,
+    imsi: string,
+    text: string
+): Promise<void> {
+
+    const assignations = [
+        `CALLERID(name)=${dongleId}`,
+        `CALLERID(num)=${number}`,
+        `CALLERID(ani)=${number}`,
+        `DONGLENAME=${dongleId}`,
+        `DONGLEPROVIDER=${spn}`,
+        `DONGLEIMEI=${imei}`,
+        `DONGLEIMSI=${imsi}`,
+        `DONGLENUMBER=${number}`
+    ];
+
+    let textSplit = strDivide(200, encodeURI(text));
+
+    assignations.push(`SMS_TEXT_SPLIT_COUNT=${textSplit.length}`);
+
+    for (let i = 0; i < textSplit.length; i++)
+        assignations.push(`SMS_TEXT_P${i}=${textSplit[i]}`);
+
+    
+    let truncatedText= text.substring(0, 2048);
+
+    if( truncatedText.length < text.length )
+        truncatedText+= " [ truncated ]";
+
+    let textTruncatedSplit= strDivide(200, encodeURI(truncatedText));
+
+    assignations.push(`SMS_URI_ENCODED=${textTruncatedSplit.shift()}`);
+
+    for( let part of textTruncatedSplit)
+        assignations.push(`SMS_URI_ENCODED=\${SMS_URI_ENCODED}${part}`);
+
+    assignations.push(`SMS=${JSON.stringify(text.substring(0,200))}`);
+
+    let priority = 1;
+
+    await addDialplanExtension(initSmsExt, priority++, "Answer()", dialplanContext);
+
+    for (let assignation of assignations)
+        await addDialplanExtension(initSmsExt, priority++, `Set(${assignation})`, dialplanContext);
+
+    await addDialplanExtension(initSmsExt, priority++, `GoTo(${smsExt},1)`, dialplanContext);
+
+    await amiClient.postAction({
+        "action": "originate",
+        "channel": `Local/${initSmsExt}@${dialplanContext}`,
+        "application": "Wait",
+        "data": "60"
+    });
+
+}
+
+
 
 amiClient.evtAmiUserEvent.attach(({ actionid, event, action, userevent, privilege, ...prettyEvt }) => debug(prettyEvt));
 
-activeModems.evtSet.attach(async ([{ modem }, imei]) => {
+activeModems.evtSet.attach(async ([{ modem, chanDongleDeviceName }, imei]) => {
 
     debug(`New active modem ${imei}`);
 
@@ -70,14 +157,14 @@ activeModems.evtSet.attach(async ([{ modem }, imei]) => {
             )
     );
 
-    modem.evtMessage.attach( async message => {
+    modem.evtMessage.attach(async message => {
 
-        let data= await Storage.read();
+        let data = await Storage.read();
 
-        let { imsi }= modem;
+        let { imsi } = modem;
 
-        if( !data.messages[imsi] ) 
-            data.messages[imsi]= [];
+        if (!data.messages[imsi])
+            data.messages[imsi] = [];
 
         data.messages[imsi].push(message);
 
@@ -94,6 +181,16 @@ activeModems.evtSet.attach(async ([{ modem }, imei]) => {
             )
         );
 
+        dialplanNotifySms(
+            chanDongleDeviceName,
+            number,
+            modem.serviceProviderName || "",
+            imei,
+            imsi,
+            text
+        );
+
+
     });
 
 
@@ -101,9 +198,9 @@ activeModems.evtSet.attach(async ([{ modem }, imei]) => {
 
 
 activeModems.evtDelete.attach(
-    ([{ modem }, imei]) => amiClient.postUserEventAction(
+    ([{ modem }]) => amiClient.postUserEventAction(
         Event.DongleDisconnect.buildAction(
-            imei,
+            modem.imei,
             modem.iccid,
             modem.imsi,
             modem.number || "",
@@ -122,7 +219,7 @@ lockedModems.evtSet.attach(
 
         let pin = data.pins[iccid || imei];
 
-        if (pin) 
+        if (pin)
             delete data.pins[iccid || imei];
 
         data.release();
@@ -180,13 +277,13 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
                 messageId.toString()
             )
         );
-    } else if(Request.UpdateNumber.matchEvt(evtRequest)) {
+    } else if (Request.UpdateNumber.matchEvt(evtRequest)) {
 
         let { imei } = evtRequest;
 
         if (!activeModems.has(imei))
             return replyError(`Dongle imei: ${imei} not found`);
-            
+
         let { modem, accessPoint } = activeModems.get(imei)!;
 
         await modem.writeNumber(evtRequest.number);
@@ -195,7 +292,7 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
             Response.buildAction(Request.UpdateNumber.keyword, actionid)
         );
 
-        let id= "Dongle" + imei.substring(0,3) + imei.substring(imei.length-3);
+        let id = "Dongle" + imei.substring(0, 3) + imei.substring(imei.length - 3);
 
         amiClient.postAction({
             "action": "DongleRestart",

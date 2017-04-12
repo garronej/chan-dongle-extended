@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+require("rejection-tracker")(__dirname);
+
 import * as program from "commander";
 import { AmiClient } from "chan-dongle-extended-client";
 import { spawn } from "child_process";
@@ -347,8 +349,9 @@ program.parse(process.argv);
 
 function assertServiceRunning(): Promise<void> {
 
-    //return new Promise<void>(resolve => resolve());
+    return new Promise<void>(resolve => resolve());
 
+    /*
     return new Promise<void>(resolve => {
         spawn("systemctl", ["status", "dongle-extended.service"])
             .stdout
@@ -365,6 +368,7 @@ function assertServiceRunning(): Promise<void> {
                 resolve();
             });
     });
+    */
 
 }
 

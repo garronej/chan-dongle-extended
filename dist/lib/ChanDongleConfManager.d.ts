@@ -6,6 +6,7 @@ export interface DongleConf {
     audioIfPath: string;
 }
 export declare namespace ChanDongleConfManager {
+    function getContext(): string;
     const init: ((callback?: (() => void) | undefined) => Promise<void>) & ExecQueue;
     const addDongle: (({id, dataIfPath, audioIfPath}: DongleConf, callback?: (() => void) | undefined) => Promise<void>) & ExecQueue;
     const removeDongle: ((dongleId: string, callback?: (() => void) | undefined) => Promise<void>) & ExecQueue;

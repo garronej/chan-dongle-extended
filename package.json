@@ -1,6 +1,6 @@
 {
   "name": "chan-dongle-extended",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
@@ -13,7 +13,7 @@
     "set-udev-rules": "node ./dist/bin/installer set-udev-rules",
     "enable-manager": "node ./dist/bin/installer enable-manager",
     "install-service": "node ./dist/bin/installer install-service",
-    "start": "DEBUG=_* node ./dist/lib/main"
+    "start": "node ./dist/bin/daemon"
   },
   "repository": {
     "type": "git",
@@ -21,7 +21,8 @@
   },
   "bin": {
     "dongle": "./dist/bin/cli.js",
-    "dongle-installer": "./dist/bin/installer.js"
+    "dongle-installer": "./dist/bin/installer.js",
+    "dongle-daemon": "./dist/bin/daemon.js"
   },
   "keywords": [
     "chan_dongle",
@@ -46,7 +47,8 @@
     "ts-events-extended": "garronej/ts-events-extended",
     "ts-exec-queue": "garronej/ts-exec-queue",
     "ts-gsm-modem": "garronej/ts-gsm-modem",
-    "ts-promisify": "garronej/ts-promisify"
+    "ts-promisify": "garronej/ts-promisify",
+    "rejection-tracker": "garronej/rejection-tracker"
   },
   "devDependencies": {
     "why-is-node-running": "^1.2.2",

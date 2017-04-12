@@ -22,13 +22,27 @@ export namespace ChanDongleConfManager {
 
     const cluster = {};
 
+    export function getContext(): string {
+
+        if( !config )
+            config= loadConfig();
+        
+        return config.defaults.context;
+
+    }
+
+    let isInit= false;
+
     export const init= execQueue(cluster, "WRITE",
         async (callback?: ()=> void): Promise<void> => {
 
-            if( config ) 
-                return callback!();
+            if( isInit )
+                callback!();
 
-            config= loadConfig();
+            isInit= true;
+
+            if( !config )
+                config = loadConfig();
 
             await update();
 
@@ -106,7 +120,7 @@ function loadConfig(): any {
             readFileSync(dongleConfPath, "utf8")
         );
 
-        defaults.disablesms = "yes";
+        defaults.autodeletesms= "false";
 
         return { general, defaults };
 

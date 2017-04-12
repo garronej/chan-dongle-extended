@@ -1,4 +1,6 @@
 #!/usr/bin/env node
+require("rejection-tracker")(__dirname);
+
 import { spawn } from "child_process";
 import * as readline from "readline";
 import { readFileSync, writeFile, unlinkSync, existsSync, chmodSync } from "fs";
@@ -45,6 +47,7 @@ program
             process.exit(-1);
         }
 
+        //TODO: see if module loaded instead
         if (!existsSync(dongleConfPath)) {
             console.log(`Error: Seems like chan_dongle is not installed, ${dongleConfPath} does not exist`.red);
             process.exit(-1);
@@ -63,15 +66,17 @@ program
             "enabled": "yes",
             "port": "5038",
             "bindaddr": "127.0.0.1",
-            "displayconnects": "no"
+            "displayconnects": "yes"
         };
 
         const dongle_ext_user = {
             "secret": Date.now().toString(),
             "deny": "0.0.0.0/0.0.0.0",
             "permit": "0.0.0.0/0.0.0.0",
-            "read": "system,user,config,agi",
-            "write": "system,user,config,agi",
+            //"read": "system,user,config,agi",
+            "read": "all",
+            //"write": "system,user,config,agi",
+            "write": "all",
             "writetimeout": "5000"
         };
 
@@ -86,6 +91,8 @@ program
         await writeFileAssertSuccess(managerConfPath, ini.stringify({ general, dongle_ext_user }));
 
         chmodSync(managerConfPath, "775");
+
+        //TODO create file if does not exist
         chmodSync(dongleConfPath, "777");
 
         await runShellCommand(`asterisk -rx`, ["core reload"]);
@@ -118,7 +125,7 @@ program
             ``,
             `[Service]`,
             `ExecStartPre=/bin/sh ${process.cwd()}/src/bin/chown_tty0tty.sh ${user} ${group}`,
-            `ExecStart=${node_execpath} ${process.cwd()}/dist/lib/main`,
+            `ExecStart=${node_execpath} ${process.cwd()}/dist/bin/daemon`,
             `PermissionsStartOnly=true`,
             `WorkingDirectory=${process.cwd()}`,
             `Restart=always`,

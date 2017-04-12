@@ -37,6 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
+require("rejection-tracker")(__dirname);
 var child_process_1 = require("child_process");
 var readline = require("readline");
 var fs_1 = require("fs");
@@ -75,6 +76,7 @@ program
                     console.log(("Error: " + chan_dongle_extended_client_1.asteriskConfDirPath + " does not exist").red);
                     process.exit(-1);
                 }
+                //TODO: see if module loaded instead
                 if (!fs_1.existsSync(ChanDongleConfManager_1.dongleConfPath)) {
                     console.log(("Error: Seems like chan_dongle is not installed, " + ChanDongleConfManager_1.dongleConfPath + " does not exist").red);
                     process.exit(-1);
@@ -96,14 +98,16 @@ program
                     "enabled": "yes",
                     "port": "5038",
                     "bindaddr": "127.0.0.1",
-                    "displayconnects": "no"
+                    "displayconnects": "yes"
                 };
                 dongle_ext_user = {
                     "secret": Date.now().toString(),
                     "deny": "0.0.0.0/0.0.0.0",
                     "permit": "0.0.0.0/0.0.0.0",
-                    "read": "system,user,config,agi",
-                    "write": "system,user,config,agi",
+                    //"read": "system,user,config,agi",
+                    "read": "all",
+                    //"write": "system,user,config,agi",
+                    "write": "all",
                     "writetimeout": "5000"
                 };
                 if (fs_1.existsSync(chan_dongle_extended_client_1.managerConfPath)) {
@@ -117,6 +121,7 @@ program
             case 1:
                 _a.sent();
                 fs_1.chmodSync(chan_dongle_extended_client_1.managerConfPath, "775");
+                //TODO create file if does not exist
                 fs_1.chmodSync(ChanDongleConfManager_1.dongleConfPath, "777");
                 return [4 /*yield*/, runShellCommand("asterisk -rx", ["core reload"])];
             case 2:
@@ -152,7 +157,7 @@ program
                     "",
                     "[Service]",
                     "ExecStartPre=/bin/sh " + process.cwd() + "/src/bin/chown_tty0tty.sh " + user + " " + group,
-                    "ExecStart=" + node_execpath + " " + process.cwd() + "/dist/lib/main",
+                    "ExecStart=" + node_execpath + " " + process.cwd() + "/dist/bin/daemon",
                     "PermissionsStartOnly=true",
                     "WorkingDirectory=" + process.cwd(),
                     "Restart=always",

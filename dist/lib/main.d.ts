@@ -4,6 +4,7 @@ import { TrackableMap } from "trackable-map";
 export declare const activeModems: TrackableMap<string, {
     modem: Modem;
     accessPoint: AccessPoint;
+    chanDongleDeviceName: string;
 }>;
 export declare const lockedModems: TrackableMap<string, {
     iccid: string;

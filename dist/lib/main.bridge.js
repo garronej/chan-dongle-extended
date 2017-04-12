@@ -47,18 +47,16 @@ var _debug = require("debug");
 var debug = _debug("_main.bridge");
 ChanDongleConfManager_1.ChanDongleConfManager.init();
 main_1.activeModems.evtSet.attach(function (_a) {
-    var _b = _a[0], modem = _b.modem, accessPoint = _b.accessPoint;
+    var _b = _a[0], modem = _b.modem, accessPoint = _b.accessPoint, chanDongleDeviceName = _b.chanDongleDeviceName;
     return __awaiter(_this, void 0, void 0, function () {
         var _this = this;
-        var voidModem, id, portVirtual;
+        var voidModem, portVirtual;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     voidModem = Tty0tty_1.Tty0tty.getPair();
-                    id = "Dongle" + modem.imei.substring(0, 3) + modem.imei.substring(modem.imei.length - 3);
-                    debug("Dongle id: " + id);
                     ChanDongleConfManager_1.ChanDongleConfManager.addDongle({
-                        "id": id,
+                        "id": chanDongleDeviceName,
                         "dataIfPath": voidModem.rightEnd,
                         "audioIfPath": accessPoint.audioIfPath
                     });
@@ -71,7 +69,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                             switch (_a.label) {
                                 case 0:
                                     debug("Modem terminate => closing bridge");
-                                    return [4 /*yield*/, ChanDongleConfManager_1.ChanDongleConfManager.removeDongle(id)];
+                                    return [4 /*yield*/, ChanDongleConfManager_1.ChanDongleConfManager.removeDongle(chanDongleDeviceName)];
                                 case 1:
                                     _a.sent();
                                     debug("Dongle removed from chan dongle config");

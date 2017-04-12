@@ -17,16 +17,14 @@ let debug = _debug("_main.bridge");
 
 ChanDongleConfManager.init();
 
-activeModems.evtSet.attach(async ([{ modem, accessPoint }]) => {
+activeModems.evtSet.attach(async ([{ modem, accessPoint, chanDongleDeviceName }]) => {
 
     let voidModem = Tty0tty.getPair();
 
-    let id = "Dongle" + modem.imei.substring(0,3) + modem.imei.substring(modem.imei.length-3);
 
-    debug(`Dongle id: ${id}`);
 
     ChanDongleConfManager.addDongle({
-        "id": id,
+        "id": chanDongleDeviceName,
         "dataIfPath": voidModem.rightEnd,
         "audioIfPath": accessPoint.audioIfPath
     });
@@ -43,7 +41,7 @@ activeModems.evtSet.attach(async ([{ modem, accessPoint }]) => {
 
         debug("Modem terminate => closing bridge");
 
-        await ChanDongleConfManager.removeDongle(id);
+        await ChanDongleConfManager.removeDongle(chanDongleDeviceName);
 
         debug("Dongle removed from chan dongle config");
 

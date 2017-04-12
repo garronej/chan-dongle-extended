@@ -49,13 +49,22 @@ var ChanDongleConfManager;
 (function (ChanDongleConfManager) {
     var _this = this;
     var cluster = {};
+    function getContext() {
+        if (!config)
+            config = loadConfig();
+        return config.defaults.context;
+    }
+    ChanDongleConfManager.getContext = getContext;
+    var isInit = false;
     ChanDongleConfManager.init = ts_exec_queue_1.execQueue(cluster, "WRITE", function (callback) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (config)
-                        return [2 /*return*/, callback()];
-                    config = loadConfig();
+                    if (isInit)
+                        callback();
+                    isInit = true;
+                    if (!config)
+                        config = loadConfig();
                     return [4 /*yield*/, update()];
                 case 1:
                     _a.sent();
@@ -133,7 +142,7 @@ function reloadChanDongle() {
 function loadConfig() {
     try {
         var _a = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(exports.dongleConfPath, "utf8")), general = _a.general, defaults = _a.defaults;
-        defaults.disablesms = "yes";
+        defaults.autodeletesms = "false";
         return { general: general, defaults: defaults };
     }
     catch (error) {

@@ -37,9 +37,9 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
+require("rejection-tracker")(__dirname);
 var program = require("commander");
 var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
-var child_process_1 = require("child_process");
 var storage = require("node-persist");
 var path = require("path");
 require("colors");
@@ -417,20 +417,25 @@ program
 }); });
 program.parse(process.argv);
 function assertServiceRunning() {
-    //return new Promise<void>(resolve => resolve());
-    return new Promise(function (resolve) {
-        child_process_1.spawn("systemctl", ["status", "dongle-extended.service"])
+    return new Promise(function (resolve) { return resolve(); });
+    /*
+    return new Promise<void>(resolve => {
+        spawn("systemctl", ["status", "dongle-extended.service"])
             .stdout
-            .once("data", function (data) {
-            var line = data.toString("utf8").split("\n")[2];
-            if (!line || !line.match(/^\ *Active:\ *active/)) {
-                console.log("Error: dongle-extended service is not running!".red);
-                console.log("run: sudo systemctl start dongle-extended");
-                process.exit(-1);
-            }
-            resolve();
-        });
+            .once("data", data => {
+
+                let line = data.toString("utf8").split("\n")[2];
+
+                if (!line || !line.match(/^\ *Active:\ *active/)) {
+                    console.log("Error: dongle-extended service is not running!".red);
+                    console.log("run: sudo systemctl start dongle-extended");
+                    process.exit(-1);
+                }
+
+                resolve();
+            });
     });
+    */
 }
 function getImei(options) {
     return __awaiter(this, void 0, void 0, function () {
