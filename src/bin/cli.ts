@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-require("rejection-tracker")(__dirname);
+require("rejection-tracker").main(__dirname, "..", "..");
 
 import * as program from "commander";
 import { AmiClient } from "chan-dongle-extended-client";
@@ -9,12 +9,6 @@ import * as path from "path";
 import "colors";
 
 const persistDir = path.join(__dirname, "..", "..", ".node-persist", "storage");
-
-process.on("unhandledRejection", error => {
-    console.log("INTERNAL ERROR AMI CLIENT");
-    console.log(error);
-    throw error;
-});
 
 program
     .version('0.0.1')

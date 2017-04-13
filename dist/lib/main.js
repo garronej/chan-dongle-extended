@@ -36,7 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-require("rejection-tracker")(__dirname, "..", "..");
+require("rejection-tracker").main(__dirname, "..", "..");
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var gsm_modem_connection_1 = require("gsm-modem-connection");
 var trackable_map_1 = require("trackable-map");
@@ -53,7 +53,7 @@ require("./main.bridge");
 gsm_modem_connection_1.Monitor.evtModemDisconnect.attach(function (accessPoint) { return debug("DISCONNECT: " + accessPoint.toString()); });
 gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { return __awaiter(_this, void 0, void 0, function () {
     var _this = this;
-    var _a, error, modem, hasSim, data, chanDongleDeviceName;
+    var _a, error, modem, hasSim, data, dongleName;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -88,8 +88,8 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
             case 4:
                 if (!hasSim)
                     return [2 /*return*/, debug("No sim!".red)];
-                chanDongleDeviceName = "Dongle" + modem.imei.substring(0, 3) + modem.imei.substring(modem.imei.length - 3);
-                exports.activeModems.set(modem.imei, { modem: modem, accessPoint: accessPoint, chanDongleDeviceName: chanDongleDeviceName });
+                dongleName = "Dongle" + modem.imei.substring(0, 3) + modem.imei.substring(modem.imei.length - 3);
+                exports.activeModems.set(modem.imei, { modem: modem, accessPoint: accessPoint, dongleName: dongleName });
                 modem.evtTerminate.attachOnce(function (error) { return __awaiter(_this, void 0, void 0, function () {
                     var timeout_1;
                     return __generator(this, function (_a) {

@@ -6,43 +6,78 @@ import * as path from "path";
 import { asteriskConfDirPath } from "chan-dongle-extended-client";
 
 import * as _debug from "debug";
-let debug= _debug("_ChanDongleConfManager");
+let debug = _debug("_ChanDongleConfManager");
 
 export const dongleConfPath = path.join(asteriskConfDirPath, "dongle.conf");
 
 export interface DongleConf {
-    id: string;
-    dataIfPath: string;
-    audioIfPath: string;
+    dongleName: string;
+    data: string;
+    audio: string;
 }
 
-let config: any = undefined;
+
+export const defaultConfig = {
+    "general": {
+        "interval": "10000000",
+        "jbenable": "yes",
+        "jbmaxsize": "100",
+        "jbimpl": "fixed"
+    },
+    "defaults": {
+        "context": "from-dongle",
+        "group": "0",
+        "rxgain": "0",
+        "txgain": "0",
+        "autodeletesms": "no",
+        "resetdongle": "yes",
+        "u2diag": "-1",
+        "usecallingpres": "yes",
+        "callingpres": "allowed_passed_screen",
+        "disablesms": "no",
+        "language": "en",
+        "smsaspdu": "yes",
+        "mindtmfgap": "45",
+        "mindtmfduration": "80",
+        "mindtmfinterval": "200",
+        "callwaiting": "auto",
+        "disable": "no",
+        "initstate": "start",
+        "exten": "+12345678987",
+        "dtmf": "relax"
+    }
+};
+
+
+
+export type ModuleConfiguration={
+    general: typeof defaultConfig['general'],
+    defaults: typeof defaultConfig['defaults'],
+    [dongleName: string]: {
+        audio?: string;
+        data?: string;
+    };
+};
+
+
+let config: ModuleConfiguration | undefined = undefined;
 
 export namespace ChanDongleConfManager {
 
     const cluster = {};
 
-    export function getContext(): string {
+    export function getConfig(): ModuleConfiguration {
 
-        if( !config )
-            config= loadConfig();
-        
-        return config.defaults.context;
+        if (!config) config = loadConfig();
+
+        return config;
 
     }
 
-    let isInit= false;
+    export const reset = execQueue(cluster, "WRITE",
+        async (callback?: () => void) => {
 
-    export const init= execQueue(cluster, "WRITE",
-        async (callback?: ()=> void): Promise<void> => {
-
-            if( isInit )
-                callback!();
-
-            isInit= true;
-
-            if( !config )
-                config = loadConfig();
+            if (!config) config = loadConfig();
 
             await update();
 
@@ -51,12 +86,15 @@ export namespace ChanDongleConfManager {
         }
     );
 
-    export const addDongle = execQueue(cluster, "WRITE",
-        async ({ id, dataIfPath, audioIfPath }: DongleConf, callback?: () => void): Promise<void> => {
 
-            config[id] = {
-                "audio": audioIfPath,
-                "data": dataIfPath
+    export const addDongle = execQueue(cluster, "WRITE",
+        async ({ dongleName, data, audio }: DongleConf, callback?: () => void) => {
+
+            if (!config) config = loadConfig();
+
+            config[dongleName] = {
+                "audio": audio,
+                "data": data
             };
 
             await update();
@@ -67,9 +105,11 @@ export namespace ChanDongleConfManager {
     );
 
     export const removeDongle = execQueue(cluster, "WRITE",
-        async (dongleId: string, callback?: () => void): Promise<void> => {
+        async (dongleName: string, callback?: () => void) => {
 
-            delete config[dongleId];
+            if (!config) config = loadConfig();
+
+            delete config[dongleName];
 
             await update();
 
@@ -78,7 +118,9 @@ export namespace ChanDongleConfManager {
         }
     );
 
+
 }
+
 
 function update(): Promise<void> {
 
@@ -101,7 +143,8 @@ function update(): Promise<void> {
 
 }
 
-async function reloadChanDongle(): Promise<void> {
+
+export async function reloadChanDongle() {
 
     await AmiClient.localhost().postAction({
         "action": "DongleReload",
@@ -112,7 +155,9 @@ async function reloadChanDongle(): Promise<void> {
 
 }
 
-function loadConfig(): any {
+
+
+function loadConfig(): ModuleConfiguration {
 
     try {
 
@@ -120,42 +165,15 @@ function loadConfig(): any {
             readFileSync(dongleConfPath, "utf8")
         );
 
-        defaults.autodeletesms= "false";
+        defaults.autodeletesms = "false";
+        defaults.disablesms= "no";
+        general.interval = "10000";
 
         return { general, defaults };
 
     } catch (error) {
 
-        return {
-            "general": {
-                "interval": "1",
-                "jbenable": "yes",
-                "jbmaxsize": "100",
-                "jbimpl": "fixed"
-            },
-            "defaults": {
-                "context": "from-dongle",
-                "group": "0",
-                "rxgain": "0",
-                "txgain": "0",
-                "autodeletesms": "yes",
-                "resetdongle": "yes",
-                "u2diag": "-1",
-                "usecallingpres": "yes",
-                "callingpres": "allowed_passed_screen",
-                "disablesms": "yes",
-                "language": "en",
-                "smsaspdu": "yes",
-                "mindtmfgap": "45",
-                "mindtmfduration": "80",
-                "mindtmfinterval": "200",
-                "callwaiting": "auto",
-                "disable": "no",
-                "initstate": "start",
-                "exten": "+12345678987",
-                "dtmf": "relax"
-            }
-        };
+        return defaultConfig;
 
     }
 }

@@ -37,18 +37,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-require("rejection-tracker")(__dirname);
+require("rejection-tracker").main(__dirname, "..", "..");
 var program = require("commander");
 var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
 var storage = require("node-persist");
 var path = require("path");
 require("colors");
 var persistDir = path.join(__dirname, "..", "..", ".node-persist", "storage");
-process.on("unhandledRejection", function (error) {
-    console.log("INTERNAL ERROR AMI CLIENT");
-    console.log(error);
-    throw error;
-});
 program
     .version('0.0.1');
 program

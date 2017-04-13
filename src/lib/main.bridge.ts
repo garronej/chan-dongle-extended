@@ -15,18 +15,16 @@ import * as pr from "ts-promisify";
 import * as _debug from "debug";
 let debug = _debug("_main.bridge");
 
-ChanDongleConfManager.init();
-
-activeModems.evtSet.attach(async ([{ modem, accessPoint, chanDongleDeviceName }]) => {
+activeModems.evtSet.attach(async ([{ modem, accessPoint, dongleName }]) => {
 
     let voidModem = Tty0tty.getPair();
 
 
 
     ChanDongleConfManager.addDongle({
-        "id": chanDongleDeviceName,
-        "dataIfPath": voidModem.rightEnd,
-        "audioIfPath": accessPoint.audioIfPath
+        dongleName,
+        "data": voidModem.rightEnd,
+        "audio": accessPoint.audioIfPath
     });
 
     let portVirtual = new SerialPortExt(
@@ -41,7 +39,7 @@ activeModems.evtSet.attach(async ([{ modem, accessPoint, chanDongleDeviceName }]
 
         debug("Modem terminate => closing bridge");
 
-        await ChanDongleConfManager.removeDongle(chanDongleDeviceName);
+        await ChanDongleConfManager.removeDongle(dongleName);
 
         debug("Dongle removed from chan dongle config");
 

@@ -1,4 +1,4 @@
-require("rejection-tracker")(__dirname, "..", "..");
+require("rejection-tracker").main(__dirname, "..", "..");
 
 import {
     Modem,
@@ -12,13 +12,10 @@ import { Storage } from "./Storage";
 import * as _debug from "debug";
 let debug = _debug("_main");
 
-
-
-
 export const activeModems = new TrackableMap<string, {
     modem: Modem;
     accessPoint: AccessPoint;
-    chanDongleDeviceName: string;
+    dongleName: string;
 }>();
 
 export const lockedModems = new TrackableMap<string, {
@@ -86,9 +83,9 @@ Monitor.evtModemConnect.attach(async accessPoint => {
 
 
 
-    let chanDongleDeviceName = "Dongle" + modem.imei.substring(0, 3) + modem.imei.substring(modem.imei.length - 3);
+    let dongleName = "Dongle" + modem.imei.substring(0, 3) + modem.imei.substring(modem.imei.length - 3);
 
-    activeModems.set(modem.imei, { modem, accessPoint, chanDongleDeviceName });
+    activeModems.set(modem.imei, { modem, accessPoint, dongleName });
 
 
     modem.evtTerminate.attachOnce( async error => {

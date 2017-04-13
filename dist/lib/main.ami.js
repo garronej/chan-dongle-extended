@@ -51,101 +51,20 @@ var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
 var Event = chan_dongle_extended_client_1.UserEvent.Event;
 var Response = chan_dongle_extended_client_1.UserEvent.Response;
 var Request = chan_dongle_extended_client_1.UserEvent.Request;
-var ChanDongleConfManager_1 = require("./ChanDongleConfManager");
-var dialplanContext = ChanDongleConfManager_1.ChanDongleConfManager.getContext();
+var Dialplan_1 = require("./Dialplan");
 var _debug = require("debug");
 var debug = _debug("_main.ami");
 var amiClient = chan_dongle_extended_client_1.AmiClient.localhost();
-function addDialplanExtension(extension, priority, application, context, replace) {
-    return __awaiter(this, void 0, void 0, function () {
-        var rawCommand;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    rawCommand = "dialplan add extension " + extension + "," + priority + "," + application + " ";
-                    rawCommand += "into " + context + ((replace !== false) ? " replace" : "");
-                    return [4 /*yield*/, amiClient.postAction({
-                            "action": "Command",
-                            "Command": rawCommand
-                        })];
-                case 1: return [2 /*return*/, _a.sent()];
-            }
-        });
-    });
-}
-var smsExt = "reassembled-sms";
-var initSmsExt = "init-" + smsExt;
-function dialplanNotifySms(dongleId, number, spn, imei, imsi, text) {
-    return __awaiter(this, void 0, void 0, function () {
-        var assignations, textSplit, i, truncatedText, textTruncatedSplit, _i, textTruncatedSplit_1, part, priority, _a, assignations_1, assignation;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    assignations = [
-                        "CALLERID(name)=" + dongleId,
-                        "CALLERID(num)=" + number,
-                        "CALLERID(ani)=" + number,
-                        "DONGLENAME=" + dongleId,
-                        "DONGLEPROVIDER=" + spn,
-                        "DONGLEIMEI=" + imei,
-                        "DONGLEIMSI=" + imsi,
-                        "DONGLENUMBER=" + number
-                    ];
-                    textSplit = chan_dongle_extended_client_1.strDivide(200, encodeURI(text));
-                    assignations.push("SMS_TEXT_SPLIT_COUNT=" + textSplit.length);
-                    for (i = 0; i < textSplit.length; i++)
-                        assignations.push("SMS_TEXT_P" + i + "=" + textSplit[i]);
-                    truncatedText = text.substring(0, 2048);
-                    if (truncatedText.length < text.length)
-                        truncatedText += " [ truncated ]";
-                    textTruncatedSplit = chan_dongle_extended_client_1.strDivide(200, encodeURI(truncatedText));
-                    assignations.push("SMS_URI_ENCODED=" + textTruncatedSplit.shift());
-                    for (_i = 0, textTruncatedSplit_1 = textTruncatedSplit; _i < textTruncatedSplit_1.length; _i++) {
-                        part = textTruncatedSplit_1[_i];
-                        assignations.push("SMS_URI_ENCODED=${SMS_URI_ENCODED}" + part);
-                    }
-                    assignations.push("SMS=" + JSON.stringify(text.substring(0, 200)));
-                    priority = 1;
-                    return [4 /*yield*/, addDialplanExtension(initSmsExt, priority++, "Answer()", dialplanContext)];
-                case 1:
-                    _b.sent();
-                    _a = 0, assignations_1 = assignations;
-                    _b.label = 2;
-                case 2:
-                    if (!(_a < assignations_1.length)) return [3 /*break*/, 5];
-                    assignation = assignations_1[_a];
-                    return [4 /*yield*/, addDialplanExtension(initSmsExt, priority++, "Set(" + assignation + ")", dialplanContext)];
-                case 3:
-                    _b.sent();
-                    _b.label = 4;
-                case 4:
-                    _a++;
-                    return [3 /*break*/, 2];
-                case 5: return [4 /*yield*/, addDialplanExtension(initSmsExt, priority++, "GoTo(" + smsExt + ",1)", dialplanContext)];
-                case 6:
-                    _b.sent();
-                    return [4 /*yield*/, amiClient.postAction({
-                            "action": "originate",
-                            "channel": "Local/" + initSmsExt + "@" + dialplanContext,
-                            "application": "Wait",
-                            "data": "60"
-                        })];
-                case 7:
-                    _b.sent();
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
+Dialplan_1.Dialplan.amiClient = amiClient;
 amiClient.evtAmiUserEvent.attach(function (_a) {
     var actionid = _a.actionid, event = _a.event, action = _a.action, userevent = _a.userevent, privilege = _a.privilege, prettyEvt = __rest(_a, ["actionid", "event", "action", "userevent", "privilege"]);
     return debug(prettyEvt);
 });
 main_1.activeModems.evtSet.attach(function (_a) {
-    var _b = _a[0], modem = _b.modem, chanDongleDeviceName = _b.chanDongleDeviceName, imei = _a[1];
+    var _b = _a[0], modem = _b.modem, dongleName = _b.dongleName, imei = _a[1];
     return __awaiter(_this, void 0, void 0, function () {
         var _this = this;
-        var data;
+        var data, imsi;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -168,21 +87,42 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         var messageId = _a.messageId, dischargeTime = _a.dischargeTime, isDelivered = _a.isDelivered, status = _a.status;
                         return amiClient.postUserEventAction(Event.MessageStatusReport.buildAction(imei, messageId.toString(), dischargeTime.toISOString(), isDelivered ? "true" : "false", status));
                     });
+                    imsi = modem.imsi;
+                    modem.evtMessageStatusReport.attach(function (statusReport) { return __awaiter(_this, void 0, void 0, function () {
+                        var messageId, dischargeTime, isDelivered, status;
+                        return __generator(this, function (_a) {
+                            messageId = statusReport.messageId, dischargeTime = statusReport.dischargeTime, isDelivered = statusReport.isDelivered, status = statusReport.status;
+                            amiClient.postUserEventAction(Event.MessageStatusReport.buildAction(imei, messageId.toString(), dischargeTime.toISOString(), isDelivered ? "true" : "false", status));
+                            Dialplan_1.Dialplan.notifyStatusReport({
+                                "name": dongleName,
+                                "number": modem.number || "",
+                                imei: imei,
+                                imsi: imsi,
+                                "provider": modem.serviceProviderName || ""
+                            }, statusReport);
+                            return [2 /*return*/];
+                        });
+                    }); });
                     modem.evtMessage.attach(function (message) { return __awaiter(_this, void 0, void 0, function () {
-                        var data, imsi, number, date, text;
+                        var data, number, date, text;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0: return [4 /*yield*/, Storage_1.Storage.read()];
                                 case 1:
                                     data = _a.sent();
-                                    imsi = modem.imsi;
                                     if (!data.messages[imsi])
                                         data.messages[imsi] = [];
                                     data.messages[imsi].push(message);
                                     data.release();
                                     number = message.number, date = message.date, text = message.text;
                                     amiClient.postUserEventAction(chan_dongle_extended_client_1.UserEvent.Event.NewMessage.buildAction(imei, number, date.toISOString(), text));
-                                    dialplanNotifySms(chanDongleDeviceName, number, modem.serviceProviderName || "", imei, imsi, text);
+                                    Dialplan_1.Dialplan.notifySms({
+                                        "name": dongleName,
+                                        "number": modem.number || "",
+                                        imei: imei,
+                                        imsi: imsi,
+                                        "provider": modem.serviceProviderName || ""
+                                    }, message);
                                     return [2 /*return*/];
                             }
                         });

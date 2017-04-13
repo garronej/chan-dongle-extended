@@ -44,25 +44,51 @@ var chan_dongle_extended_client_2 = require("chan-dongle-extended-client");
 var _debug = require("debug");
 var debug = _debug("_ChanDongleConfManager");
 exports.dongleConfPath = path.join(chan_dongle_extended_client_2.asteriskConfDirPath, "dongle.conf");
+exports.defaultConfig = {
+    "general": {
+        "interval": "10000000",
+        "jbenable": "yes",
+        "jbmaxsize": "100",
+        "jbimpl": "fixed"
+    },
+    "defaults": {
+        "context": "from-dongle",
+        "group": "0",
+        "rxgain": "0",
+        "txgain": "0",
+        "autodeletesms": "no",
+        "resetdongle": "yes",
+        "u2diag": "-1",
+        "usecallingpres": "yes",
+        "callingpres": "allowed_passed_screen",
+        "disablesms": "no",
+        "language": "en",
+        "smsaspdu": "yes",
+        "mindtmfgap": "45",
+        "mindtmfduration": "80",
+        "mindtmfinterval": "200",
+        "callwaiting": "auto",
+        "disable": "no",
+        "initstate": "start",
+        "exten": "+12345678987",
+        "dtmf": "relax"
+    }
+};
 var config = undefined;
 var ChanDongleConfManager;
 (function (ChanDongleConfManager) {
     var _this = this;
     var cluster = {};
-    function getContext() {
+    function getConfig() {
         if (!config)
             config = loadConfig();
-        return config.defaults.context;
+        return config;
     }
-    ChanDongleConfManager.getContext = getContext;
-    var isInit = false;
-    ChanDongleConfManager.init = ts_exec_queue_1.execQueue(cluster, "WRITE", function (callback) { return __awaiter(_this, void 0, void 0, function () {
+    ChanDongleConfManager.getConfig = getConfig;
+    ChanDongleConfManager.reset = ts_exec_queue_1.execQueue(cluster, "WRITE", function (callback) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (isInit)
-                        callback();
-                    isInit = true;
                     if (!config)
                         config = loadConfig();
                     return [4 /*yield*/, update()];
@@ -74,14 +100,16 @@ var ChanDongleConfManager;
         });
     }); });
     ChanDongleConfManager.addDongle = ts_exec_queue_1.execQueue(cluster, "WRITE", function (_a, callback) {
-        var id = _a.id, dataIfPath = _a.dataIfPath, audioIfPath = _a.audioIfPath;
+        var dongleName = _a.dongleName, data = _a.data, audio = _a.audio;
         return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
-                        config[id] = {
-                            "audio": audioIfPath,
-                            "data": dataIfPath
+                        if (!config)
+                            config = loadConfig();
+                        config[dongleName] = {
+                            "audio": audio,
+                            "data": data
                         };
                         return [4 /*yield*/, update()];
                     case 1:
@@ -92,11 +120,13 @@ var ChanDongleConfManager;
             });
         });
     });
-    ChanDongleConfManager.removeDongle = ts_exec_queue_1.execQueue(cluster, "WRITE", function (dongleId, callback) { return __awaiter(_this, void 0, void 0, function () {
+    ChanDongleConfManager.removeDongle = ts_exec_queue_1.execQueue(cluster, "WRITE", function (dongleName, callback) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    delete config[dongleId];
+                    if (!config)
+                        config = loadConfig();
+                    delete config[dongleName];
                     return [4 /*yield*/, update()];
                 case 1:
                     _a.sent();
@@ -139,43 +169,17 @@ function reloadChanDongle() {
         });
     });
 }
+exports.reloadChanDongle = reloadChanDongle;
 function loadConfig() {
     try {
         var _a = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(exports.dongleConfPath, "utf8")), general = _a.general, defaults = _a.defaults;
         defaults.autodeletesms = "false";
+        defaults.disablesms = "no";
+        general.interval = "10000";
         return { general: general, defaults: defaults };
     }
     catch (error) {
-        return {
-            "general": {
-                "interval": "1",
-                "jbenable": "yes",
-                "jbmaxsize": "100",
-                "jbimpl": "fixed"
-            },
-            "defaults": {
-                "context": "from-dongle",
-                "group": "0",
-                "rxgain": "0",
-                "txgain": "0",
-                "autodeletesms": "yes",
-                "resetdongle": "yes",
-                "u2diag": "-1",
-                "usecallingpres": "yes",
-                "callingpres": "allowed_passed_screen",
-                "disablesms": "yes",
-                "language": "en",
-                "smsaspdu": "yes",
-                "mindtmfgap": "45",
-                "mindtmfduration": "80",
-                "mindtmfinterval": "200",
-                "callwaiting": "auto",
-                "disable": "no",
-                "initstate": "start",
-                "exten": "+12345678987",
-                "dtmf": "relax"
-            }
-        };
+        return exports.defaultConfig;
     }
 }
 //# sourceMappingURL=ChanDongleConfManager.js.map

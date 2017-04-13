@@ -21,6 +21,7 @@ $ sudo apt-get install build-essential python-pip libudev-dev && sudo pip instal
 Follow the instructions on: https://github.com/garronej/tty0tty
 
 * Instating Node.js: 
+Or do it your way...
 Follow the instructions on: https://gist.github.com/garronej/6a1eecb9dde9d9184014c5d25a9b6d1c
 
 * Install the module
@@ -30,5 +31,5 @@ $ sudo npm install --unsafe-perm -g garronej/chan-dongle-extended
 
 #Uninstall
 ``` bash
-$ sudo dongle-installer remove-udev-rules && sudo dongle-installer uninstall-service && sudo npm uninstall --unsafe-perm -g chan-dongle-extended
+$ sudo uninstall-dongle-extended
 ```
