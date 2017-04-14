@@ -54,23 +54,6 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
         )
     );
 
-    modem.evtMessageStatusReport.attach(
-        ({
-            messageId,
-            dischargeTime,
-            isDelivered,
-            status
-        }) => amiClient.postUserEventAction(
-                Event.MessageStatusReport.buildAction(
-                    imei,
-                    messageId.toString(),
-                    dischargeTime.toISOString(),
-                    isDelivered ? "true" : "false",
-                    status
-                )
-            )
-    );
-
     let { imsi } = modem;
     
     modem.evtMessageStatusReport.attach(async statusReport => {

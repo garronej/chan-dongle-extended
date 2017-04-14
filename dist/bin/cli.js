@@ -202,15 +202,16 @@ program
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("-n, --number [number]", "target phone number")
     .option("-t, --text [text]", "Text of the message")
+    .option("-ut, --uri-encoded-text [uriEncodedText]", "Text URI encoded")
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var number, text, imei, _a, error, messageId;
+    var number, text, uriEncodedText, imei, _a, error, messageId;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0: return [4 /*yield*/, assertServiceRunning()];
             case 1:
                 _b.sent();
-                number = options.number, text = options.text;
-                if (!number || !text) {
+                number = options.number, text = options.text, uriEncodedText = options.uriEncodedText;
+                if (!number || (!text && !uriEncodedText)) {
                     console.log("Error: command malformed".red);
                     console.log(options.optionHelp());
                     process.exit(-1);
@@ -218,7 +219,7 @@ program
                 return [4 /*yield*/, getImei(options)];
             case 2:
                 imei = _b.sent();
-                text = JSON.parse("\"" + text + "\"");
+                text = uriEncodedText ? decodeURI(uriEncodedText) : JSON.parse("\"" + text + "\"");
                 return [4 /*yield*/, chan_dongle_extended_client_1.AmiClient
                         .localhost()
                         .sendMessage(imei, number, text)];

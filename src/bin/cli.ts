@@ -141,13 +141,14 @@ program
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("-n, --number [number]", "target phone number")
     .option("-t, --text [text]", "Text of the message")
+    .option("-ut, --uri-encoded-text [uriEncodedText]", "Text URI encoded")
     .action(async options => {
 
         await assertServiceRunning();
 
-        let { number, text } = options;
+        let { number, text, uriEncodedText } = options;
 
-        if (!number || !text) {
+        if (!number || (!text && !uriEncodedText)) {
             console.log("Error: command malformed".red);
             console.log(options.optionHelp());
             process.exit(-1);
@@ -155,7 +156,7 @@ program
 
         let imei = await getImei(options);
 
-        text = JSON.parse(`"${text}"`);
+        text = uriEncodedText ? decodeURI(uriEncodedText) : JSON.parse(`"${text}"`);
 
         let [error, messageId] = await AmiClient
             .localhost()

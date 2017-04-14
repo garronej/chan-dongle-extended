@@ -83,10 +83,6 @@ main_1.activeModems.evtSet.attach(function (_a) {
                     _a.label = 2;
                 case 2:
                     amiClient.postUserEventAction(Event.NewActiveDongle.buildAction(imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || ""));
-                    modem.evtMessageStatusReport.attach(function (_a) {
-                        var messageId = _a.messageId, dischargeTime = _a.dischargeTime, isDelivered = _a.isDelivered, status = _a.status;
-                        return amiClient.postUserEventAction(Event.MessageStatusReport.buildAction(imei, messageId.toString(), dischargeTime.toISOString(), isDelivered ? "true" : "false", status));
-                    });
                     imsi = modem.imsi;
                     modem.evtMessageStatusReport.attach(function (statusReport) { return __awaiter(_this, void 0, void 0, function () {
                         var messageId, dischargeTime, isDelivered, status;
