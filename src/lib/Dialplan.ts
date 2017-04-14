@@ -47,7 +47,7 @@ export namespace Dialplan {
 
         assignations= [ 
             ...assignations, 
-            `STATUS_REPORT_DISCHARGE_TIME=${dischargeTime.toUTCString()}`,
+            `STATUS_REPORT_DISCHARGE_TIME=${dischargeTime.toISOString()}`,
             `STATUS_REPORT_IS_DELIVERED=${isDelivered}`,
             `STATUS_REPORT_ID=${messageId}`,
             `STATUS_REPORT_STATUS=${status}`
@@ -78,7 +78,7 @@ export namespace Dialplan {
             `CALLERID(num)=${message.number}`,
             `CALLERID(ani)=${message.number}`,
             `SMS_NUMBER=${message.number}`,
-            `SMS_DATE=${message.date.toUTCString()}`
+            `SMS_DATE=${message.date.toISOString()}`
         ];
 
         let { text }= message;
@@ -108,26 +108,6 @@ export namespace Dialplan {
 
     }
 
-    async function addDialplanExtension(
-        extension: string,
-        priority: number,
-        application: string,
-        context: string,
-        replace?: boolean
-    ) {
-
-        let rawCommand = [
-            `dialplan add extension ${extension},${priority},${application}`,
-            ` into ${context}${(replace !== false) ? " replace" : ""}`
-        ].join("");
-
-        await amiClient.postAction({
-            "action": "Command",
-            "Command": rawCommand
-        });
-
-    }
-
     async function assignAndRun(assignations: string[], gotoExtension: string){
 
         let priority = 1;
@@ -150,6 +130,29 @@ export namespace Dialplan {
 
 
     }
+
+    
+
+    async function addDialplanExtension(
+        extension: string,
+        priority: number,
+        action: string,
+        context: string,
+        replace?: boolean
+    ) {
+
+        let rawCommand = [
+            `dialplan add extension ${extension},${priority},${action}`,
+            ` into ${context}${(replace !== false) ? " replace" : ""}`
+        ].join("");
+
+        await amiClient.postAction({
+            "action": "Command",
+            "Command": rawCommand
+        }).promise;
+
+    }
+
 
 
 

@@ -96,9 +96,8 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
                         switch (_a.label) {
                             case 0:
                                 debug("Modem evt terminate");
-                                if (error) {
+                                if (error)
                                     debug("terminate reason: ", error);
-                                }
                                 exports.activeModems.delete(modem.imei);
                                 if (!(gsm_modem_connection_1.Monitor.connectedModems.indexOf(accessPoint) >= 0)) return [3 /*break*/, 4];
                                 debug("Modem still connected");

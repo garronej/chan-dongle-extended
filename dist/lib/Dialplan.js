@@ -60,7 +60,7 @@ var Dialplan;
                         ];
                         dischargeTime = statusReport.dischargeTime, isDelivered = statusReport.isDelivered, messageId = statusReport.messageId, status = statusReport.status;
                         assignations = assignations.concat([
-                            "STATUS_REPORT_DISCHARGE_TIME=" + dischargeTime.toUTCString(),
+                            "STATUS_REPORT_DISCHARGE_TIME=" + dischargeTime.toISOString(),
                             "STATUS_REPORT_IS_DELIVERED=" + isDelivered,
                             "STATUS_REPORT_ID=" + messageId,
                             "STATUS_REPORT_STATUS=" + status
@@ -93,7 +93,7 @@ var Dialplan;
                             "CALLERID(num)=" + message.number,
                             "CALLERID(ani)=" + message.number,
                             "SMS_NUMBER=" + message.number,
-                            "SMS_DATE=" + message.date.toUTCString()
+                            "SMS_DATE=" + message.date.toISOString()
                         ]);
                         text = message.text;
                         textSplit = chan_dongle_extended_client_1.strDivide(200, encodeURI(text));
@@ -119,27 +119,6 @@ var Dialplan;
         });
     }
     Dialplan.notifySms = notifySms;
-    function addDialplanExtension(extension, priority, application, context, replace) {
-        return __awaiter(this, void 0, void 0, function () {
-            var rawCommand;
-            return __generator(this, function (_a) {
-                switch (_a.label) {
-                    case 0:
-                        rawCommand = [
-                            "dialplan add extension " + extension + "," + priority + "," + application,
-                            " into " + context + ((replace !== false) ? " replace" : "")
-                        ].join("");
-                        return [4 /*yield*/, Dialplan.amiClient.postAction({
-                                "action": "Command",
-                                "Command": rawCommand
-                            })];
-                    case 1:
-                        _a.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    }
     function assignAndRun(assignations, gotoExtension) {
         return __awaiter(this, void 0, void 0, function () {
             var priority, initExtension, _i, assignations_1, assignation;
@@ -173,6 +152,27 @@ var Dialplan;
                                 "data": "60"
                             })];
                     case 7:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }
+    function addDialplanExtension(extension, priority, action, context, replace) {
+        return __awaiter(this, void 0, void 0, function () {
+            var rawCommand;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        rawCommand = [
+                            "dialplan add extension " + extension + "," + priority + "," + action,
+                            " into " + context + ((replace !== false) ? " replace" : "")
+                        ].join("");
+                        return [4 /*yield*/, Dialplan.amiClient.postAction({
+                                "action": "Command",
+                                "Command": rawCommand
+                            }).promise];
+                    case 1:
                         _a.sent();
                         return [2 /*return*/];
                 }

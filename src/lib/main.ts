@@ -92,9 +92,8 @@ Monitor.evtModemConnect.attach(async accessPoint => {
 
         debug("Modem evt terminate");
 
-        if( error ){
+        if( error )
             debug("terminate reason: ", error);
-        }
 
         activeModems.delete(modem.imei);
 

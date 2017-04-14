@@ -9,12 +9,16 @@ function cleanup {
 
     echo process stoped, running poststop
 
+    sleep 2
+
     sudo node $SCRIPTS poststop
 
 }
 trap cleanup EXIT
 
 sudo systemctl stop dongle-extended
+
+sleep 2
 
 sudo node $SCRIPTS prestart
 
