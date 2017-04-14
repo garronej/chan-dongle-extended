@@ -45,8 +45,6 @@ var path = require("path");
 require("colors");
 var persistDir = path.join(__dirname, "..", "..", ".node-persist", "storage");
 program
-    .version('0.0.1');
-program
     .command("list")
     .description("List active dongle")
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {

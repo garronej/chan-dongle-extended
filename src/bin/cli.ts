@@ -11,9 +11,6 @@ import "colors";
 const persistDir = path.join(__dirname, "..", "..", ".node-persist", "storage");
 
 program
-    .version('0.0.1')
-
-program
     .command("list")
     .description("List active dongle")
     .action(async options => {
