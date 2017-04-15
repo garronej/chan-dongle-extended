@@ -1,18 +1,34 @@
 # chan-dongle-extended
 
+NOTE: This work in progress the API is likely to change greatly.
+
 An extension for chan_dongle that feature: 
 
-* PIN codes ( no need to disable LOCK anymore )
-* Multipart SMS
-* SMS status report ( confirm that SMS have been successfully delivered )
-* SIM phonebook ( read and write contacts in SIM storage )
-* Update SIM phone number ( if not wrote by the telecom operator )
-* Auto configuration of devices ( no need to configure devices in dongle.conf anymore)
+* PIN/PUK codes:
+     No need to disable LOCK anymore, list connected dongle that need to be
+     unlocked, provide a PIN or PUK, if the unlocking was successful the module
+     will save the code for the SIM so you don't have to provide it again.
+* Multipart SMS: 
+    Reliably Send and receive multipart SMS, fix all encoding problems.
+* SMS status report:
+    Confirm that SMS have been successfully delivered.
+* SIM phonebook:
+    Read and write contacts in SIM storage.
+* Write own number on SIM memory.
+* Auto configuration of devices:
+    No need to configure devices in dongle.conf anymore,
+    when a supported device is connected it is automatically detected
+    by the module and instantiated for you.
 
 This module is a middleware between the Huawei devices and chan_dongle. 
-It will work with any version of chan dongle.
+It will work with any version of asterisk/chan_dongle.
 
-You interact with the daemon via the cli tool `dongle`
+There is two way to interact with the module: 
+
+* For local usage: The cli tool.
+* For remote usage: Asterisk Manager
+
+The cli tool is accessible via the unix command: `dongle`
 
 ````shell
 $ dongle --help
@@ -37,7 +53,6 @@ Usage: dongle [options] [command]
 More info on every command by typing e.g: `dongle unlock --help`
 
 All the listed commands are accessible via Asterisk Manager ( documentation incoming )
-
 The module has a specific JavaScript client: `garronej/chan-dongle-extended-client`
 
 #Dialplan example:
@@ -93,7 +108,7 @@ same = n,NoOp(STATUS_REPORT_STATUS=${STATUS_REPORT_STATUS})
     -- On fait de pareils dévouements.
     -- 🐵🙈🙉🙊") in new stack
 
-
+    ...
 
     -- Executing [sms-status-report@from-dongle:1] NoOp("Local/init-sms-status-report@from-dongle-00000054;2", "sms-status-report") in new stack
     -- Executing [sms-status-report@from-dongle:2] NoOp("Local/init-sms-status-report@from-dongle-00000054;2", "STATUS_REPORT_DISCHARGE_TIME=2017-04-14T21:33:54.000Z") in new stack
