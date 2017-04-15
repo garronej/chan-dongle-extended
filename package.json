@@ -1,12 +1,13 @@
 {
   "name": "chan-dongle-extended",
-  "version": "1.3.3",
+  "version": "1.3.4",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
   "scripts": {
-    "tsc": "./node_modules/.bin/tsc -p ./tsconfig.json",
-    "postinstall": "node ./dist/bin/scripts postinstall",
+    "tsc": "./node_modules/.bin/tsc -p ./tsconfig.json && chmod +x ./dist/bin/*.js",
+    "postinstall": "if [ $(id -u) -eq 0  ]; then (node ./dist/bin/scripts postinstall); else (sudo node ./dist/bin/scripts postinstall); fi",
+    "preuninstall": "if [ $(id -u) -eq 0  ]; then (node ./dist/bin/scripts preuninstall); else (sudo node ./dist/bin/scripts preuninstall); fi",
     "start": "/bin/bash ./src/bin/start.sh"
   },
   "repository": {
@@ -15,7 +16,7 @@
   },
   "bin": {
     "dongle": "./dist/bin/cli.js",
-    "uninstall-dongle-extended": "./src/bin/uninstall.sh"
+    "dongle-extended-admin": "./dist/bin/scripts.js"
   },
   "keywords": [
     "chan_dongle",

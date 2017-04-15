@@ -3,7 +3,6 @@ require("rejection-tracker").main(__dirname, "..", "..");
 
 import * as program from "commander";
 import { AmiClient } from "chan-dongle-extended-client";
-import { spawn } from "child_process";
 import * as storage from "node-persist";
 import * as path from "path";
 import "colors";
@@ -14,8 +13,6 @@ program
     .command("list")
     .description("List active dongle")
     .action(async options => {
-
-        await assertServiceRunning();
 
         let client = AmiClient.localhost();
 
@@ -31,8 +28,6 @@ program
     .command("list-locked")
     .description("List PIN/PUK locked dongles")
     .action(async options => {
-
-        await assertServiceRunning();
 
         let client = AmiClient.localhost();
 
@@ -91,8 +86,6 @@ program
     .option("--puk [puk-newPin]", "PUK ( 8 digits ) and new PIN eg. --puk 12345678-0000")
     .action(async options => {
 
-        await assertServiceRunning();
-
         let imei = await getImei(options);
 
         if (!options.pin && !options.puk) {
@@ -144,8 +137,6 @@ program
     .option("-ut, --uri-encoded-text [uriEncodedText]", "Text URI encoded")
     .action(async options => {
 
-        await assertServiceRunning();
-
         let { number, text, uriEncodedText } = options;
 
         if (!number || (!text && !uriEncodedText)) {
@@ -167,6 +158,7 @@ program
             process.exit(-1);
         }
 
+
         console.log(messageId);
 
         process.exit(0);
@@ -179,8 +171,6 @@ program
     .description("Get SIM card phonebook")
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .action(async options => {
-
-        await assertServiceRunning();
 
         let imei = await getImei(options);
 
@@ -207,8 +197,6 @@ program
     .option("--name [name]", "Contact's name")
     .option("--number [number]", "Contact's number")
     .action(async options => {
-
-        await assertServiceRunning();
 
         let { name, number } = options;
 
@@ -242,8 +230,6 @@ program
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("--number [number]", "SIM card phone number")
     .action(async options => {
-
-        await assertServiceRunning();
 
         let { number } = options;
 
@@ -279,8 +265,6 @@ program
     .option("--index [index]", "Contact's index")
     .action(async options => {
 
-        await assertServiceRunning();
-
         let { index } = options;
 
         if (!index) {
@@ -314,8 +298,6 @@ program
     .option("-f, --flush", "Whether or not erasing retrieved messages")
     .action(async options => {
 
-        await assertServiceRunning();
-
         let flush: boolean = (options.flush === true);
 
         let imei = await getImei(options);
@@ -339,30 +321,6 @@ program
 
 program.parse(process.argv);
 
-function assertServiceRunning(): Promise<void> {
-
-    return new Promise<void>(resolve => resolve());
-
-    /*
-    return new Promise<void>(resolve => {
-        spawn("systemctl", ["status", "dongle-extended.service"])
-            .stdout
-            .once("data", data => {
-
-                let line = data.toString("utf8").split("\n")[2];
-
-                if (!line || !line.match(/^\ *Active:\ *active/)) {
-                    console.log("Error: dongle-extended service is not running!".red);
-                    console.log("run: sudo systemctl start dongle-extended");
-                    process.exit(-1);
-                }
-
-                resolve();
-            });
-    });
-    */
-
-}
 
 async function getImei(options: { imei: string | undefined }): Promise<string> {
 

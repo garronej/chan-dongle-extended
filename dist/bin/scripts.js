@@ -54,7 +54,12 @@ var ChanDongleConfManager_1 = require("../lib/ChanDongleConfManager");
 require("colors");
 program
     .command("postinstall")
-    .description("Must be run as administrator after installing dependencies")
+    .description([
+    "Checks that Asterisk and chan_dongle and tty0tty are installed",
+    "Create udev rules for granting R/W access on dongles on connect",
+    "Enable Asterisk Manager and create a user for this module",
+    "Register a systemd service: dongle-extended.service"
+].join(""))
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -80,7 +85,7 @@ program
 }); });
 program
     .command("prestart")
-    .description("Must be run as root before starting the daemon")
+    .description("Reset chan_dongle, give perms to dev/tnt* devices (tty0tty)")
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -97,7 +102,7 @@ program
 }); });
 program
     .command("poststop")
-    .description("Must be run as root after the daemon is stopped")
+    .description("Reset chan_dongle")
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -110,8 +115,8 @@ program
     });
 }); });
 program
-    .command("uninstall")
-    .description("before uninstall module, run as root")
+    .command("preuninstall")
+    .description("Remove systemd service, remove udev rules")
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {

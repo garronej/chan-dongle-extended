@@ -138,5 +138,5 @@ PS: You don't need --unsafe-perm if you use npm link
 
 #Uninstall
 ``` bash
-$ sudo uninstall-dongle-extended
+$ sudo dongle-extended-admin preuninstall && sudo  npm uninstall --unsafe-perm -g chan-dongle-extended
 ```

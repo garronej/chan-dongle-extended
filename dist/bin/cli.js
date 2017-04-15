@@ -51,12 +51,10 @@ program
     var client, dongles;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, assertServiceRunning()];
-            case 1:
-                _a.sent();
+            case 0:
                 client = chan_dongle_extended_client_1.AmiClient.localhost();
                 return [4 /*yield*/, client.getActiveDongles()];
-            case 2:
+            case 1:
                 dongles = _a.sent();
                 console.log(JSON.stringify(dongles, null, 2));
                 process.exit(0);
@@ -71,12 +69,10 @@ program
     var client, locked;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, assertServiceRunning()];
-            case 1:
-                _a.sent();
+            case 0:
                 client = chan_dongle_extended_client_1.AmiClient.localhost();
                 return [4 /*yield*/, client.getLockedDongles()];
-            case 2:
+            case 1:
                 locked = _a.sent();
                 console.log(JSON.stringify(locked, null, 2));
                 process.exit(0);
@@ -155,11 +151,8 @@ program
     var imei, client, error, match, puk, newPin;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, assertServiceRunning()];
+            case 0: return [4 /*yield*/, getImei(options)];
             case 1:
-                _a.sent();
-                return [4 /*yield*/, getImei(options)];
-            case 2:
                 imei = _a.sent();
                 if (!options.pin && !options.puk) {
                     console.log("Error: command malformed".red);
@@ -167,12 +160,12 @@ program
                     process.exit(-1);
                 }
                 client = chan_dongle_extended_client_1.AmiClient.localhost();
-                if (!options.pin) return [3 /*break*/, 4];
+                if (!options.pin) return [3 /*break*/, 3];
                 return [4 /*yield*/, client.unlockDongle(imei, options.pin)];
-            case 3:
+            case 2:
                 error = _a.sent();
-                return [3 /*break*/, 6];
-            case 4:
+                return [3 /*break*/, 5];
+            case 3:
                 match = options.puk.match(/^([0-9]{8})-([0-9]{4})$/);
                 if (!match) {
                     console.log("Error: puk-newPin malformed".red);
@@ -182,10 +175,10 @@ program
                 puk = match[1];
                 newPin = match[2];
                 return [4 /*yield*/, client.unlockDongle(imei, puk, newPin)];
-            case 5:
+            case 4:
                 error = _a.sent();
-                _a.label = 6;
-            case 6:
+                _a.label = 5;
+            case 5:
                 if (error) {
                     console.log(error.message.red);
                     process.exit(-1);
@@ -207,9 +200,7 @@ program
     var number, text, uriEncodedText, imei, _a, error, messageId;
     return __generator(this, function (_b) {
         switch (_b.label) {
-            case 0: return [4 /*yield*/, assertServiceRunning()];
-            case 1:
-                _b.sent();
+            case 0:
                 number = options.number, text = options.text, uriEncodedText = options.uriEncodedText;
                 if (!number || (!text && !uriEncodedText)) {
                     console.log("Error: command malformed".red);
@@ -217,13 +208,13 @@ program
                     process.exit(-1);
                 }
                 return [4 /*yield*/, getImei(options)];
-            case 2:
+            case 1:
                 imei = _b.sent();
                 text = uriEncodedText ? decodeURI(uriEncodedText) : JSON.parse("\"" + text + "\"");
                 return [4 /*yield*/, chan_dongle_extended_client_1.AmiClient
                         .localhost()
                         .sendMessage(imei, number, text)];
-            case 3:
+            case 2:
                 _a = _b.sent(), error = _a[0], messageId = _a[1];
                 if (error) {
                     console.log(error.message.red);
@@ -243,16 +234,13 @@ program
     var imei, _a, error, phonebook;
     return __generator(this, function (_b) {
         switch (_b.label) {
-            case 0: return [4 /*yield*/, assertServiceRunning()];
+            case 0: return [4 /*yield*/, getImei(options)];
             case 1:
-                _b.sent();
-                return [4 /*yield*/, getImei(options)];
-            case 2:
                 imei = _b.sent();
                 return [4 /*yield*/, chan_dongle_extended_client_1.AmiClient
                         .localhost()
                         .getSimPhonebook(imei)];
-            case 3:
+            case 2:
                 _a = _b.sent(), error = _a[0], phonebook = _a[1];
                 if (error) {
                     console.log(error.message.red);
@@ -275,9 +263,7 @@ program
     var name, number, imei, _a, error, contact;
     return __generator(this, function (_b) {
         switch (_b.label) {
-            case 0: return [4 /*yield*/, assertServiceRunning()];
-            case 1:
-                _b.sent();
+            case 0:
                 name = options.name, number = options.number;
                 if (!name || !number) {
                     console.log("Error: command malformed".red);
@@ -285,12 +271,12 @@ program
                     process.exit(-1);
                 }
                 return [4 /*yield*/, getImei(options)];
-            case 2:
+            case 1:
                 imei = _b.sent();
                 return [4 /*yield*/, chan_dongle_extended_client_1.AmiClient
                         .localhost()
                         .createContact(imei, name, number)];
-            case 3:
+            case 2:
                 _a = _b.sent(), error = _a[0], contact = _a[1];
                 if (error) {
                     console.log(error.message.red);
@@ -312,9 +298,7 @@ program
     var number, imei, error;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, assertServiceRunning()];
-            case 1:
-                _a.sent();
+            case 0:
                 number = options.number;
                 if (!number) {
                     console.log("Error: command malformed".red);
@@ -322,12 +306,12 @@ program
                     process.exit(-1);
                 }
                 return [4 /*yield*/, getImei(options)];
-            case 2:
+            case 1:
                 imei = _a.sent();
                 return [4 /*yield*/, chan_dongle_extended_client_1.AmiClient
                         .localhost()
                         .updateNumber(imei, number)];
-            case 3:
+            case 2:
                 error = _a.sent();
                 if (error) {
                     console.log(error.message.red);
@@ -349,9 +333,7 @@ program
     var index, imei, error;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, assertServiceRunning()];
-            case 1:
-                _a.sent();
+            case 0:
                 index = options.index;
                 if (!index) {
                     console.log("Error: command malformed".red);
@@ -359,12 +341,12 @@ program
                     process.exit(-1);
                 }
                 return [4 /*yield*/, getImei(options)];
-            case 2:
+            case 1:
                 imei = _a.sent();
                 return [4 /*yield*/, chan_dongle_extended_client_1.AmiClient
                         .localhost()
                         .deleteContact(imei, parseInt(index))];
-            case 3:
+            case 2:
                 error = _a.sent();
                 if (error) {
                     console.log(error.message.red);
@@ -386,17 +368,15 @@ program
     var flush, imei, _a, error, messages;
     return __generator(this, function (_b) {
         switch (_b.label) {
-            case 0: return [4 /*yield*/, assertServiceRunning()];
-            case 1:
-                _b.sent();
+            case 0:
                 flush = (options.flush === true);
                 return [4 /*yield*/, getImei(options)];
-            case 2:
+            case 1:
                 imei = _b.sent();
                 return [4 /*yield*/, chan_dongle_extended_client_1.AmiClient
                         .localhost()
                         .getMessages(imei, flush)];
-            case 3:
+            case 2:
                 _a = _b.sent(), error = _a[0], messages = _a[1];
                 if (error) {
                     console.log(error.message.red);
@@ -410,27 +390,6 @@ program
     });
 }); });
 program.parse(process.argv);
-function assertServiceRunning() {
-    return new Promise(function (resolve) { return resolve(); });
-    /*
-    return new Promise<void>(resolve => {
-        spawn("systemctl", ["status", "dongle-extended.service"])
-            .stdout
-            .once("data", data => {
-
-                let line = data.toString("utf8").split("\n")[2];
-
-                if (!line || !line.match(/^\ *Active:\ *active/)) {
-                    console.log("Error: dongle-extended service is not running!".red);
-                    console.log("run: sudo systemctl start dongle-extended");
-                    process.exit(-1);
-                }
-
-                resolve();
-            });
-    });
-    */
-}
 function getImei(options) {
     return __awaiter(this, void 0, void 0, function () {
         var imei;

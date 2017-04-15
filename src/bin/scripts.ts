@@ -21,7 +21,12 @@ import "colors";
 
 program
     .command("postinstall")
-    .description("Must be run as administrator after installing dependencies")
+    .description([
+        "Checks that Asterisk and chan_dongle and tty0tty are installed",
+        "Create udev rules for granting R/W access on dongles on connect",
+        "Enable Asterisk Manager and create a user for this module",
+        "Register a systemd service: dongle-extended.service"
+    ].join(""))
     .action(async () => {
 
         await checkDependencies();
@@ -36,7 +41,7 @@ program
 
 program
     .command("prestart")
-    .description("Must be run as root before starting the daemon")
+    .description("Reset chan_dongle, give perms to dev/tnt* devices (tty0tty)")
     .action(async () => {
 
         await resetChanDongle();
@@ -48,7 +53,7 @@ program
 
 program
     .command("poststop")
-    .description("Must be run as root after the daemon is stopped")
+    .description("Reset chan_dongle")
     .action(async () => {
 
         await resetChanDongle()
@@ -58,8 +63,8 @@ program
     });
 
 program
-    .command("uninstall")
-    .description("before uninstall module, run as root")
+    .command("preuninstall")
+    .description("Remove systemd service, remove udev rules")
     .action(async () => {
 
         await removeService();
