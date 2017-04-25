@@ -1,18 +1,17 @@
-
-import { AmiClient, strDivide } from "chan-dongle-extended-client";
+import { execQueue, ExecQueue } from "ts-exec-queue";
+import { DongleExtendedClient, strDivide } from "chan-dongle-extended-client";
 
 import { Message, StatusReport } from "ts-gsm-modem";
 
 import { ChanDongleConfManager } from "./ChanDongleConfManager";
-const dialplanContext = ChanDongleConfManager.getConfig().defaults.context as string;
+const dialplanContext = ChanDongleConfManager.getConfig().defaults.context;
 
 const smsExtension = "reassembled-sms";
+const smsStatusReportExtension = "sms-status-report";
 
-const smsStatusReportExtension= "sms-status-report";
+
 
 export namespace Dialplan {
-
-    export let amiClient: AmiClient = null as any;
 
     export interface DongleIdentifier {
         name: string;
@@ -22,139 +21,109 @@ export namespace Dialplan {
         provider: string;
     }
 
-    export async function notifyStatusReport(
-        dongle: DongleIdentifier,
-        statusReport: StatusReport
-    ){
+    const cluster = {};
 
-        let { name, number, provider, imei, imsi}= dongle;
+    export const notifyStatusReport = execQueue(cluster, "WRITE",
+        async (dongle: DongleIdentifier, statusReport: StatusReport, callback?: () => void) => {
 
-        let assignations = [
-            `CALLERID(name)=${name}`,
-            `DONGLENAME=${name}`,
-            `DONGLEPROVIDER=${provider}`,
-            `DONGLEIMEI=${imei}`,
-            `DONGLEIMSI=${imsi}`,
-            `DONGLENUMBER=${number}`
-        ];
+            let { name, number, provider, imei, imsi } = dongle;
 
-        let { 
-            dischargeTime,
-            isDelivered,
-            messageId,
-            status
-        } = statusReport;
+            let assignations = [
+                `CALLERID(name)=${name}`,
+                `DONGLENAME=${name}`,
+                `DONGLEPROVIDER=${provider}`,
+                `DONGLEIMEI=${imei}`,
+                `DONGLEIMSI=${imsi}`,
+                `DONGLENUMBER=${number}`
+            ];
 
-        assignations= [ 
-            ...assignations, 
-            `STATUS_REPORT_DISCHARGE_TIME=${dischargeTime.toISOString()}`,
-            `STATUS_REPORT_IS_DELIVERED=${isDelivered}`,
-            `STATUS_REPORT_ID=${messageId}`,
-            `STATUS_REPORT_STATUS=${status}`
-        ];
+            let { dischargeTime, isDelivered, messageId, status, recipient } = statusReport;
 
-        await assignAndRun(assignations, smsStatusReportExtension);
+            assignations = [
+                ...assignations,
+                `STATUS_REPORT_DISCHARGE_TIME=${dischargeTime.toISOString()}`,
+                `STATUS_REPORT_IS_DELIVERED=${isDelivered}`,
+                `STATUS_REPORT_ID=${messageId}`,
+                `STATUS_REPORT_STATUS=${status}`,
+                `STATUS_REPORT_RECIPIENT=${recipient}`
+            ];
 
-    }
+            await assignAndOriginate(assignations, smsStatusReportExtension);
 
-    export async function notifySms(
-        dongle: DongleIdentifier,
-        message: Message
-    ) {
+            callback!();
 
-        let { name, number, provider, imei, imsi}= dongle;
+        }
+    );
 
-        let assignations = [
-            `CALLERID(name)=${name}`,
-            `DONGLENAME=${name}`,
-            `DONGLEPROVIDER=${provider}`,
-            `DONGLEIMEI=${imei}`,
-            `DONGLEIMSI=${imsi}`,
-            `DONGLENUMBER=${number}`
-        ];
+    export const notifySms = execQueue(cluster, "NOTIFY_SMS",
+        async (dongle: DongleIdentifier, message: Message, callback?: () => void) => {
 
-        assignations= [ 
-            ...assignations, 
-            `CALLERID(num)=${message.number}`,
-            `CALLERID(ani)=${message.number}`,
-            `SMS_NUMBER=${message.number}`,
-            `SMS_DATE=${message.date.toISOString()}`
-        ];
+            let { name, number, provider, imei, imsi } = dongle;
 
-        let { text }= message;
+            let assignations = [
+                `CALLERID(name)=${name}`,
+                `DONGLENAME=${name}`,
+                `DONGLEPROVIDER=${provider}`,
+                `DONGLEIMEI=${imei}`,
+                `DONGLEIMSI=${imsi}`,
+                `DONGLENUMBER=${number}`
+            ];
 
-        let textSplit = strDivide(200, encodeURI(text));
+            assignations = [
+                ...assignations,
+                `CALLERID(num)=${message.number}`,
+                `CALLERID(ani)=${message.number}`,
+                `SMS_NUMBER=${message.number}`,
+                `SMS_DATE=${message.date.toISOString()}`
+            ];
 
-        assignations.push(`SMS_TEXT_SPLIT_COUNT=${textSplit.length}`);
+            let { text } = message;
 
-        for (let i = 0; i < textSplit.length; i++)
-            assignations.push(`SMS_TEXT_P${i}=${textSplit[i]}`);
+            let textSplit = strDivide(200, encodeURI(text));
 
-        let truncatedText = text.substring(0, 2048);
+            assignations.push(`SMS_TEXT_SPLIT_COUNT=${textSplit.length}`);
 
-        if (truncatedText.length < text.length)
-            truncatedText += " [ truncated ]";
+            for (let i = 0; i < textSplit.length; i++)
+                assignations.push(`SMS_TEXT_P${i}=${textSplit[i]}`);
 
-        let textTruncatedSplit = strDivide(200, encodeURI(truncatedText));
+            let truncatedText = text.substring(0, 2048);
 
-        assignations.push(`SMS_URI_ENCODED=${textTruncatedSplit.shift()}`);
+            if (truncatedText.length < text.length)
+                truncatedText += " [ truncated ]";
 
-        for (let part of textTruncatedSplit)
-            assignations.push(`SMS_URI_ENCODED=\${SMS_URI_ENCODED}${part}`);
+            let textTruncatedSplit = strDivide(200, encodeURI(truncatedText));
 
-        assignations.push(`SMS=${JSON.stringify(text.substring(0, 200))}`);
+            assignations.push(`SMS_URI_ENCODED=${textTruncatedSplit.shift()}`);
 
-        await assignAndRun(assignations, smsExtension);
+            for (let part of textTruncatedSplit)
+                assignations.push(`SMS_URI_ENCODED=\${SMS_URI_ENCODED}${part}`);
 
-    }
+            assignations.push(`SMS=${JSON.stringify(text.substring(0, 200))}`);
 
-    async function assignAndRun(assignations: string[], gotoExtension: string){
+            await assignAndOriginate(assignations, smsExtension);
 
-        let priority = 1;
+            callback!();
 
-        let initExtension= `init-${gotoExtension}`;
-
-        await addDialplanExtension(initExtension, priority++, "Answer()", dialplanContext);
-
-        for (let assignation of assignations)
-            await addDialplanExtension(initExtension, priority++, `Set(${assignation})`, dialplanContext);
-
-        await addDialplanExtension(initExtension, priority++, `GoTo(${gotoExtension},1)`, dialplanContext);
-
-        await amiClient.postAction({
-            "action": "originate",
-            "channel": `Local/${initExtension}@${dialplanContext}`,
-            "application": "Wait",
-            "data": "60"
-        });
-
-
-    }
-
-    
-
-    async function addDialplanExtension(
-        extension: string,
-        priority: number,
-        action: string,
-        context: string,
-        replace?: boolean
-    ) {
-
-        let rawCommand = [
-            `dialplan add extension ${extension},${priority},${action}`,
-            ` into ${context}${(replace !== false) ? " replace" : ""}`
-        ].join("");
-
-        await amiClient.postAction({
-            "action": "Command",
-            "Command": rawCommand
-        }).promise;
-
-    }
-
-
-
+        }
+    );
 
 }
 
+async function assignAndOriginate(assignations: string[], gotoExtension: string) {
+
+    const ami = DongleExtendedClient.localhost().ami;
+
+    let priority = 1;
+
+    let initExtension = `init-${gotoExtension}`;
+
+    await ami.addDialplanExtension(initExtension, priority++, "Answer()", dialplanContext);
+
+    for (let assignation of assignations)
+        await ami.addDialplanExtension(initExtension, priority++, `Set(${assignation})`, dialplanContext);
+
+    await ami.addDialplanExtension(initExtension, priority++, `GoTo(${gotoExtension},1)`, dialplanContext);
+
+    await ami.originateLocalChannel(dialplanContext, initExtension);
+
+}

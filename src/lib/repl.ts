@@ -1,5 +1,6 @@
 import * as repl from "repl";
 import { activeModems, lockedModems } from "./main";
+import "colors";
 
 let replSession: { 
     imei: string, 
@@ -24,29 +25,30 @@ activeModems.evtSet.attach(([{ modem }, imei]) => {
         "prompt": "> "
     });
 
-    Object.assign((value as any).context, {
+    let { context } = value as any;
+
+    Object.assign(context, {
         modem,
-        run(command: string): string {
+        async run(command: string) {
 
-            (modem as any).atStack.runCommand(
+            let [resp, final] = await (modem as any).atStack.runCommand(
                 command + "\r",
-                { "recoverable": true, "retryOnErrors": false },
-                (resp, final) => {
-
-                    if (resp)
-                        console.log(JSON.stringify(resp, null, 2));
-
-                    if (final.isError)
-                        console.log(JSON.stringify(final, null, 2).red);
-                    else
-                        console.log(final.raw.green);
-
-                }
+                { "recoverable": true, "retryOnErrors": false }
             );
 
-            return "COMMAND QUEUED";
+            if (resp)
+                console.log(JSON.stringify(resp, null, 2));
+
+            if (final.isError)
+                console.log(JSON.stringify(final, null, 2).red);
+            else
+                console.log(final.raw.green);
 
         }
+    });
+
+    Object.defineProperty(context, "exit", {
+        "get": ()=> process.exit(0)
     });
 
     replSession = { imei, value };

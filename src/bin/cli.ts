@@ -2,7 +2,7 @@
 require("rejection-tracker").main(__dirname, "..", "..");
 
 import * as program from "commander";
-import { AmiClient } from "chan-dongle-extended-client";
+import { DongleExtendedClient } from "chan-dongle-extended-client";
 import * as storage from "node-persist";
 import * as path from "path";
 import "colors";
@@ -14,9 +14,7 @@ program
     .description("List active dongle")
     .action(async options => {
 
-        let client = AmiClient.localhost();
-
-        let dongles = await client.getActiveDongles();
+        let dongles = await DongleExtendedClient.localhost().getActiveDongles();
 
         console.log(JSON.stringify(dongles, null, 2));
 
@@ -29,11 +27,10 @@ program
     .description("List PIN/PUK locked dongles")
     .action(async options => {
 
-        let client = AmiClient.localhost();
+        let dongles = DongleExtendedClient.localhost().getLockedDongles();
 
-        let locked = await client.getLockedDongles();
+        console.log(JSON.stringify(dongles, null, 2));
 
-        console.log(JSON.stringify(locked, null, 2));
         process.exit(0);
 
 
@@ -52,7 +49,7 @@ program
             process.exit(-1);
         }
 
-        let client = AmiClient.localhost();
+        let client = DongleExtendedClient.localhost();
 
         let arrImei: string[] = [];
 
@@ -94,11 +91,10 @@ program
             process.exit(-1);
         }
 
-        let client = AmiClient.localhost();
-        let error: null | Error;
+        let client = DongleExtendedClient.localhost();
 
         if (options.pin)
-            error = await client.unlockDongle(imei, options.pin);
+            await client.unlockDongle(imei, options.pin);
         else {
 
             let match = (options.puk as string).match(/^([0-9]{8})-([0-9]{4})$/);
@@ -112,14 +108,10 @@ program
             let puk = match[1];
             let newPin = match[2];
 
-            error = await client.unlockDongle(imei, puk, newPin);
+            await client.unlockDongle(imei, puk, newPin);
 
         }
 
-        if (error) {
-            console.log(error.message.red);
-            process.exit(-1);
-        }
 
         console.log("done");
 
@@ -149,15 +141,9 @@ program
 
         text = uriEncodedText ? decodeURI(uriEncodedText) : JSON.parse(`"${text}"`);
 
-        let [error, messageId] = await AmiClient
+        let messageId = await DongleExtendedClient
             .localhost()
             .sendMessage(imei, number, text);
-
-        if (error) {
-            console.log(error.message.red);
-            process.exit(-1);
-        }
-
 
         console.log(messageId);
 
@@ -174,17 +160,11 @@ program
 
         let imei = await getImei(options);
 
-        let [error, phonebook] = await AmiClient
+        let phonebook = await DongleExtendedClient
             .localhost()
             .getSimPhonebook(imei);
 
-        if (error) {
-            console.log(error.message.red);
-            process.exit(-1);
-            return;
-        }
-
-        console.log(JSON.stringify(phonebook!, null, 2));
+        console.log(JSON.stringify(phonebook, null, 2));
 
         process.exit(0);
 
@@ -208,17 +188,11 @@ program
 
         let imei = await getImei(options);
 
-        let [error, contact] = await AmiClient
+        let contact = await DongleExtendedClient
             .localhost()
             .createContact(imei, name, number);
 
-        if (error) {
-            console.log(error.message.red);
-            process.exit(-1);
-            return;
-        }
-
-        console.log(JSON.stringify(contact!, null, 2));
+        console.log(JSON.stringify(contact, null, 2));
 
         process.exit(0);
 
@@ -241,15 +215,9 @@ program
 
         let imei = await getImei(options);
 
-        let error = await AmiClient
+        await DongleExtendedClient
             .localhost()
             .updateNumber(imei, number);
-
-        if (error) {
-            console.log(error.message.red);
-            process.exit(-1);
-            return;
-        }
 
         console.log("done");
 
@@ -275,15 +243,9 @@ program
 
         let imei = await getImei(options);
 
-        let error = await AmiClient
+        await DongleExtendedClient
             .localhost()
             .deleteContact(imei, parseInt(index));
-
-        if (error) {
-            console.log(error.message.red);
-            process.exit(-1);
-            return;
-        }
 
         console.log(`Contact index: ${index} successfully deleted`);
 
@@ -302,17 +264,11 @@ program
 
         let imei = await getImei(options);
 
-        let [error, messages] = await AmiClient
+        let messages = await DongleExtendedClient
             .localhost()
             .getMessages(imei, flush);
 
-        if (error) {
-            console.log(error.message.red);
-            process.exit(-1);
-            return;
-        }
-
-        console.log(JSON.stringify(messages!, null, 2));
+        console.log(JSON.stringify(messages, null, 2));
 
         process.exit(0);
 
@@ -320,7 +276,6 @@ program
     });
 
 program.parse(process.argv);
-
 
 async function getImei(options: { imei: string | undefined }): Promise<string> {
 

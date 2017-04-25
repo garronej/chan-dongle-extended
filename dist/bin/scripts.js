@@ -41,6 +41,9 @@ var path = require("path");
 var modulePath = path.join(__dirname, "..", "..");
 var systemdServicePath = path.join("/etc", "systemd", "system", "dongle-extended.service");
 var udevRulesPath = path.join("/etc", "udev", "rules.d", "99-dongle-extended.rules");
+var astConfPath = path.join("/etc", "asterisk");
+var dongleConfPath = path.join(astConfPath, "dongle.conf");
+var managerConfPath = path.join(astConfPath, "manager.conf");
 require("rejection-tracker").main(modulePath);
 var child_process_1 = require("child_process");
 var readline = require("readline");
@@ -49,7 +52,6 @@ var program = require("commander");
 var gsm_modem_connection_1 = require("gsm-modem-connection");
 var vendorIds = Object.keys(gsm_modem_connection_1.recordIfNum);
 var ini_extended_1 = require("ini-extended");
-var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
 var ChanDongleConfManager_1 = require("../lib/ChanDongleConfManager");
 require("colors");
 program
@@ -232,17 +234,17 @@ function enableManager() {
                         "write": "all",
                         "writetimeout": "5000"
                     };
-                    if (fs_1.existsSync(chan_dongle_extended_client_1.managerConfPath)) {
+                    if (fs_1.existsSync(managerConfPath)) {
                         try {
-                            general = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(chan_dongle_extended_client_1.managerConfPath, "utf8")).general;
+                            general = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(managerConfPath, "utf8")).general;
                             general.enabled = "yes";
                         }
                         catch (error) { }
                     }
-                    return [4 /*yield*/, writeFileAssertSuccess(chan_dongle_extended_client_1.managerConfPath, ini_extended_1.ini.stringify({ general: general, dongle_ext_user: dongle_ext_user }))];
+                    return [4 /*yield*/, writeFileAssertSuccess(managerConfPath, ini_extended_1.ini.stringify({ general: general, dongle_ext_user: dongle_ext_user }))];
                 case 1:
                     _a.sent();
-                    return [4 /*yield*/, run("chmod u+r,g+r,o+r " + chan_dongle_extended_client_1.managerConfPath)];
+                    return [4 /*yield*/, run("chmod u+r,g+r,o+r " + managerConfPath)];
                 case 2:
                     _a.sent();
                     _a.label = 3;
@@ -337,8 +339,8 @@ function checkDependencies() {
                     process.exit(-1);
                     return [3 /*break*/, 8];
                 case 8:
-                    if (!fs_1.existsSync(chan_dongle_extended_client_1.asteriskConfDirPath)) {
-                        console.log(("Error: " + chan_dongle_extended_client_1.asteriskConfDirPath + " does not exist").red);
+                    if (!fs_1.existsSync(astConfPath)) {
+                        console.log(("Error: " + astConfPath + " does not exist").red);
                         process.exit(-1);
                     }
                     console.log("asterisk ok");
@@ -360,7 +362,7 @@ function resetChanDongle() {
                 case 0: return [4 /*yield*/, ChanDongleConfManager_1.ChanDongleConfManager.reset()];
                 case 1:
                     _a.sent();
-                    return [4 /*yield*/, run("chmod u+rw,g+rw,o+rw " + ChanDongleConfManager_1.dongleConfPath)];
+                    return [4 /*yield*/, run("chmod u+rw,g+rw,o+rw " + dongleConfPath)];
                 case 2:
                     _a.sent();
                     console.log("chan dongle has been reset");

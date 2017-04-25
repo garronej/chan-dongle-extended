@@ -1,7 +1,6 @@
-import { AmiClient } from "chan-dongle-extended-client";
+import { ExecQueue } from "ts-exec-queue";
 import { Message, StatusReport } from "ts-gsm-modem";
 export declare namespace Dialplan {
-    let amiClient: AmiClient;
     interface DongleIdentifier {
         name: string;
         imei: string;
@@ -9,6 +8,6 @@ export declare namespace Dialplan {
         number: string;
         provider: string;
     }
-    function notifyStatusReport(dongle: DongleIdentifier, statusReport: StatusReport): Promise<void>;
-    function notifySms(dongle: DongleIdentifier, message: Message): Promise<void>;
+    const notifyStatusReport: ((dongle: DongleIdentifier, statusReport: StatusReport, callback?: (() => void) | undefined) => Promise<void>) & ExecQueue;
+    const notifySms: ((dongle: DongleIdentifier, message: Message, callback?: (() => void) | undefined) => Promise<void>) & ExecQueue;
 }

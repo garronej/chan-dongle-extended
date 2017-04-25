@@ -50,6 +50,7 @@ if (process.env["NODE_ENV"] !== "production")
 require("./evtLogger");
 require("./main.ami");
 require("./main.bridge");
+debug("Daemon started!");
 gsm_modem_connection_1.Monitor.evtModemDisconnect.attach(function (accessPoint) { return debug("DISCONNECT: " + accessPoint.toString()); });
 gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { return __awaiter(_this, void 0, void 0, function () {
     var _this = this;

@@ -4,6 +4,9 @@ import * as path from "path";
 const modulePath = path.join(__dirname, "..", "..");
 const systemdServicePath = path.join("/etc", "systemd", "system", "dongle-extended.service");
 const udevRulesPath = path.join("/etc", "udev", "rules.d", "99-dongle-extended.rules");
+const astConfPath= path.join("/etc", "asterisk");
+const dongleConfPath= path.join(astConfPath, "dongle.conf");
+const managerConfPath= path.join(astConfPath, "manager.conf");
 
 require("rejection-tracker").main(modulePath);
 
@@ -14,9 +17,9 @@ import * as program from "commander";
 import { recordIfNum } from "gsm-modem-connection";
 const vendorIds = Object.keys(recordIfNum);
 import { ini } from "ini-extended";
-import { AmiCredential, asteriskConfDirPath, managerConfPath } from "chan-dongle-extended-client";
-import { ChanDongleConfManager, dongleConfPath } from "../lib/ChanDongleConfManager";
+import { ChanDongleConfManager} from "../lib/ChanDongleConfManager";
 import "colors";
+
 
 
 program
@@ -249,8 +252,8 @@ async function checkDependencies() {
 
     }
 
-    if (!existsSync(asteriskConfDirPath)) {
-        console.log(`Error: ${asteriskConfDirPath} does not exist`.red);
+    if (!existsSync(astConfPath)) {
+        console.log(`Error: ${astConfPath} does not exist`.red);
         process.exit(-1);
     }
 

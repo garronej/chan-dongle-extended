@@ -40,10 +40,10 @@ var ini_extended_1 = require("ini-extended");
 var ts_exec_queue_1 = require("ts-exec-queue");
 var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
 var path = require("path");
-var chan_dongle_extended_client_2 = require("chan-dongle-extended-client");
+var astConfPath = path.join("/etc", "asterisk");
+var dongleConfPath = path.join(astConfPath, "dongle.conf");
 var _debug = require("debug");
 var debug = _debug("_ChanDongleConfManager");
-exports.dongleConfPath = path.join(chan_dongle_extended_client_2.asteriskConfDirPath, "dongle.conf");
 exports.defaultConfig = {
     "general": {
         "interval": "10000000",
@@ -138,7 +138,7 @@ var ChanDongleConfManager;
 })(ChanDongleConfManager = exports.ChanDongleConfManager || (exports.ChanDongleConfManager = {}));
 function update() {
     var _this = this;
-    return new Promise(function (resolve) { return fs_1.writeFile(exports.dongleConfPath, ini_extended_1.ini.stringify(config), { "encoding": "utf8", "flag": "w" }, function (error) { return __awaiter(_this, void 0, void 0, function () {
+    return new Promise(function (resolve) { return fs_1.writeFile(dongleConfPath, ini_extended_1.ini.stringify(config), { "encoding": "utf8", "flag": "w" }, function (error) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -157,10 +157,10 @@ function reloadChanDongle() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, chan_dongle_extended_client_1.AmiClient.localhost().postAction({
+                case 0: return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient.localhost().ami.postAction({
                         "action": "DongleReload",
                         "when": "gracefully"
-                    }).promise];
+                    })];
                 case 1:
                     _a.sent();
                     debug("update chan_dongle config");
@@ -172,7 +172,7 @@ function reloadChanDongle() {
 exports.reloadChanDongle = reloadChanDongle;
 function loadConfig() {
     try {
-        var _a = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(exports.dongleConfPath, "utf8")), general = _a.general, defaults = _a.defaults;
+        var _a = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(dongleConfPath, "utf8")), general = _a.general, defaults = _a.defaults;
         defaults.autodeletesms = "false";
         defaults.disablesms = "no";
         general.interval = "10000";

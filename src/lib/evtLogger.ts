@@ -1,17 +1,17 @@
-import { AmiClient } from "chan-dongle-extended-client";
+import { DongleExtendedClient } from "chan-dongle-extended-client";
 
 import * as _debug from "debug";
 let debug= _debug("_evtLogger");
 
-let amiClient= AmiClient.localhost();
+let client= DongleExtendedClient.localhost();
 
 let logger= (evtName: string)=> {
     return data => debug(`${evtName}: ${JSON.stringify(data, null, 2)}`);
 };
 
 
-amiClient.evtDongleDisconnect.attach(logger("evtDongleDisconnect"));
-amiClient.evtMessageStatusReport.attach(logger("evtMessageStatusReport"));
-amiClient.evtNewActiveDongle.attach(logger("evtNewActiveDongle"));
-amiClient.evtNewMessage.attach(logger("evtNewMessage"));
-amiClient.evtRequestUnlockCode.attach(logger("evtRequestUnlockCode"));
+client.evtDongleDisconnect.attach(logger("evtDongleDisconnect"));
+client.evtMessageStatusReport.attach(logger("evtMessageStatusReport"));
+client.evtNewActiveDongle.attach(logger("evtNewActiveDongle"));
+client.evtNewMessage.attach(logger("evtNewMessage"));
+client.evtRequestUnlockCode.attach(logger("evtRequestUnlockCode"));

@@ -100,14 +100,16 @@ main_1.activeModems.evtSet.attach(function (_a) {
                                 ].join("\n").red);
                                 return;
                             }
-                            //debug(JSON.stringify(rawResp).blue);
+                            debug("response: " + JSON.stringify(rawResp).blue);
                             portVirtual.writeAndDrain(rawResp);
                         };
-                        if (command === "ATZ\r" || command.match(/^AT\+CNMI=/)) {
+                        debug("from chan_dongle: " + JSON.stringify(command));
+                        if (command === "ATZ\r" ||
+                            command.match(/^AT\+CNMI=/)) {
+                            debug("fake resp...");
                             forwardResp("\r\nOK\r\n");
                             return;
                         }
-                        //debug(JSON.stringify(command).green);
                         if (modem.runCommand.isRunning) {
                             debug([
                                 "a command is already running",
@@ -125,7 +127,10 @@ main_1.activeModems.evtSet.attach(function (_a) {
                     return [4 /*yield*/, portVirtual.evtData.waitFor()];
                 case 1:
                     _a.sent();
-                    modem.evtUnsolicitedAtMessage.attach(function (urc) { return portVirtual.writeAndDrain(urc.raw); });
+                    modem.evtUnsolicitedAtMessage.attach(function (urc) {
+                        debug("forwarding urc: " + JSON.stringify(urc.raw));
+                        portVirtual.writeAndDrain(urc.raw);
+                    });
                     return [2 /*return*/];
             }
         });

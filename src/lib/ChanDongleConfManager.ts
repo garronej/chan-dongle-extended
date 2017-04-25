@@ -1,14 +1,15 @@
 import { writeFile, readFileSync } from "fs";
 import { ini } from "ini-extended";
 import { execQueue, ExecQueue } from "ts-exec-queue";
-import { AmiClient } from "chan-dongle-extended-client";
+import { DongleExtendedClient } from "chan-dongle-extended-client";
 import * as path from "path";
-import { asteriskConfDirPath } from "chan-dongle-extended-client";
+
+const astConfPath= path.join("/etc", "asterisk");
+const dongleConfPath= path.join(astConfPath, "dongle.conf");
 
 import * as _debug from "debug";
 let debug = _debug("_ChanDongleConfManager");
 
-export const dongleConfPath = path.join(asteriskConfDirPath, "dongle.conf");
 
 export interface DongleConf {
     dongleName: string;
@@ -146,10 +147,10 @@ function update(): Promise<void> {
 
 export async function reloadChanDongle() {
 
-    await AmiClient.localhost().postAction({
+    await DongleExtendedClient.localhost().ami.postAction({
         "action": "DongleReload",
         "when": "gracefully"
-    }).promise;
+    });
 
     debug("update chan_dongle config");
 

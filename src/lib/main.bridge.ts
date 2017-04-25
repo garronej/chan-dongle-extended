@@ -54,7 +54,6 @@ activeModems.evtSet.attach(async ([{ modem, accessPoint, dongleName }]) => {
 
     portVirtual.evtError.attach(serialPortError => {
         debug("uncaught error serialPortVirtual", serialPortError);
-
         modem.terminate(new Error("Bridge serialport error"));
     });
 
@@ -75,18 +74,22 @@ activeModems.evtSet.attach(async ([{ modem, accessPoint, dongleName }]) => {
                 return;
             }
 
-            //debug(JSON.stringify(rawResp).blue);
+            debug("response: " + JSON.stringify(rawResp).blue);
 
             portVirtual.writeAndDrain(rawResp);
 
         };
 
-        if (command === "ATZ\r" || command.match(/^AT\+CNMI=/)) {
+        debug("from chan_dongle: " + JSON.stringify(command));
+
+        if (
+            command === "ATZ\r" ||
+            command.match(/^AT\+CNMI=/)
+        ) {
+            debug("fake resp...");
             forwardResp("\r\nOK\r\n");
             return;
         }
-
-        //debug(JSON.stringify(command).green);
 
         if (modem.runCommand.isRunning) {
 
@@ -110,9 +113,13 @@ activeModems.evtSet.attach(async ([{ modem, accessPoint, dongleName }]) => {
 
     await portVirtual.evtData.waitFor();
 
-    modem.evtUnsolicitedAtMessage.attach(
-        urc => portVirtual.writeAndDrain(urc.raw)
-    );
+    modem.evtUnsolicitedAtMessage.attach(urc => {
+
+        debug("forwarding urc: " + JSON.stringify(urc.raw));
+
+        portVirtual.writeAndDrain(urc.raw)
+
+    });
 
 
 

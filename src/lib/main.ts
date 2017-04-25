@@ -38,6 +38,8 @@ require("./evtLogger");
 import "./main.ami";
 import "./main.bridge";
 
+debug("Daemon started!");
+
 Monitor.evtModemDisconnect.attach(accessPoint => debug(`DISCONNECT: ${accessPoint.toString()}`));
 
 Monitor.evtModemConnect.attach(async accessPoint => {

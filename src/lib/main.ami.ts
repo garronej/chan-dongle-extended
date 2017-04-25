@@ -1,7 +1,7 @@
 import { activeModems, lockedModems } from "./main";
 import { Storage } from "./Storage";
 import { 
-    AmiClient, 
+    DongleExtendedClient, 
     UserEvent, 
     DongleActive, 
     LockedDongle
@@ -16,11 +16,9 @@ import { Dialplan } from "./Dialplan";
 import * as _debug from "debug";
 let debug = _debug("_main.ami");
 
-const amiClient= AmiClient.localhost();
+const client= DongleExtendedClient.localhost();
 
-Dialplan.amiClient= amiClient;
-
-amiClient.evtAmiUserEvent.attach(({ actionid, event, action, userevent, privilege, ...prettyEvt }) => debug(prettyEvt));
+//client.evtUserEvent.attach(({ actionid, event, action, userevent, privilege, ...prettyEvt }) => debug(prettyEvt));
 
 activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
 
@@ -44,7 +42,7 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
 
     }
 
-    amiClient.postUserEventAction(
+    client.postUserEventAction(
         Event.NewActiveDongle.buildAction(
             imei,
             modem.iccid,
@@ -62,16 +60,18 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
             messageId,
             dischargeTime,
             isDelivered,
-            status
+            status,
+            recipient
         } = statusReport;
 
-        amiClient.postUserEventAction(
+        client.postUserEventAction(
             Event.MessageStatusReport.buildAction(
                 imei,
                 messageId.toString(),
                 dischargeTime.toISOString(),
                 isDelivered ? "true" : "false",
-                status
+                status,
+                recipient
             )
         )
 
@@ -102,7 +102,7 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
 
         let { number, date, text } = message;
 
-        amiClient.postUserEventAction(
+        client.postUserEventAction(
             UserEvent.Event.NewMessage.buildAction(
                 imei,
                 number,
@@ -131,7 +131,7 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
 
 
 activeModems.evtDelete.attach(
-    ([{ modem }]) => amiClient.postUserEventAction(
+    ([{ modem }]) => client.postUserEventAction(
         Event.DongleDisconnect.buildAction(
             modem.imei,
             modem.iccid,
@@ -162,7 +162,7 @@ lockedModems.evtSet.attach(
             lockedModems.delete(imei);
             callback(pin);
         } else
-            amiClient.postUserEventAction(
+            client.postUserEventAction(
                 UserEvent.Event.RequestUnlockCode.buildAction(
                     imei,
                     iccid,
@@ -175,11 +175,11 @@ lockedModems.evtSet.attach(
 );
 
 
-amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
+client.evtUserEvent.attach(Request.matchEvt, async evtRequest => {
 
     let { actionid, command } = evtRequest;
 
-    let replyError = (errorMessage: string) => amiClient.postUserEventAction(
+    let replyError = (errorMessage: string) => client.postUserEventAction(
         Response.buildAction(
             command,
             actionid,
@@ -204,7 +204,7 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
         if (isNaN(messageId))
             return replyError("Message not send");
 
-        amiClient.postUserEventAction(
+        client.postUserEventAction(
             Response.SendMessage.buildAction(
                 actionid,
                 messageId.toString()
@@ -221,13 +221,13 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
 
         await modem.writeNumber(evtRequest.number);
 
-        amiClient.postUserEventAction(
+        client.postUserEventAction(
             Response.buildAction(Request.UpdateNumber.keyword, actionid)
         );
 
         let id = "Dongle" + imei.substring(0, 3) + imei.substring(imei.length - 3);
 
-        amiClient.postAction({
+        client.ami.postAction({
             "action": "DongleRestart",
             "device": id,
             "when": "gracefully"
@@ -235,19 +235,18 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
 
     } else if (Request.GetLockedDongles.matchEvt(evtRequest)) {
 
-
-        await amiClient.postUserEventAction(
+        await client.postUserEventAction(
             Response.GetLockedDongles.Infos.buildAction(
                 actionid,
                 lockedModems.size.toString()
             )
-        ).promise;
+        );
 
         for (let imei of lockedModems.keysAsArray()) {
 
             let { iccid, pinState, tryLeft } = lockedModems.get(imei)!;
 
-            await amiClient.postUserEventAction(
+            await client.postUserEventAction(
                 Response.GetLockedDongles.Entry.buildAction(
                     actionid,
                     imei,
@@ -255,7 +254,7 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
                     pinState,
                     tryLeft.toString()
                 )
-            ).promise;
+            );
 
         }
 
@@ -276,22 +275,22 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
 
         data.release();
 
-        await amiClient.postUserEventAction(
+        await client.postUserEventAction(
             Response.GetMessages.Infos.buildAction(
                 actionid,
                 messages.length.toString()
             )
-        ).promise;
+        );
 
         for (let { number, date, text } of messages)
-            await amiClient.postUserEventAction(
+            await client.postUserEventAction(
                 Response.GetMessages.Entry.buildAction(
                     actionid,
                     number,
                     date.toISOString(),
                     text
                 )
-            ).promise;
+            );
 
 
     } else if (Request.GetSimPhonebook.matchEvt(evtRequest)) {
@@ -304,7 +303,7 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
 
         let contacts = modem.contacts;
 
-        await amiClient.postUserEventAction(
+        await client.postUserEventAction(
             Response.GetSimPhonebook.Infos.buildAction(
                 actionid,
                 modem.contactNameMaxLength.toString(),
@@ -312,17 +311,17 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
                 modem.storageLeft.toString(),
                 contacts.length.toString()
             )
-        ).promise;
+        );
 
         for (let { index, name, number } of contacts)
-            await amiClient.postUserEventAction(
+            await client.postUserEventAction(
                 Response.GetSimPhonebook.Entry.buildAction(
                     actionid,
                     index.toString(),
                     name,
                     number
                 )
-            ).promise;
+            );
 
     } else if (Request.CreateContact.matchEvt(evtRequest)) {
 
@@ -340,7 +339,7 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
 
         let contact = await modem.createContact(number, name);
 
-        amiClient.postUserEventAction(
+        client.postUserEventAction(
             Response.CreateContact.buildAction(
                 actionid,
                 contact.index.toString(),
@@ -363,7 +362,7 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
 
         await modem.deleteContact(index);
 
-        amiClient.postUserEventAction(
+        client.postUserEventAction(
             Response.buildAction(
                 Request.DeleteContact.keyword,
                 actionid
@@ -372,19 +371,19 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
 
     } else if (Request.GetActiveDongles.matchEvt(evtRequest)) {
 
-        await amiClient.postUserEventAction(
+        await client.postUserEventAction(
             Response.GetActiveDongles.Infos.buildAction(
                 actionid,
                 activeModems.size.toString()
             )
-        ).promise;
+        );
 
         for (let imei of activeModems.keysAsArray()) {
 
             let { modem } = activeModems.get(imei)!;
             let { iccid, imsi, number, serviceProviderName } = modem;
 
-            await amiClient.postUserEventAction(
+            await client.postUserEventAction(
                 Response.GetActiveDongles.Entry.buildAction(
                     actionid,
                     imei,
@@ -393,7 +392,7 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
                     number || "",
                     serviceProviderName || ""
                 )
-            ).promise;
+            );
 
         }
 
@@ -432,7 +431,7 @@ amiClient.evtAmiUserEvent.attach(Request.matchEvt, async evtRequest => {
 
         lockedModems.delete(imei);
 
-        amiClient.postUserEventAction(
+        client.postUserEventAction(
             Response.buildAction(
                 Request.UnlockDongle.keyword,
                 actionid
