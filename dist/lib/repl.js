@@ -38,48 +38,44 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var repl = require("repl");
 var main_1 = require("./main");
 require("colors");
-var replSession = undefined;
-main_1.activeModems.evtDelete.attach(function (_a) {
-    var _ = _a[0], imei = _a[1];
-    if (replSession && replSession.imei === imei) {
-        replSession.value.close();
-        replSession = undefined;
-    }
+var gsm_modem_connection_1 = require("gsm-modem-connection");
+var context = repl.start({
+    "terminal": true,
+    "prompt": "> "
+}).context;
+Object.defineProperty(context, "exit", {
+    "get": function () { return process.exit(0); }
 });
-main_1.activeModems.evtSet.attach(function (_a) {
-    var modem = _a[0].modem, imei = _a[1];
-    if (replSession)
-        return;
-    var value = repl.start({
-        "terminal": true,
-        "prompt": "> "
-    });
-    var context = value.context;
-    Object.assign(context, {
-        modem: modem,
-        run: function (command) {
-            return __awaiter(this, void 0, void 0, function () {
-                var _a, resp, final;
-                return __generator(this, function (_b) {
-                    switch (_b.label) {
-                        case 0: return [4 /*yield*/, modem.atStack.runCommand(command + "\r", { "recoverable": true, "retryOnErrors": false })];
-                        case 1:
-                            _a = _b.sent(), resp = _a[0], final = _a[1];
-                            if (resp)
-                                console.log(JSON.stringify(resp, null, 2));
-                            if (final.isError)
-                                console.log(JSON.stringify(final, null, 2).red);
-                            else
-                                console.log(final.raw.green);
-                            return [2 /*return*/];
+Object.defineProperty(context, "accessPoints", {
+    "get": function () { return gsm_modem_connection_1.Monitor.connectedModems; }
+});
+Object.defineProperty(context, "modem", {
+    "get": function () { return (main_1.activeModems.valuesAsArray()[0] || {}).modem; }
+});
+Object.assign(context, { activeModems: main_1.activeModems, lockedModems: main_1.lockedModems });
+context.run = function (command) {
+    return __awaiter(this, void 0, void 0, function () {
+        var modem, _a, resp, final;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    modem = context.modem;
+                    if (!modem) {
+                        console.log("No active modem to run command on");
+                        return [2 /*return*/];
                     }
-                });
-            });
-        }
+                    return [4 /*yield*/, modem.atStack.runCommand(command + "\r", { "recoverable": true, "retryOnErrors": false })];
+                case 1:
+                    _a = _b.sent(), resp = _a[0], final = _a[1];
+                    if (resp)
+                        console.log(JSON.stringify(resp, null, 2));
+                    if (final.isError)
+                        console.log(JSON.stringify(final, null, 2).red);
+                    else
+                        console.log(final.raw.green);
+                    return [2 /*return*/];
+            }
+        });
     });
-    Object.defineProperty(context, "exit", {
-        "get": function () { return process.exit(0); }
-    });
-    replSession = { imei: imei, value: value };
-});
+};
 //# sourceMappingURL=repl.js.map

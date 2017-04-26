@@ -27,7 +27,7 @@ program
     .description("List PIN/PUK locked dongles")
     .action(async options => {
 
-        let dongles = DongleExtendedClient.localhost().getLockedDongles();
+        let dongles = await DongleExtendedClient.localhost().getLockedDongles();
 
         console.log(JSON.stringify(dongles, null, 2));
 

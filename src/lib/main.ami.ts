@@ -18,7 +18,7 @@ let debug = _debug("_main.ami");
 
 const client= DongleExtendedClient.localhost();
 
-//client.evtUserEvent.attach(({ actionid, event, action, userevent, privilege, ...prettyEvt }) => debug(prettyEvt));
+client.evtUserEvent.attach(({ actionid, event, action, userevent, privilege, ...prettyEvt }) => debug(prettyEvt));
 
 activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
 

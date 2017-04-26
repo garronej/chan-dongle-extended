@@ -34,6 +34,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __rest = (this && this.__rest) || function (s, e) {
+    var t = {};
+    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
+        t[p] = s[p];
+    if (s != null && typeof Object.getOwnPropertySymbols === "function")
+        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0)
+            t[p[i]] = s[p[i]];
+    return t;
+};
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var main_1 = require("./main");
@@ -46,7 +55,10 @@ var Dialplan_1 = require("./Dialplan");
 var _debug = require("debug");
 var debug = _debug("_main.ami");
 var client = chan_dongle_extended_client_1.DongleExtendedClient.localhost();
-//client.evtUserEvent.attach(({ actionid, event, action, userevent, privilege, ...prettyEvt }) => debug(prettyEvt));
+client.evtUserEvent.attach(function (_a) {
+    var actionid = _a.actionid, event = _a.event, action = _a.action, userevent = _a.userevent, privilege = _a.privilege, prettyEvt = __rest(_a, ["actionid", "event", "action", "userevent", "privilege"]);
+    return debug(prettyEvt);
+});
 main_1.activeModems.evtSet.attach(function (_a) {
     var _b = _a[0], modem = _b.modem, dongleName = _b.dongleName, imei = _a[1];
     return __awaiter(_this, void 0, void 0, function () {

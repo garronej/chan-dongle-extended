@@ -66,10 +66,14 @@ program
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
     var dongles;
     return __generator(this, function (_a) {
-        dongles = chan_dongle_extended_client_1.DongleExtendedClient.localhost().getLockedDongles();
-        console.log(JSON.stringify(dongles, null, 2));
-        process.exit(0);
-        return [2 /*return*/];
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient.localhost().getLockedDongles()];
+            case 1:
+                dongles = _a.sent();
+                console.log(JSON.stringify(dongles, null, 2));
+                process.exit(0);
+                return [2 /*return*/];
+        }
     });
 }); });
 program
