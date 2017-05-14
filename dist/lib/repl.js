@@ -34,6 +34,22 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __read = (this && this.__read) || function (o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var repl = require("repl");
 var main_1 = require("./main");
@@ -66,7 +82,7 @@ context.run = function (command) {
                     }
                     return [4 /*yield*/, modem.atStack.runCommand(command + "\r", { "recoverable": true, "retryOnErrors": false })];
                 case 1:
-                    _a = _b.sent(), resp = _a[0], final = _a[1];
+                    _a = __read.apply(void 0, [_b.sent(), 2]), resp = _a[0], final = _a[1];
                     if (resp)
                         console.log(JSON.stringify(resp, null, 2));
                     if (final.isError)

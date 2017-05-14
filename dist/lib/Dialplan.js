@@ -34,6 +34,36 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __read = (this && this.__read) || function (o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+};
+var __spread = (this && this.__spread) || function () {
+    for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
+    return ar;
+};
+var __values = (this && this.__values) || function (o) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
+    if (m) return m.call(o);
+    return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
 var ts_exec_queue_1 = require("ts-exec-queue");
 var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
@@ -60,7 +90,7 @@ var Dialplan;
                         "DONGLENUMBER=" + number
                     ];
                     dischargeTime = statusReport.dischargeTime, isDelivered = statusReport.isDelivered, messageId = statusReport.messageId, status = statusReport.status, recipient = statusReport.recipient;
-                    assignations = assignations.concat([
+                    assignations = __spread(assignations, [
                         "STATUS_REPORT_DISCHARGE_TIME=" + dischargeTime.toISOString(),
                         "STATUS_REPORT_IS_DELIVERED=" + isDelivered,
                         "STATUS_REPORT_ID=" + messageId,
@@ -76,9 +106,9 @@ var Dialplan;
         });
     }); });
     Dialplan.notifySms = ts_exec_queue_1.execQueue(cluster, "NOTIFY_SMS", function (dongle, message, callback) { return __awaiter(_this, void 0, void 0, function () {
-        var name, number, provider, imei, imsi, assignations, text, keywordSplit, textSplit, i, keywordTruncated, actionConcatenate, truncatedText, textTruncatedSplit, _i, textTruncatedSplit_1, part;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var name, number, provider, imei, imsi, assignations, text, keywordSplit, textSplit, i, keywordTruncated, actionConcatenate, truncatedText, textTruncatedSplit, textTruncatedSplit_1, textTruncatedSplit_1_1, part, e_1, _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     name = dongle.name, number = dongle.number, provider = dongle.provider, imei = dongle.imei, imsi = dongle.imsi;
                     assignations = [
@@ -89,7 +119,7 @@ var Dialplan;
                         "DONGLEIMSI=" + imsi,
                         "DONGLENUMBER=" + number
                     ];
-                    assignations = assignations.concat([
+                    assignations = __spread(assignations, [
                         "CALLERID(num)=" + message.number,
                         "CALLERID(ani)=" + message.number,
                         "SMS_NUMBER=" + message.number,
@@ -108,14 +138,23 @@ var Dialplan;
                         truncatedText += " [ truncated ]";
                     textTruncatedSplit = chan_dongle_extended_client_1.lineSplitBase64(truncatedText, "ApplicationData" + actionConcatenate + "=Set()");
                     assignations.push(keywordTruncated + "=" + textTruncatedSplit.shift());
-                    for (_i = 0, textTruncatedSplit_1 = textTruncatedSplit; _i < textTruncatedSplit_1.length; _i++) {
-                        part = textTruncatedSplit_1[_i];
-                        assignations.push("" + actionConcatenate + part);
+                    try {
+                        for (textTruncatedSplit_1 = __values(textTruncatedSplit), textTruncatedSplit_1_1 = textTruncatedSplit_1.next(); !textTruncatedSplit_1_1.done; textTruncatedSplit_1_1 = textTruncatedSplit_1.next()) {
+                            part = textTruncatedSplit_1_1.value;
+                            assignations.push("" + actionConcatenate + part);
+                        }
+                    }
+                    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                    finally {
+                        try {
+                            if (textTruncatedSplit_1_1 && !textTruncatedSplit_1_1.done && (_a = textTruncatedSplit_1.return)) _a.call(textTruncatedSplit_1);
+                        }
+                        finally { if (e_1) throw e_1.error; }
                     }
                     assignations.push("SMS=" + JSON.stringify(text.substring(0, 200)));
                     return [4 /*yield*/, assignAndOriginate(assignations, smsExtension)];
                 case 1:
-                    _a.sent();
+                    _b.sent();
                     callback();
                     return [2 /*return*/];
             }
@@ -124,34 +163,48 @@ var Dialplan;
 })(Dialplan = exports.Dialplan || (exports.Dialplan = {}));
 function assignAndOriginate(assignations, gotoExtension) {
     return __awaiter(this, void 0, void 0, function () {
-        var ami, priority, initExtension, _i, assignations_1, assignation;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var ami, priority, initExtension, assignations_1, assignations_1_1, assignation, e_2_1, e_2, _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     ami = chan_dongle_extended_client_1.DongleExtendedClient.localhost().ami;
                     priority = 1;
                     initExtension = "init-" + gotoExtension;
                     return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, dialplanContext, "Answer")];
                 case 1:
-                    _a.sent();
-                    _i = 0, assignations_1 = assignations;
-                    _a.label = 2;
+                    _b.sent();
+                    _b.label = 2;
                 case 2:
-                    if (!(_i < assignations_1.length)) return [3 /*break*/, 5];
-                    assignation = assignations_1[_i];
-                    return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, dialplanContext, "Set", assignation)];
+                    _b.trys.push([2, 7, 8, 9]);
+                    assignations_1 = __values(assignations), assignations_1_1 = assignations_1.next();
+                    _b.label = 3;
                 case 3:
-                    _a.sent();
-                    _a.label = 4;
+                    if (!!assignations_1_1.done) return [3 /*break*/, 6];
+                    assignation = assignations_1_1.value;
+                    return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, dialplanContext, "Set", assignation)];
                 case 4:
-                    _i++;
-                    return [3 /*break*/, 2];
-                case 5: return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, dialplanContext, "GoTo", gotoExtension + ",1")];
-                case 6:
-                    _a.sent();
-                    return [4 /*yield*/, ami.originateLocalChannel(dialplanContext, initExtension)];
+                    _b.sent();
+                    _b.label = 5;
+                case 5:
+                    assignations_1_1 = assignations_1.next();
+                    return [3 /*break*/, 3];
+                case 6: return [3 /*break*/, 9];
                 case 7:
-                    _a.sent();
+                    e_2_1 = _b.sent();
+                    e_2 = { error: e_2_1 };
+                    return [3 /*break*/, 9];
+                case 8:
+                    try {
+                        if (assignations_1_1 && !assignations_1_1.done && (_a = assignations_1.return)) _a.call(assignations_1);
+                    }
+                    finally { if (e_2) throw e_2.error; }
+                    return [7 /*endfinally*/];
+                case 9: return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, dialplanContext, "GoTo", gotoExtension + ",1")];
+                case 10:
+                    _b.sent();
+                    return [4 /*yield*/, ami.originateLocalChannel(dialplanContext, initExtension)];
+                case 11:
+                    _b.sent();
                     return [2 /*return*/];
             }
         });

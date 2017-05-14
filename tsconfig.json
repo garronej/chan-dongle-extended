@@ -12,7 +12,8 @@
         "outDir": "./dist",
         "strictNullChecks": true,
         "sourceMap": true,
-        "newLine": "LF"
+        "newLine": "LF",
+        "downlevelIteration": true
     },
     "filesGlob": [
         "./src/**/*.ts"

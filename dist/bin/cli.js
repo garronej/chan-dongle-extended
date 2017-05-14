@@ -35,6 +35,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __values = (this && this.__values) || function (o) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
+    if (m) return m.call(o);
+    return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+};
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 require("rejection-tracker").main(__dirname, "..", "..");
@@ -84,9 +94,9 @@ program
     " ( to avoid having to set --imei on each command)"
 ].join(""))
     .action(function (imei) { return __awaiter(_this, void 0, void 0, function () {
-    var client, arrImei, _i, _a, imei_1, _b, _c, imei_2;
-    return __generator(this, function (_d) {
-        switch (_d.label) {
+    var client, arrImei, _a, _b, imei_1, e_1_1, _c, _d, imei_2, e_2_1, e_1, _e, e_2, _f;
+    return __generator(this, function (_g) {
+        switch (_g.label) {
             case 0:
                 if (!imei) {
                     console.log("Error: command malformed".red);
@@ -94,44 +104,68 @@ program
                 }
                 client = chan_dongle_extended_client_1.DongleExtendedClient.localhost();
                 arrImei = [];
-                _i = 0;
-                return [4 /*yield*/, client.getActiveDongles()];
+                _g.label = 1;
             case 1:
-                _a = _d.sent();
-                _d.label = 2;
+                _g.trys.push([1, 6, 7, 8]);
+                return [4 /*yield*/, client.getActiveDongles()];
             case 2:
-                if (!(_i < _a.length)) return [3 /*break*/, 4];
-                imei_1 = _a[_i].imei;
-                arrImei.push(imei_1);
-                _d.label = 3;
+                _a = __values.apply(void 0, [_g.sent()]), _b = _a.next();
+                _g.label = 3;
             case 3:
-                _i++;
-                return [3 /*break*/, 2];
+                if (!!_b.done) return [3 /*break*/, 5];
+                imei_1 = _b.value.imei;
+                arrImei.push(imei_1);
+                _g.label = 4;
             case 4:
-                _b = 0;
-                return [4 /*yield*/, client.getLockedDongles()];
-            case 5:
-                _c = _d.sent();
-                _d.label = 6;
+                _b = _a.next();
+                return [3 /*break*/, 3];
+            case 5: return [3 /*break*/, 8];
             case 6:
-                if (!(_b < _c.length)) return [3 /*break*/, 8];
-                imei_2 = _c[_b].imei;
-                arrImei.push(imei_2);
-                _d.label = 7;
+                e_1_1 = _g.sent();
+                e_1 = { error: e_1_1 };
+                return [3 /*break*/, 8];
             case 7:
-                _b++;
-                return [3 /*break*/, 6];
+                try {
+                    if (_b && !_b.done && (_e = _a.return)) _e.call(_a);
+                }
+                finally { if (e_1) throw e_1.error; }
+                return [7 /*endfinally*/];
             case 8:
+                _g.trys.push([8, 13, 14, 15]);
+                return [4 /*yield*/, client.getLockedDongles()];
+            case 9:
+                _c = __values.apply(void 0, [_g.sent()]), _d = _c.next();
+                _g.label = 10;
+            case 10:
+                if (!!_d.done) return [3 /*break*/, 12];
+                imei_2 = _d.value.imei;
+                arrImei.push(imei_2);
+                _g.label = 11;
+            case 11:
+                _d = _c.next();
+                return [3 /*break*/, 10];
+            case 12: return [3 /*break*/, 15];
+            case 13:
+                e_2_1 = _g.sent();
+                e_2 = { error: e_2_1 };
+                return [3 /*break*/, 15];
+            case 14:
+                try {
+                    if (_d && !_d.done && (_f = _c.return)) _f.call(_c);
+                }
+                finally { if (e_2) throw e_2.error; }
+                return [7 /*endfinally*/];
+            case 15:
                 if (arrImei.indexOf(imei) < 0) {
                     console.log("Error: no such dongle connected".red);
                     process.exit(-1);
                 }
                 return [4 /*yield*/, storage.init({ "dir": persistDir })];
-            case 9:
-                _d.sent();
+            case 16:
+                _g.sent();
                 return [4 /*yield*/, storage.setItem("cli_imei", imei)];
-            case 10:
-                _d.sent();
+            case 17:
+                _g.sent();
                 console.log("Dongle " + imei + " selected");
                 process.exit(0);
                 return [2 /*return*/];
