@@ -75,7 +75,7 @@ var Dialplan;
 (function (Dialplan) {
     var _this = this;
     var cluster = {};
-    Dialplan.notifyStatusReport = ts_exec_queue_1.execQueue(cluster, "WRITE", function (dongle, statusReport, callback) { return __awaiter(_this, void 0, void 0, function () {
+    Dialplan.notifyStatusReport = ts_exec_queue_1.execQueue(cluster, "STATUS_REPORT", function (dongle, statusReport, callback) { return __awaiter(_this, void 0, void 0, function () {
         var name, number, provider, imei, imsi, assignations, dischargeTime, isDelivered, messageId, status, recipient;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -127,7 +127,7 @@ var Dialplan;
                     ]);
                     text = message.text;
                     keywordSplit = "SMS_BASE64_PART_";
-                    textSplit = chan_dongle_extended_client_1.lineSplitBase64(text, "ApplicationData" + keywordSplit + "000=Set()");
+                    textSplit = chan_dongle_extended_client_1.textSplitBase64ForAmiEncodeFirst(text, "ApplicationData" + (keywordSplit + "000=Set()"));
                     assignations.push("SMS_TEXT_SPLIT_COUNT=" + textSplit.length);
                     for (i = 0; i < textSplit.length; i++)
                         assignations.push("" + keywordSplit + i + "=" + textSplit[i]);
@@ -136,7 +136,7 @@ var Dialplan;
                     truncatedText = text.substring(0, 1000);
                     if (truncatedText.length < text.length)
                         truncatedText += " [ truncated ]";
-                    textTruncatedSplit = chan_dongle_extended_client_1.lineSplitBase64(truncatedText, "ApplicationData" + actionConcatenate + "=Set()");
+                    textTruncatedSplit = chan_dongle_extended_client_1.textSplitBase64ForAmiEncodeFirst(truncatedText, "ApplicationData" + (actionConcatenate + "=Set()"));
                     assignations.push(keywordTruncated + "=" + textTruncatedSplit.shift());
                     try {
                         for (textTruncatedSplit_1 = __values(textTruncatedSplit), textTruncatedSplit_1_1 = textTruncatedSplit_1.next(); !textTruncatedSplit_1_1.done; textTruncatedSplit_1_1 = textTruncatedSplit_1.next()) {

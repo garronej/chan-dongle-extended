@@ -1,5 +1,8 @@
 import { execQueue, ExecQueue } from "ts-exec-queue";
-import { DongleExtendedClient, lineSplitBase64 } from "chan-dongle-extended-client";
+import { 
+    DongleExtendedClient, 
+    textSplitBase64ForAmiEncodeFirst 
+} from "chan-dongle-extended-client";
 
 import { Message, StatusReport } from "ts-gsm-modem";
 
@@ -22,7 +25,7 @@ export namespace Dialplan {
 
     const cluster = {};
 
-    export const notifyStatusReport = execQueue(cluster, "WRITE",
+    export const notifyStatusReport = execQueue(cluster, "STATUS_REPORT",
         async (dongle: DongleIdentifier, statusReport: StatusReport, callback?: () => void) => {
 
             let { name, number, provider, imei, imsi } = dongle;
@@ -78,25 +81,30 @@ export namespace Dialplan {
 
             let { text } = message;
 
+            let keywordSplit = "SMS_BASE64_PART_";
 
-            let keywordSplit= "SMS_BASE64_PART_";
-
-            let textSplit = lineSplitBase64(text, `ApplicationData${keywordSplit}000=Set()`);
+            let textSplit = textSplitBase64ForAmiEncodeFirst(
+                text,
+                "ApplicationData" + `${keywordSplit}000=Set()`
+            );
 
             assignations.push(`SMS_TEXT_SPLIT_COUNT=${textSplit.length}`);
 
             for (let i = 0; i < textSplit.length; i++)
                 assignations.push(`${keywordSplit}${i}=${textSplit[i]}`);
-            
-            let keywordTruncated= "SMS_BASE64";
-            let actionConcatenate= keywordTruncated + "=${" + keywordTruncated + "}";
+
+            let keywordTruncated = "SMS_BASE64";
+            let actionConcatenate = keywordTruncated + "=${" + keywordTruncated + "}";
 
             let truncatedText = text.substring(0, 1000);
 
             if (truncatedText.length < text.length)
                 truncatedText += " [ truncated ]";
 
-            let textTruncatedSplit = lineSplitBase64( truncatedText, `ApplicationData${actionConcatenate}=Set()` );
+            let textTruncatedSplit = textSplitBase64ForAmiEncodeFirst(
+                truncatedText,
+                "ApplicationData" + `${actionConcatenate}=Set()`
+            );
 
             assignations.push(`${keywordTruncated}=${textTruncatedSplit.shift()}`);
 
@@ -124,12 +132,10 @@ async function assignAndOriginate(assignations: string[], gotoExtension: string)
 
     await ami.addDialplanExtension(initExtension, priority++, dialplanContext, "Answer");
 
-    
-
     for (let assignation of assignations)
-        await ami.addDialplanExtension(initExtension, priority++, dialplanContext, "Set", assignation );
+        await ami.addDialplanExtension(initExtension, priority++, dialplanContext, "Set", assignation);
 
-    await ami.addDialplanExtension(initExtension, priority++, dialplanContext, "GoTo", `${gotoExtension},1` );
+    await ami.addDialplanExtension(initExtension, priority++, dialplanContext, "GoTo", `${gotoExtension},1`);
 
     await ami.originateLocalChannel(dialplanContext, initExtension);
 
