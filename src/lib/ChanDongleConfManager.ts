@@ -21,7 +21,7 @@ export interface DongleConf {
 export const defaultConfig = {
     "general": {
         "interval": "10000000",
-        "jbenable": "yes",
+        "jbenable": "no",
         "jbmaxsize": "100",
         "jbimpl": "fixed"
     },
@@ -57,6 +57,8 @@ export type ModuleConfiguration={
     [dongleName: string]: {
         audio?: string;
         data?: string;
+        rxgain?: string,
+        txgain?: string,
     };
 };
 
@@ -92,6 +94,15 @@ export namespace ChanDongleConfManager {
         async ({ dongleName, data, audio }: DongleConf, callback?: () => void) => {
 
             if (!config) config = loadConfig();
+
+            /*
+            config[dongleName] = {
+                "audio": audio,
+                "data": data,
+                "rxgain": "20",
+                "txgain": "-20"
+            };
+            */
 
             config[dongleName] = {
                 "audio": audio,

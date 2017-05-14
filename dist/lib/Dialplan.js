@@ -8,8 +8,8 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 var __generator = (this && this.__generator) || function (thisArg, body) {
-    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t;
-    return { next: verb(0), "throw": verb(1), "return": verb(2) };
+    var _ = { label: 0, sent: function() { if (t[0] & 1) throw t[1]; return t[1]; }, trys: [], ops: [] }, f, y, t, g;
+    return g = { next: verb(0), "throw": verb(1), "return": verb(2) }, typeof Symbol === "function" && (g[Symbol.iterator] = function() { return this; }), g;
     function verb(n) { return function (v) { return step([n, v]); }; }
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
@@ -76,7 +76,7 @@ var Dialplan;
         });
     }); });
     Dialplan.notifySms = ts_exec_queue_1.execQueue(cluster, "NOTIFY_SMS", function (dongle, message, callback) { return __awaiter(_this, void 0, void 0, function () {
-        var name, number, provider, imei, imsi, assignations, text, textSplit, i, truncatedText, textTruncatedSplit, _i, textTruncatedSplit_1, part;
+        var name, number, provider, imei, imsi, assignations, text, keywordSplit, textSplit, i, keywordTruncated, actionConcatenate, truncatedText, textTruncatedSplit, _i, textTruncatedSplit_1, part;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -96,18 +96,21 @@ var Dialplan;
                         "SMS_DATE=" + message.date.toISOString()
                     ]);
                     text = message.text;
-                    textSplit = chan_dongle_extended_client_1.strDivide(200, encodeURI(text));
+                    keywordSplit = "SMS_BASE64_PART_";
+                    textSplit = chan_dongle_extended_client_1.lineSplitBase64(text, "ApplicationData" + keywordSplit + "000=Set()");
                     assignations.push("SMS_TEXT_SPLIT_COUNT=" + textSplit.length);
                     for (i = 0; i < textSplit.length; i++)
-                        assignations.push("SMS_TEXT_P" + i + "=" + textSplit[i]);
-                    truncatedText = text.substring(0, 2048);
+                        assignations.push("" + keywordSplit + i + "=" + textSplit[i]);
+                    keywordTruncated = "SMS_BASE64";
+                    actionConcatenate = keywordTruncated + "=${" + keywordTruncated + "}";
+                    truncatedText = text.substring(0, 1000);
                     if (truncatedText.length < text.length)
                         truncatedText += " [ truncated ]";
-                    textTruncatedSplit = chan_dongle_extended_client_1.strDivide(200, encodeURI(truncatedText));
-                    assignations.push("SMS_URI_ENCODED=" + textTruncatedSplit.shift());
+                    textTruncatedSplit = chan_dongle_extended_client_1.lineSplitBase64(truncatedText, "ApplicationData" + actionConcatenate + "=Set()");
+                    assignations.push(keywordTruncated + "=" + textTruncatedSplit.shift());
                     for (_i = 0, textTruncatedSplit_1 = textTruncatedSplit; _i < textTruncatedSplit_1.length; _i++) {
                         part = textTruncatedSplit_1[_i];
-                        assignations.push("SMS_URI_ENCODED=${SMS_URI_ENCODED}" + part);
+                        assignations.push("" + actionConcatenate + part);
                     }
                     assignations.push("SMS=" + JSON.stringify(text.substring(0, 200)));
                     return [4 /*yield*/, assignAndOriginate(assignations, smsExtension)];
@@ -128,7 +131,7 @@ function assignAndOriginate(assignations, gotoExtension) {
                     ami = chan_dongle_extended_client_1.DongleExtendedClient.localhost().ami;
                     priority = 1;
                     initExtension = "init-" + gotoExtension;
-                    return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, "Answer()", dialplanContext)];
+                    return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, dialplanContext, "Answer")];
                 case 1:
                     _a.sent();
                     _i = 0, assignations_1 = assignations;
@@ -136,14 +139,14 @@ function assignAndOriginate(assignations, gotoExtension) {
                 case 2:
                     if (!(_i < assignations_1.length)) return [3 /*break*/, 5];
                     assignation = assignations_1[_i];
-                    return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, "Set(" + assignation + ")", dialplanContext)];
+                    return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, dialplanContext, "Set", assignation)];
                 case 3:
                     _a.sent();
                     _a.label = 4;
                 case 4:
                     _i++;
                     return [3 /*break*/, 2];
-                case 5: return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, "GoTo(" + gotoExtension + ",1)", dialplanContext)];
+                case 5: return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, dialplanContext, "GoTo", gotoExtension + ",1")];
                 case 6:
                     _a.sent();
                     return [4 /*yield*/, ami.originateLocalChannel(dialplanContext, initExtension)];

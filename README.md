@@ -57,7 +57,7 @@ The module has a specific JavaScript client: `garronej/chan-dongle-extended-clie
 
 #Dialplan example:
 
-In this example we echo reply any message that any dongle receive.
+In this example we reply "OK, got you! 👌" to any message we receive
 ````ini
 [from-dongle]
 
@@ -65,10 +65,11 @@ In this example we echo reply any message that any dongle receive.
 exten = reassembled-sms,1,NoOp(reassembled-sms)
 same = n,NoOp(SMS_NUMBER=${SMS_NUMBER})
 same = n,NoOp(SMS_DATE=${SMS_DATE})
-same = n,NoOp(URIDECODE(SMS_URI_ENCODED)=${URIDECODE(${SMS_URI_ENCODED})})
-same = n,Set(MESSAGE_ID=${SHELL(dongle send --imei ${DONGLEIMEI} --number ${SMS_NUMBER} --uri-encoded-text "${SMS_URI_ENCODED}")})
+same = n,NoOp(BASE64_DECODE(SMS_BASE64)=${BASE64_DECODE(${SMS_BASE64})})
+same = n,Set(MESSAGE_ID=${SHELL(dongle send --imei ${DONGLEIMEI} --number ${SMS_NUMBER} --text-base64 ${BASE64_ENCODE(OK, got you! 👌)})})
 ;Or just use System instead of SHELL system if you don't care about the status report
-;same = n,System(dongle send --imei ${DONGLEIMEI} --number ${SMS_NUMBER} --uri-encoded-text "${URIENCODE(${URIDECODE(${SMS_URI_ENCODED})})}")
+;same = n,System(dongle send --i ${DONGLEIMEI} --n ${SMS_NUMBER} --t64 ${BASE64_ENCODE(OK, got you! 👌)})
+same = n,Hangup()
 
 ;Check that the message have been received
 exten = sms-status-report,1,NoOp(sms-status-report)
@@ -76,15 +77,16 @@ same = n,NoOp(STATUS_REPORT_DISCHARGE_TIME=${STATUS_REPORT_DISCHARGE_TIME})
 same = n,NoOp(STATUS_REPORT_IS_DELIVERED=${STATUS_REPORT_IS_DELIVERED})
 same = n,NoOp(STATUS_REPORT_ID=${STATUS_REPORT_ID})
 same = n,NoOp(STATUS_REPORT_STATUS=${STATUS_REPORT_STATUS})
+same = n,Hangup()
 ````
 
 * Asterisk log: 
 
 ````raw
-    -- Executing [reassembled-sms@from-dongle:1] NoOp("Local/init-reassembled-sms@from-dongle-00000053;2", "reassembled-sms") in new stack
-    -- Executing [reassembled-sms@from-dongle:2] NoOp("Local/init-reassembled-sms@from-dongle-00000053;2", "SMS_NUMBER=+33636786385") in new stack
-    -- Executing [reassembled-sms@from-dongle:3] NoOp("Local/init-reassembled-sms@from-dongle-00000053;2", "SMS_DATE=2017-04-14T21:33:07.000Z") in new stack 
-    -- Executing [reassembled-sms@from-dongle:4] NoOp("Local/init-reassembled-sms@from-dongle-00000053;2", "URIDECODE(SMS_URI_ENCODED)= Un mal qui répand la terreur,
+    -- Executing [reassembled-sms@from-dongle:1] NoOp("Local/init-reassembled-sms@from-dongle-0000001b;2", "reassembled-sms") in new stack
+    -- Executing [reassembled-sms@from-dongle:2] NoOp("Local/init-reassembled-sms@from-dongle-0000001b;2", "SMS_NUMBER=+33636786385") in new stack
+    -- Executing [reassembled-sms@from-dongle:3] NoOp("Local/init-reassembled-sms@from-dongle-0000001b;2", "SMS_DATE=2017-05-14T17:37:45.000Z") in new stack
+    -- Executing [reassembled-sms@from-dongle:4] NoOp("Local/init-reassembled-sms@from-dongle-0000001b;2", "BASE64_DECODE(SMS_BASE64)=Un mal qui répand la terreur,
     -- Mal que le Ciel en sa fureur
     -- Inventa pour punir les crimes de la terre,
     -- La Peste (puisqu’il faut l’appeler par son nom),
@@ -103,20 +105,24 @@ same = n,NoOp(STATUS_REPORT_STATUS=${STATUS_REPORT_STATUS})
     -- Pour nos péchés cette infortune.
     -- Que le plus coupable de nous
     -- Se sacrifie aux traits du céleste courroux ;
-    -- Peut-être il obtiendra la guérison commune.
-    -- L’histoire nous apprend qu’en de tels accidents
-    -- On fait de pareils dévouements.
-    -- 🐵🙈🙉🙊") in new stack
+    -- Peut-être il obtiendra la guérison commune.") in new stack
+    -- Executing [reassembled-sms@from-dongle:5] Set("Local/init-reassembled-sms@from-dongle-0000001b;2", "MESSAGE_ID=1494783564908
+    -- ") in new stack
+    -- Executing [reassembled-sms@from-dongle:6] Hangup("Local/init-reassembled-sms@from-dongle-0000001b;2", "") in new stack
 
-    ...
+    ... Then when "OK, got you! 👌"  received :
 
-    -- Executing [sms-status-report@from-dongle:1] NoOp("Local/init-sms-status-report@from-dongle-00000054;2", "sms-status-report") in new stack
-    -- Executing [sms-status-report@from-dongle:2] NoOp("Local/init-sms-status-report@from-dongle-00000054;2", "STATUS_REPORT_DISCHARGE_TIME=2017-04-14T21:33:54.000Z") in new stack
-    -- Executing [sms-status-report@from-dongle:3] NoOp("Local/init-sms-status-report@from-dongle-00000054;2", "STATUS_REPORT_IS_DELIVERED=true") in new stack
-    -- Executing [sms-status-report@from-dongle:4] NoOp("Local/init-sms-status-report@from-dongle-00000054;2", "STATUS_REPORT_ID=1492205624999") in new stack
-    -- Executing [sms-status-report@from-dongle:5] NoOp("Local/init-sms-status-report@from-dongle-00000054;2", "STATUS_REPORT_STATUS=COMPLETED_RECEIVED") in new stack
-
+    -- Goto (from-dongle,sms-status-report,1)
+    -- Executing [sms-status-report@from-dongle:1] NoOp("Local/init-sms-status-report@from-dongle-0000001c;2", "sms-status-report") in new stack
+    -- Executing [sms-status-report@from-dongle:2] NoOp("Local/init-sms-status-report@from-dongle-0000001c;2", "STATUS_REPORT_DISCHARGE_TIME=2017-05-14T17:39:27.000Z") in new stack
+    -- Executing [sms-status-report@from-dongle:3] NoOp("Local/init-sms-status-report@from-dongle-0000001c;2", "STATUS_REPORT_IS_DELIVERED=true") in new stack
+    -- Executing [sms-status-report@from-dongle:4] NoOp("Local/init-sms-status-report@from-dongle-0000001c;2", "STATUS_REPORT_ID=1494783564908") in new stack
+    -- Executing [sms-status-report@from-dongle:5] NoOp("Local/init-sms-status-report@from-dongle-0000001c;2", "STATUS_REPORT_STATUS=COMPLETED_RECEIVED") in new stack
+    -- Executing [sms-status-report@from-dongle:6] Hangup("Local/init-sms-status-report@from-dongle-0000001c;2", "") in new stack
 ````
+
+Note: SMS_BASE64 truncate message of more than 2000 character, this is an expected behavior, it is due to the size limitation of asterisk's 
+dialplan variable. You can use the SMS_TEXT_SPLIT_COUNT=n and SMS_BASE64_PART_0..n-1 variables to retrieve very long SMS.
 
 #Requirement
 

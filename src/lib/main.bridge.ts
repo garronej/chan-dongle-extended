@@ -17,9 +17,14 @@ let debug = _debug("_main.bridge");
 
 activeModems.evtSet.attach(async ([{ modem, accessPoint, dongleName }]) => {
 
+    if( 1 + 1 === 3 ){
+
+        debug("chan_dongle bridge disabled");
+
+        return;
+    }
+
     let voidModem = Tty0tty.getPair();
-
-
 
     ChanDongleConfManager.addDongle({
         dongleName,

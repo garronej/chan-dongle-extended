@@ -5,6 +5,7 @@ import * as program from "commander";
 import { DongleExtendedClient } from "chan-dongle-extended-client";
 import * as storage from "node-persist";
 import * as path from "path";
+import { Base64 } from "js-base64";
 import "colors";
 
 const persistDir = path.join(__dirname, "..", "..", ".node-persist", "storage");
@@ -126,12 +127,12 @@ program
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("-n, --number [number]", "target phone number")
     .option("-t, --text [text]", "Text of the message")
-    .option("-ut, --uri-encoded-text [uriEncodedText]", "Text URI encoded")
+    .option("-t64, --text-base64 [textBase64]", "Text Base64 encoded")
     .action(async options => {
 
-        let { number, text, uriEncodedText } = options;
+        let { number, text, textBase64 } = options;
 
-        if (!number || (!text && !uriEncodedText)) {
+        if (!number || (!text && !textBase64)) {
             console.log("Error: command malformed".red);
             console.log(options.optionHelp());
             process.exit(-1);
@@ -139,7 +140,7 @@ program
 
         let imei = await getImei(options);
 
-        text = uriEncodedText ? decodeURI(uriEncodedText) : JSON.parse(`"${text}"`);
+        text = textBase64 ? Base64.decode(textBase64) : JSON.parse(`"${text}"`);
 
         let messageId = await DongleExtendedClient
             .localhost()

@@ -40,6 +40,8 @@ export declare type ModuleConfiguration = {
     [dongleName: string]: {
         audio?: string;
         data?: string;
+        rxgain?: string;
+        txgain?: string;
     };
 };
 export declare namespace ChanDongleConfManager {

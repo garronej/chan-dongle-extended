@@ -1,6 +1,6 @@
 {
   "name": "chan-dongle-extended",
-  "version": "1.3.8",
+  "version": "1.4.0",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
@@ -30,26 +30,28 @@
   "license": "MIT",
   "dependencies": {
     "chan-dongle-extended-client": "garronej/chan-dongle-extended-client",
+    "colors": "^1.1.2",
+    "commander": "^2.9.0",
+    "debug": "^2.6.1",
     "gsm-modem-connection": "garronej/gsm-modem-connection",
     "ini-extended": "github:garronej/ini-extended",
+    "js-base64": "^2.1.9",
+    "node-persist": "^2.0.10",
     "rejection-tracker": "github:garronej/rejection-tracker",
     "timer-extended": "garronej/timer-extended",
     "trackable-map": "garronej/trackable-map",
     "ts-events-extended": "garronej/ts-events-extended",
     "ts-exec-queue": "garronej/ts-exec-queue",
     "ts-gsm-modem": "garronej/ts-gsm-modem",
-    "ts-promisify": "garronej/ts-promisify",
-    "node-persist": "^2.0.10",
-    "colors": "^1.1.2",
-    "commander": "^2.9.0",
-    "debug": "^2.6.1"
+    "ts-promisify": "garronej/ts-promisify"
   },
   "devDependencies": {
-    "typescript": "^2.2.2",
     "@types/chai": "^3.4.34",
     "@types/colors": "^1.1.1",
     "@types/debug": "0.0.29",
+    "@types/js-base64": "^2.1.5",
     "@types/node": "^4.2.2",
-    "@types/node-persist": "0.0.31"
+    "@types/node-persist": "0.0.31",
+    "typescript": "^2.2.2"
   }
 }
