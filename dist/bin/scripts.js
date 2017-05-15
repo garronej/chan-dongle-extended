@@ -62,7 +62,7 @@ var program = require("commander");
 var gsm_modem_connection_1 = require("gsm-modem-connection");
 var vendorIds = Object.keys(gsm_modem_connection_1.recordIfNum);
 var ini_extended_1 = require("ini-extended");
-var ChanDongleConfManager_1 = require("../lib/ChanDongleConfManager");
+var chanDongleConfManager_1 = require("../lib/chanDongleConfManager");
 require("colors");
 program
     .command("postinstall")
@@ -378,7 +378,7 @@ function resetChanDongle() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, ChanDongleConfManager_1.ChanDongleConfManager.reset()];
+                case 0: return [4 /*yield*/, chanDongleConfManager_1.chanDongleConfManager.reset()];
                 case 1:
                     _a.sent();
                     return [4 /*yield*/, run("chmod u+rw,g+rw,o+rw " + dongleConfPath)];

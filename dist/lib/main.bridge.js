@@ -55,7 +55,7 @@ var __read = (this && this.__read) || function (o, n) {
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var ts_gsm_modem_1 = require("ts-gsm-modem");
-var ChanDongleConfManager_1 = require("./ChanDongleConfManager");
+var chanDongleConfManager_1 = require("./chanDongleConfManager");
 var Tty0tty_1 = require("./Tty0tty");
 var main_1 = require("./main");
 var pr = require("ts-promisify");
@@ -74,7 +74,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         return [2 /*return*/];
                     }
                     voidModem = Tty0tty_1.Tty0tty.getPair();
-                    ChanDongleConfManager_1.ChanDongleConfManager.addDongle({
+                    chanDongleConfManager_1.chanDongleConfManager.addDongle({
                         dongleName: dongleName,
                         "data": voidModem.rightEnd,
                         "audio": accessPoint.audioIfPath
@@ -88,7 +88,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                             switch (_a.label) {
                                 case 0:
                                     debug("Modem terminate => closing bridge");
-                                    return [4 /*yield*/, ChanDongleConfManager_1.ChanDongleConfManager.removeDongle(dongleName)];
+                                    return [4 /*yield*/, chanDongleConfManager_1.chanDongleConfManager.removeDongle(dongleName)];
                                 case 1:
                                     _a.sent();
                                     debug("Dongle removed from chan dongle config");

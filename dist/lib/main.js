@@ -56,7 +56,7 @@ require("rejection-tracker").main(__dirname, "..", "..");
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var gsm_modem_connection_1 = require("gsm-modem-connection");
 var trackable_map_1 = require("trackable-map");
-var Storage_1 = require("./Storage");
+var appStorage_1 = require("./appStorage");
 var _debug = require("debug");
 var debug = _debug("_main");
 exports.activeModems = new trackable_map_1.TrackableMap();
@@ -70,7 +70,7 @@ debug("Daemon started!");
 gsm_modem_connection_1.Monitor.evtModemDisconnect.attach(function (accessPoint) { return debug("DISCONNECT: " + accessPoint.toString()); });
 gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { return __awaiter(_this, void 0, void 0, function () {
     var _this = this;
-    var _a, error, modem, hasSim, data, dongleName;
+    var _a, error, modem, hasSim, appData, dongleName;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -92,12 +92,12 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
                 else
                     debug("for dongle IMEI: " + modem.imei + ", because SIM ICCID is not readable with this dongle when SIM is locked");
                 console.log("lock");
-                return [4 /*yield*/, Storage_1.Storage.read()];
+                return [4 /*yield*/, appStorage_1.appStorage.read()];
             case 2:
-                data = _b.sent();
-                data.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
+                appData = _b.sent();
+                appData.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
                 console.log("unlock");
-                data.release();
+                appData.release();
                 _b.label = 3;
             case 3:
                 exports.lockedModems.delete(modem.imei);

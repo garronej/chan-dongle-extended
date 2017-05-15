@@ -65,7 +65,7 @@ export type ModuleConfiguration={
 
 let config: ModuleConfiguration | undefined = undefined;
 
-export namespace ChanDongleConfManager {
+export namespace chanDongleConfManager {
 
     const cluster = {};
 

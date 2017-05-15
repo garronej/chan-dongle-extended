@@ -72,12 +72,12 @@ var __values = (this && this.__values) || function (o) {
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var main_1 = require("./main");
-var Storage_1 = require("./Storage");
+var appStorage_1 = require("./appStorage");
 var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
 var Event = chan_dongle_extended_client_1.UserEvent.Event;
 var Response = chan_dongle_extended_client_1.UserEvent.Response;
 var Request = chan_dongle_extended_client_1.UserEvent.Request;
-var Dialplan_1 = require("./Dialplan");
+var dialplan_1 = require("./dialplan");
 var _debug = require("debug");
 var debug = _debug("_main.ami");
 var client = chan_dongle_extended_client_1.DongleExtendedClient.localhost();
@@ -89,7 +89,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
     var _b = __read(_a, 2), _c = _b[0], modem = _c.modem, dongleName = _c.dongleName, imei = _b[1];
     return __awaiter(_this, void 0, void 0, function () {
         var _this = this;
-        var data, imsi;
+        var appData, imsi;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -100,11 +100,11 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         debug("for SIM ICCID: " + modem.iccid);
                     else
                         debug("for dongle IMEI: " + modem.imei + ", because SIM ICCID is not readable with this dongle when SIM is locked");
-                    return [4 /*yield*/, Storage_1.Storage.read()];
+                    return [4 /*yield*/, appStorage_1.appStorage.read()];
                 case 1:
-                    data = _a.sent();
-                    data.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
-                    data.release();
+                    appData = _a.sent();
+                    appData.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
+                    appData.release();
                     _a.label = 2;
                 case 2:
                     client.postUserEventAction(Event.NewActiveDongle.buildAction(imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || ""));
@@ -114,7 +114,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         return __generator(this, function (_a) {
                             messageId = statusReport.messageId, dischargeTime = statusReport.dischargeTime, isDelivered = statusReport.isDelivered, status = statusReport.status, recipient = statusReport.recipient;
                             client.postUserEventAction(Event.MessageStatusReport.buildAction(imei, messageId.toString(), dischargeTime.toISOString(), isDelivered ? "true" : "false", status, recipient));
-                            Dialplan_1.Dialplan.notifyStatusReport({
+                            dialplan_1.dialplan.notifyStatusReport({
                                 "name": dongleName,
                                 "number": modem.number || "",
                                 imei: imei,
@@ -125,19 +125,19 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         });
                     }); });
                     modem.evtMessage.attach(function (message) { return __awaiter(_this, void 0, void 0, function () {
-                        var data, number, date, text;
+                        var appData, number, date, text;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
-                                case 0: return [4 /*yield*/, Storage_1.Storage.read()];
+                                case 0: return [4 /*yield*/, appStorage_1.appStorage.read()];
                                 case 1:
-                                    data = _a.sent();
-                                    if (!data.messages[imsi])
-                                        data.messages[imsi] = [];
-                                    data.messages[imsi].push(message);
-                                    data.release();
+                                    appData = _a.sent();
+                                    if (!appData.messages[imsi])
+                                        appData.messages[imsi] = [];
+                                    appData.messages[imsi].push(message);
+                                    appData.release();
                                     number = message.number, date = message.date, text = message.text;
                                     client.postUserEventAction(chan_dongle_extended_client_1.UserEvent.Event.NewMessage.buildAction(imei, number, date.toISOString(), text));
-                                    Dialplan_1.Dialplan.notifySms({
+                                    dialplan_1.dialplan.notifySms({
                                         "name": dongleName,
                                         "number": modem.number || "",
                                         imei: imei,
@@ -160,18 +160,18 @@ main_1.activeModems.evtDelete.attach(function (_a) {
 main_1.lockedModems.evtSet.attach(function (_a) {
     var _b = __read(_a, 2), _c = _b[0], iccid = _c.iccid, pinState = _c.pinState, tryLeft = _c.tryLeft, callback = _c.callback, imei = _b[1];
     return __awaiter(_this, void 0, void 0, function () {
-        var data, pin;
+        var appData, pin;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     debug("Locked modem IMEI: " + imei + ",ICCID: " + iccid + ", " + pinState + ", " + tryLeft);
-                    return [4 /*yield*/, Storage_1.Storage.read()];
+                    return [4 /*yield*/, appStorage_1.appStorage.read()];
                 case 1:
-                    data = _a.sent();
-                    pin = data.pins[iccid || imei];
+                    appData = _a.sent();
+                    pin = appData.pins[iccid || imei];
                     if (pin)
-                        delete data.pins[iccid || imei];
-                    data.release();
+                        delete appData.pins[iccid || imei];
+                    appData.release();
                     if (pin && pinState === "SIM PIN" && tryLeft === 3) {
                         debug("Using stored pin " + pin + " for unlocking dongle");
                         main_1.lockedModems.delete(imei);
@@ -185,7 +185,7 @@ main_1.lockedModems.evtSet.attach(function (_a) {
     });
 });
 client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __awaiter(_this, void 0, void 0, function () {
-    var actionid, command, replyError, modem, text, messageId, imei, _a, modem, accessPoint, id, _b, _c, imei, _d, iccid, pinState, tryLeft, e_1_1, imsi, data, messages, messages_1, messages_1_1, _e, number, date, text, e_2_1, modem, contacts, contacts_1, contacts_1_1, _f, index, name_1, number, e_3_1, modem, name_2, number, contact, modem, index, _g, _h, imei, modem, iccid, imsi, number, serviceProviderName, e_4_1, imei, lockedModem, pinState, tryLeft, unlockCallback, pin, puk, newpin, e_1, _j, e_2, _k, e_3, _l, e_4, _m;
+    var actionid, command, replyError, modem, text, messageId, imei, _a, modem, accessPoint, id, _b, _c, imei, _d, iccid, pinState, tryLeft, e_1_1, imsi, appData, messages, messages_1, messages_1_1, _e, number, date, text, e_2_1, modem, contacts, contacts_1, contacts_1_1, _f, index, name_1, number, e_3_1, modem, name_2, number, contact, modem, index, _g, _h, imei, modem, iccid, imsi, number, serviceProviderName, e_4_1, imei, lockedModem, pinState, tryLeft, unlockCallback, pin, puk, newpin, e_1, _j, e_2, _k, e_3, _l, e_4, _m;
     return __generator(this, function (_o) {
         switch (_o.label) {
             case 0:
@@ -258,13 +258,13 @@ client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __aw
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 imsi = main_1.activeModems.get(evtRequest.imei).modem.imsi;
-                return [4 /*yield*/, Storage_1.Storage.read()];
+                return [4 /*yield*/, appStorage_1.appStorage.read()];
             case 15:
-                data = _o.sent();
-                messages = data.messages[imsi] || [];
+                appData = _o.sent();
+                messages = appData.messages[imsi] || [];
                 if (evtRequest.flush === "true" && messages.length)
-                    delete data.messages[imsi];
-                data.release();
+                    delete appData.messages[imsi];
+                appData.release();
                 return [4 /*yield*/, client.postUserEventAction(Response.GetMessages.Infos.buildAction(actionid, messages.length.toString()))];
             case 16:
                 _o.sent();

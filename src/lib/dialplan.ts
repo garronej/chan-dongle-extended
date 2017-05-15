@@ -1,27 +1,26 @@
 import { execQueue, ExecQueue } from "ts-exec-queue";
-import { 
-    DongleExtendedClient, 
-    textSplitBase64ForAmiEncodeFirst 
+import {
+    DongleExtendedClient,
+    textSplitBase64ForAmiEncodeFirst
 } from "chan-dongle-extended-client";
 
 import { Message, StatusReport } from "ts-gsm-modem";
 
-import { ChanDongleConfManager } from "./ChanDongleConfManager";
-const dialplanContext = ChanDongleConfManager.getConfig().defaults.context;
+import { chanDongleConfManager } from "./chanDongleConfManager";
+const dialplanContext = chanDongleConfManager.getConfig().defaults.context;
 
 const smsExtension = "reassembled-sms";
 const smsStatusReportExtension = "sms-status-report";
 
+export interface DongleIdentifier {
+    name: string;
+    imei: string;
+    imsi: string;
+    number: string;
+    provider: string;
+}
 
-export namespace Dialplan {
-
-    export interface DongleIdentifier {
-        name: string;
-        imei: string;
-        imsi: string;
-        number: string;
-        provider: string;
-    }
+export namespace dialplan {
 
     const cluster = {};
 
@@ -85,7 +84,7 @@ export namespace Dialplan {
 
             let textSplit = textSplitBase64ForAmiEncodeFirst(
                 text,
-                "ApplicationData" + `${keywordSplit}000=Set()`
+                "ApplicationData" + `${keywordSplit}000=`
             );
 
             assignations.push(`SMS_TEXT_SPLIT_COUNT=${textSplit.length}`);
@@ -103,7 +102,7 @@ export namespace Dialplan {
 
             let textTruncatedSplit = textSplitBase64ForAmiEncodeFirst(
                 truncatedText,
-                "ApplicationData" + `${actionConcatenate}=Set()`
+                "ApplicationData" + `${actionConcatenate}`
             );
 
             assignations.push(`${keywordTruncated}=${textTruncatedSplit.shift()}`);
@@ -122,6 +121,7 @@ export namespace Dialplan {
 
 }
 
+
 async function assignAndOriginate(assignations: string[], gotoExtension: string) {
 
     const ami = DongleExtendedClient.localhost().ami;
@@ -130,12 +130,12 @@ async function assignAndOriginate(assignations: string[], gotoExtension: string)
 
     let initExtension = `init-${gotoExtension}`;
 
-    await ami.addDialplanExtension(initExtension, priority++, dialplanContext, "Answer");
+    await ami.addDialplanExtension(dialplanContext, initExtension, priority++, "Answer");
 
     for (let assignation of assignations)
-        await ami.addDialplanExtension(initExtension, priority++, dialplanContext, "Set", assignation);
+        await ami.addDialplanExtension(dialplanContext, initExtension, priority++, "Set", assignation);
 
-    await ami.addDialplanExtension(initExtension, priority++, dialplanContext, "GoTo", `${gotoExtension},1`);
+    await ami.addDialplanExtension(dialplanContext, initExtension, priority++, "GoTo", `${gotoExtension},1`);
 
     await ami.originateLocalChannel(dialplanContext, initExtension);
 

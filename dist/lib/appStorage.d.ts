@@ -1,6 +1,6 @@
 import { Message } from "chan-dongle-extended-client";
 export declare const JSON_parse_WithDate: (str: string) => any;
-export declare type StorageData = {
+export declare type AppData = {
     pins: {
         [iccidOrImei: string]: string;
     };
@@ -8,8 +8,9 @@ export declare type StorageData = {
         [imsi: string]: Message[];
     };
 };
-export declare namespace Storage {
-    function read(): Promise<StorageData & {
-        readonly release: () => Promise<void>;
-    }>;
+export declare type ReadOutput = AppData & {
+    readonly release: () => Promise<void>;
+};
+export declare namespace appStorage {
+    function read(): Promise<ReadOutput>;
 }

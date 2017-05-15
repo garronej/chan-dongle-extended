@@ -67,15 +67,15 @@ var __values = (this && this.__values) || function (o) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var ts_exec_queue_1 = require("ts-exec-queue");
 var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
-var ChanDongleConfManager_1 = require("./ChanDongleConfManager");
-var dialplanContext = ChanDongleConfManager_1.ChanDongleConfManager.getConfig().defaults.context;
+var chanDongleConfManager_1 = require("./chanDongleConfManager");
+var dialplanContext = chanDongleConfManager_1.chanDongleConfManager.getConfig().defaults.context;
 var smsExtension = "reassembled-sms";
 var smsStatusReportExtension = "sms-status-report";
-var Dialplan;
-(function (Dialplan) {
+var dialplan;
+(function (dialplan) {
     var _this = this;
     var cluster = {};
-    Dialplan.notifyStatusReport = ts_exec_queue_1.execQueue(cluster, "STATUS_REPORT", function (dongle, statusReport, callback) { return __awaiter(_this, void 0, void 0, function () {
+    dialplan.notifyStatusReport = ts_exec_queue_1.execQueue(cluster, "STATUS_REPORT", function (dongle, statusReport, callback) { return __awaiter(_this, void 0, void 0, function () {
         var name, number, provider, imei, imsi, assignations, dischargeTime, isDelivered, messageId, status, recipient;
         return __generator(this, function (_a) {
             switch (_a.label) {
@@ -105,7 +105,7 @@ var Dialplan;
             }
         });
     }); });
-    Dialplan.notifySms = ts_exec_queue_1.execQueue(cluster, "NOTIFY_SMS", function (dongle, message, callback) { return __awaiter(_this, void 0, void 0, function () {
+    dialplan.notifySms = ts_exec_queue_1.execQueue(cluster, "NOTIFY_SMS", function (dongle, message, callback) { return __awaiter(_this, void 0, void 0, function () {
         var name, number, provider, imei, imsi, assignations, text, keywordSplit, textSplit, i, keywordTruncated, actionConcatenate, truncatedText, textTruncatedSplit, textTruncatedSplit_1, textTruncatedSplit_1_1, part, e_1, _a;
         return __generator(this, function (_b) {
             switch (_b.label) {
@@ -127,7 +127,7 @@ var Dialplan;
                     ]);
                     text = message.text;
                     keywordSplit = "SMS_BASE64_PART_";
-                    textSplit = chan_dongle_extended_client_1.textSplitBase64ForAmiEncodeFirst(text, "ApplicationData" + (keywordSplit + "000=Set()"));
+                    textSplit = chan_dongle_extended_client_1.textSplitBase64ForAmiEncodeFirst(text, "ApplicationData" + (keywordSplit + "000="));
                     assignations.push("SMS_TEXT_SPLIT_COUNT=" + textSplit.length);
                     for (i = 0; i < textSplit.length; i++)
                         assignations.push("" + keywordSplit + i + "=" + textSplit[i]);
@@ -136,7 +136,7 @@ var Dialplan;
                     truncatedText = text.substring(0, 1000);
                     if (truncatedText.length < text.length)
                         truncatedText += " [ truncated ]";
-                    textTruncatedSplit = chan_dongle_extended_client_1.textSplitBase64ForAmiEncodeFirst(truncatedText, "ApplicationData" + (actionConcatenate + "=Set()"));
+                    textTruncatedSplit = chan_dongle_extended_client_1.textSplitBase64ForAmiEncodeFirst(truncatedText, "ApplicationData" + ("" + actionConcatenate));
                     assignations.push(keywordTruncated + "=" + textTruncatedSplit.shift());
                     try {
                         for (textTruncatedSplit_1 = __values(textTruncatedSplit), textTruncatedSplit_1_1 = textTruncatedSplit_1.next(); !textTruncatedSplit_1_1.done; textTruncatedSplit_1_1 = textTruncatedSplit_1.next()) {
@@ -160,7 +160,7 @@ var Dialplan;
             }
         });
     }); });
-})(Dialplan = exports.Dialplan || (exports.Dialplan = {}));
+})(dialplan = exports.dialplan || (exports.dialplan = {}));
 function assignAndOriginate(assignations, gotoExtension) {
     return __awaiter(this, void 0, void 0, function () {
         var ami, priority, initExtension, assignations_1, assignations_1_1, assignation, e_2_1, e_2, _a;
@@ -170,7 +170,7 @@ function assignAndOriginate(assignations, gotoExtension) {
                     ami = chan_dongle_extended_client_1.DongleExtendedClient.localhost().ami;
                     priority = 1;
                     initExtension = "init-" + gotoExtension;
-                    return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, dialplanContext, "Answer")];
+                    return [4 /*yield*/, ami.addDialplanExtension(dialplanContext, initExtension, priority++, "Answer")];
                 case 1:
                     _b.sent();
                     _b.label = 2;
@@ -181,7 +181,7 @@ function assignAndOriginate(assignations, gotoExtension) {
                 case 3:
                     if (!!assignations_1_1.done) return [3 /*break*/, 6];
                     assignation = assignations_1_1.value;
-                    return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, dialplanContext, "Set", assignation)];
+                    return [4 /*yield*/, ami.addDialplanExtension(dialplanContext, initExtension, priority++, "Set", assignation)];
                 case 4:
                     _b.sent();
                     _b.label = 5;
@@ -199,7 +199,7 @@ function assignAndOriginate(assignations, gotoExtension) {
                     }
                     finally { if (e_2) throw e_2.error; }
                     return [7 /*endfinally*/];
-                case 9: return [4 /*yield*/, ami.addDialplanExtension(initExtension, priority++, dialplanContext, "GoTo", gotoExtension + ",1")];
+                case 9: return [4 /*yield*/, ami.addDialplanExtension(dialplanContext, initExtension, priority++, "GoTo", gotoExtension + ",1")];
                 case 10:
                     _b.sent();
                     return [4 /*yield*/, ami.originateLocalChannel(dialplanContext, initExtension)];
@@ -210,4 +210,4 @@ function assignAndOriginate(assignations, gotoExtension) {
         });
     });
 }
-//# sourceMappingURL=Dialplan.js.map
+//# sourceMappingURL=dialplan.js.map

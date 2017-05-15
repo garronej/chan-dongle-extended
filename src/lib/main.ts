@@ -7,7 +7,7 @@ import {
 } from "ts-gsm-modem";
 import { Monitor, AccessPoint } from "gsm-modem-connection";
 import { TrackableMap } from "trackable-map";
-import { Storage } from "./Storage";
+import { appStorage } from "./appStorage";
 
 import * as _debug from "debug";
 let debug = _debug("_main");
@@ -66,12 +66,12 @@ Monitor.evtModemConnect.attach(async accessPoint => {
                 debug(`for dongle IMEI: ${modem.imei}, because SIM ICCID is not readable with this dongle when SIM is locked`);
 
             console.log("lock");
-            let data = await Storage.read();
+            let appData = await appStorage.read();
 
-            data.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
+            appData.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
 
             console.log("unlock");
-            data.release();
+            appData.release();
 
 
         }

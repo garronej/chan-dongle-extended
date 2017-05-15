@@ -1,5 +1,5 @@
 import { activeModems, lockedModems } from "./main";
-import { Storage } from "./Storage";
+import { appStorage } from "./appStorage";
 import { 
     DongleExtendedClient, 
     UserEvent, 
@@ -11,7 +11,7 @@ import Event= UserEvent.Event;
 import Response= UserEvent.Response;
 import Request= UserEvent.Request;
 
-import { Dialplan } from "./Dialplan";
+import { dialplan } from "./dialplan";
 
 import * as _debug from "debug";
 let debug = _debug("_main.ami");
@@ -33,11 +33,11 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
         else
             debug(`for dongle IMEI: ${modem.imei}, because SIM ICCID is not readable with this dongle when SIM is locked`);
 
-        let data = await Storage.read();
+        let appData = await appStorage.read();
 
-        data.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
+        appData.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
 
-        data.release();
+        appData.release();
 
 
     }
@@ -75,7 +75,7 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
             )
         )
 
-        Dialplan.notifyStatusReport(
+        dialplan.notifyStatusReport(
             {
                 "name": dongleName,
                 "number": modem.number || "",
@@ -90,15 +90,15 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
 
     modem.evtMessage.attach(async message => {
 
-        let data = await Storage.read();
+        let appData = await appStorage.read();
 
 
-        if (!data.messages[imsi])
-            data.messages[imsi] = [];
+        if (!appData.messages[imsi])
+            appData.messages[imsi] = [];
 
-        data.messages[imsi].push(message);
+        appData.messages[imsi].push(message);
 
-        data.release();
+        appData.release();
 
         let { number, date, text } = message;
 
@@ -112,7 +112,7 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
         );
 
 
-        Dialplan.notifySms(
+        dialplan.notifySms(
             {
                 "name": dongleName,
                 "number": modem.number || "",
@@ -148,14 +148,14 @@ lockedModems.evtSet.attach(
 
         debug(`Locked modem IMEI: ${imei},ICCID: ${iccid}, ${pinState}, ${tryLeft}`);
 
-        let data = await Storage.read();
+        let appData = await appStorage.read();
 
-        let pin = data.pins[iccid || imei];
+        let pin = appData.pins[iccid || imei];
 
         if (pin)
-            delete data.pins[iccid || imei];
+            delete appData.pins[iccid || imei];
 
-        data.release();
+        appData.release();
 
         if (pin && pinState === "SIM PIN" && tryLeft === 3) {
             debug(`Using stored pin ${pin} for unlocking dongle`);
@@ -266,14 +266,14 @@ client.evtUserEvent.attach(Request.matchEvt, async evtRequest => {
 
         let { imsi } = activeModems.get(evtRequest.imei)!.modem;
 
-        let data = await Storage.read();
+        let appData = await appStorage.read();
 
-        let messages = data.messages[imsi] || [];
+        let messages = appData.messages[imsi] || [];
 
         if (evtRequest.flush === "true" && messages.length)
-            delete data.messages[imsi];
+            delete appData.messages[imsi];
 
-        data.release();
+        appData.release();
 
         await client.postUserEventAction(
             Response.GetMessages.Infos.buildAction(

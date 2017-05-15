@@ -54,33 +54,83 @@ var defaultStorageData = {
     "pins": {},
     "messages": {}
 };
-var Storage;
-(function (Storage) {
+var init = false;
+var appStorage;
+(function (appStorage) {
     var _this = this;
     var cluster = {};
-    var queue = ts_exec_queue_1.execQueue(cluster, "WRITE", function (provider, callback) {
-        storage.getItem("storageData", function (error, value) {
-            var storageData = value || defaultStorageData;
-            provider(__assign({}, storageData, { "release": function () { return __awaiter(_this, void 0, void 0, function () {
-                    return __generator(this, function (_a) {
-                        switch (_a.label) {
-                            case 0: return [4 /*yield*/, storage.setItem("storageData", storageData)];
-                            case 1:
-                                _a.sent();
-                                callback();
-                                return [2 /*return*/];
-                        }
-                    });
-                }); } }));
+    var queue = ts_exec_queue_1.execQueue(cluster, "WRITE_FS", function (provider, callback) { return __awaiter(_this, void 0, void 0, function () {
+        var _this = this;
+        var appData;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (!!init) return [3 /*break*/, 2];
+                    return [4 /*yield*/, storage.init({
+                            "dir": path.join(__dirname, "..", "..", ".node-persist", "storage"),
+                            "parse": exports.JSON_parse_WithDate
+                        })];
+                case 1:
+                    _a.sent();
+                    init = true;
+                    _a.label = 2;
+                case 2: return [4 /*yield*/, storage.getItem("appData")];
+                case 3:
+                    appData = (_a.sent()) || defaultStorageData;
+                    provider(__assign({}, appData, { "release": function () { return __awaiter(_this, void 0, void 0, function () {
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0: return [4 /*yield*/, storage.setItem("appData", appData)];
+                                    case 1:
+                                        _a.sent();
+                                        callback();
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); } }));
+                    return [2 /*return*/];
+            }
         });
-    });
+    }); });
     function read() {
-        return new Promise(function (resolve) { return queue(resolve, function () { }); });
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                return [2 /*return*/, new Promise(function (resolve) { return queue(resolve, function () { }); })];
+            });
+        });
     }
-    Storage.read = read;
-})(Storage = exports.Storage || (exports.Storage = {}));
-storage.initSync({
-    "dir": path.join(__dirname, "..", "..", ".node-persist", "storage"),
-    "parse": exports.JSON_parse_WithDate
-});
-//# sourceMappingURL=Storage.js.map
+    appStorage.read = read;
+    /*
+    const queue = execQueue(cluster, "WRITE",
+        (provider: (storageData: StorageData & { readonly release: () => Promise<void> }) => void, callback: () => void): void => {
+
+            if (!init) {
+
+                storage.initSync({
+                    "dir": path.join(__dirname, "..", "..", ".node-persist", "storage"),
+                    "parse": JSON_parse_WithDate
+                });
+
+                init = true;
+
+            }
+
+            storage.getItem("storageData", (error, value) => {
+
+                let storageData: StorageData = value || defaultStorageData;
+
+                provider({
+                    ...storageData,
+                    "release": async (): Promise<void> => {
+                        await storage.setItem("storageData", storageData);
+                        callback();
+                    }
+                });
+
+            });
+
+        }
+    );
+    */
+})(appStorage = exports.appStorage || (exports.appStorage = {}));
+//# sourceMappingURL=appStorage.js.map

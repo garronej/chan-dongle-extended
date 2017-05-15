@@ -17,7 +17,7 @@ import * as program from "commander";
 import { recordIfNum } from "gsm-modem-connection";
 const vendorIds = Object.keys(recordIfNum);
 import { ini } from "ini-extended";
-import { ChanDongleConfManager} from "../lib/ChanDongleConfManager";
+import { chanDongleConfManager} from "../lib/chanDongleConfManager";
 import "colors";
 
 
@@ -275,7 +275,7 @@ async function checkDependencies() {
 
 async function resetChanDongle() {
 
-    await ChanDongleConfManager.reset()
+    await chanDongleConfManager.reset()
 
     await run(`chmod u+rw,g+rw,o+rw ${dongleConfPath}`);
 

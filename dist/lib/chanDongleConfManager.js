@@ -75,8 +75,8 @@ exports.defaultConfig = {
     }
 };
 var config = undefined;
-var ChanDongleConfManager;
-(function (ChanDongleConfManager) {
+var chanDongleConfManager;
+(function (chanDongleConfManager) {
     var _this = this;
     var cluster = {};
     function getConfig() {
@@ -84,8 +84,8 @@ var ChanDongleConfManager;
             config = loadConfig();
         return config;
     }
-    ChanDongleConfManager.getConfig = getConfig;
-    ChanDongleConfManager.reset = ts_exec_queue_1.execQueue(cluster, "WRITE", function (callback) { return __awaiter(_this, void 0, void 0, function () {
+    chanDongleConfManager.getConfig = getConfig;
+    chanDongleConfManager.reset = ts_exec_queue_1.execQueue(cluster, "WRITE", function (callback) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -99,7 +99,7 @@ var ChanDongleConfManager;
             }
         });
     }); });
-    ChanDongleConfManager.addDongle = ts_exec_queue_1.execQueue(cluster, "WRITE", function (_a, callback) {
+    chanDongleConfManager.addDongle = ts_exec_queue_1.execQueue(cluster, "WRITE", function (_a, callback) {
         var dongleName = _a.dongleName, data = _a.data, audio = _a.audio;
         return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -128,7 +128,7 @@ var ChanDongleConfManager;
             });
         });
     });
-    ChanDongleConfManager.removeDongle = ts_exec_queue_1.execQueue(cluster, "WRITE", function (dongleName, callback) { return __awaiter(_this, void 0, void 0, function () {
+    chanDongleConfManager.removeDongle = ts_exec_queue_1.execQueue(cluster, "WRITE", function (dongleName, callback) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -143,7 +143,7 @@ var ChanDongleConfManager;
             }
         });
     }); });
-})(ChanDongleConfManager = exports.ChanDongleConfManager || (exports.ChanDongleConfManager = {}));
+})(chanDongleConfManager = exports.chanDongleConfManager || (exports.chanDongleConfManager = {}));
 function update() {
     var _this = this;
     return new Promise(function (resolve) { return fs_1.writeFile(dongleConfPath, ini_extended_1.ini.stringify(config), { "encoding": "utf8", "flag": "w" }, function (error) { return __awaiter(_this, void 0, void 0, function () {
@@ -190,4 +190,4 @@ function loadConfig() {
         return exports.defaultConfig;
     }
 }
-//# sourceMappingURL=ChanDongleConfManager.js.map
+//# sourceMappingURL=chanDongleConfManager.js.map

@@ -44,7 +44,7 @@ export declare type ModuleConfiguration = {
         txgain?: string;
     };
 };
-export declare namespace ChanDongleConfManager {
+export declare namespace chanDongleConfManager {
     function getConfig(): ModuleConfiguration;
     const reset: ((callback?: (() => void) | undefined) => Promise<void>) & ExecQueue;
     const addDongle: (({dongleName, data, audio}: DongleConf, callback?: (() => void) | undefined) => Promise<void>) & ExecQueue;

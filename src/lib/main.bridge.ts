@@ -6,7 +6,7 @@ import {
     AtMessage
 } from "ts-gsm-modem";
 
-import { ChanDongleConfManager } from "./ChanDongleConfManager";
+import { chanDongleConfManager } from "./chanDongleConfManager";
 import { Tty0tty } from "./Tty0tty";
 import { lockedModems, activeModems } from "./main";
 
@@ -26,7 +26,7 @@ activeModems.evtSet.attach(async ([{ modem, accessPoint, dongleName }]) => {
 
     let voidModem = Tty0tty.getPair();
 
-    ChanDongleConfManager.addDongle({
+    chanDongleConfManager.addDongle({
         dongleName,
         "data": voidModem.rightEnd,
         "audio": accessPoint.audioIfPath
@@ -44,7 +44,7 @@ activeModems.evtSet.attach(async ([{ modem, accessPoint, dongleName }]) => {
 
         debug("Modem terminate => closing bridge");
 
-        await ChanDongleConfManager.removeDongle(dongleName);
+        await chanDongleConfManager.removeDongle(dongleName);
 
         debug("Dongle removed from chan dongle config");
 
