@@ -130,12 +130,12 @@ async function assignAndOriginate(assignations: string[], gotoExtension: string)
 
     let initExtension = `init-${gotoExtension}`;
 
-    await ami.addDialplanExtension(dialplanContext, initExtension, priority++, "Answer");
+    await ami.dialplanExtensionAdd(dialplanContext, initExtension, priority++, "Answer");
 
     for (let assignation of assignations)
-        await ami.addDialplanExtension(dialplanContext, initExtension, priority++, "Set", assignation);
+        await ami.dialplanExtensionAdd(dialplanContext, initExtension, priority++, "Set", assignation);
 
-    await ami.addDialplanExtension(dialplanContext, initExtension, priority++, "GoTo", `${gotoExtension},1`);
+    await ami.dialplanExtensionAdd(dialplanContext, initExtension, priority++, "GoTo", `${gotoExtension},1`);
 
     await ami.originateLocalChannel(dialplanContext, initExtension);
 

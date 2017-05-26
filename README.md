@@ -25,7 +25,7 @@ It will work with any version of asterisk/chan_dongle.
 
 There is two way to interact with the module: 
 
-* For local usage: The cli tool.
+* For local usage: The cli tool
 * For remote usage: Asterisk Manager
 
 The cli tool is accessible via the unix command: `dongle`
