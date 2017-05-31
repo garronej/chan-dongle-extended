@@ -17,7 +17,6 @@ const maxMessageLength = 20000;
 
 const usereventPrefix = "DongleAPI/";
 
-
 export function buildUserEvent(
     userevent: string,
     actionid?: string
