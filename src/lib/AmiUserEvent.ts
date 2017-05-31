@@ -9,6 +9,8 @@ import { Base64 } from "js-base64";
 
 export type LockedPinState = "SIM PIN" | "SIM PUK" | "SIM PIN2" | "SIM PUK2";
 
+export const amiUser= "dongle_ext_user";
+
 const textKeyword = "base64text_part";
 
 const maxMessageLength = 20000;
