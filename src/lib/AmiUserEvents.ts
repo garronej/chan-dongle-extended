@@ -1,6 +1,5 @@
 import {
-    generateUniqueActionId,
-    lineMaxByteLength,
+    Ami,
     base64TextSplit,
     UserEvent
 } from "ts-ami";
@@ -22,7 +21,7 @@ export function buildUserEvent(
     actionid?: string
 ): UserEvent {
 
-    actionid = actionid || generateUniqueActionId();
+    actionid = actionid || Ami.generateUniqueActionId();
 
     return { userevent, actionid };
 
@@ -284,6 +283,7 @@ export interface Request extends UserEvent {
 }
 
 export namespace Request {
+    
 
     export const userevent = `${usereventPrefix}Request`;
 
