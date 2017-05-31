@@ -77,7 +77,7 @@ var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
 var Event = chan_dongle_extended_client_1.UserEvent.Event;
 var Response = chan_dongle_extended_client_1.UserEvent.Response;
 var Request = chan_dongle_extended_client_1.UserEvent.Request;
-var dialplan_1 = require("./dialplan");
+var dialplan = require("./dialplan");
 var _debug = require("debug");
 var debug = _debug("_main.ami");
 var client = chan_dongle_extended_client_1.DongleExtendedClient.localhost();
@@ -114,7 +114,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         return __generator(this, function (_a) {
                             messageId = statusReport.messageId, dischargeTime = statusReport.dischargeTime, isDelivered = statusReport.isDelivered, status = statusReport.status, recipient = statusReport.recipient;
                             client.postUserEventAction(Event.MessageStatusReport.buildAction(imei, messageId.toString(), dischargeTime.toISOString(), isDelivered ? "true" : "false", status, recipient));
-                            dialplan_1.dialplan.notifyStatusReport({
+                            dialplan.notifyStatusReport({
                                 "name": dongleName,
                                 "number": modem.number || "",
                                 imei: imei,
@@ -128,7 +128,9 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         var appData, number, date, text;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
-                                case 0: return [4 /*yield*/, appStorage_1.appStorage.read()];
+                                case 0:
+                                    debug(" we got a message from modem");
+                                    return [4 /*yield*/, appStorage_1.appStorage.read()];
                                 case 1:
                                     appData = _a.sent();
                                     if (!appData.messages[imsi])
@@ -137,7 +139,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                                     appData.release();
                                     number = message.number, date = message.date, text = message.text;
                                     client.postUserEventAction(chan_dongle_extended_client_1.UserEvent.Event.NewMessage.buildAction(imei, number, date.toISOString(), text));
-                                    dialplan_1.dialplan.notifySms({
+                                    dialplan.notifySms({
                                         "name": dongleName,
                                         "number": modem.number || "",
                                         imei: imei,
@@ -192,10 +194,12 @@ client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __aw
                 actionid = evtRequest.actionid, command = evtRequest.command;
                 replyError = function (errorMessage) { return client.postUserEventAction(Response.buildAction(command, actionid, errorMessage)); };
                 if (!Request.SendMessage.matchEvt(evtRequest)) return [3 /*break*/, 2];
+                debug("======>", { evtRequest: evtRequest });
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 modem = main_1.activeModems.get(evtRequest.imei).modem;
                 text = Request.SendMessage.reassembleText(evtRequest);
+                debug("on send le message avec modem");
                 return [4 /*yield*/, modem.sendMessage(evtRequest.number, text)];
             case 1:
                 messageId = _o.sent();

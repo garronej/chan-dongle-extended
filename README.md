@@ -58,6 +58,10 @@ The module has a specific JavaScript client: `garronej/chan-dongle-extended-clie
 #Dialplan example:
 
 In this example we reply "OK, got you! 👌" to any message we receive
+
+NOTE: All channel variable set in both reassembled-sms and sms-status-report extensions:
+DONGLENAME, DONGLEPROVIDER, DONGLEIMEI, DONGLEIMSI, DONGLENUMBER
+
 ````ini
 [from-dongle]
 
@@ -121,10 +125,10 @@ same = n,Hangup()
     -- Executing [sms-status-report@from-dongle:6] Hangup("Local/init-sms-status-report@from-dongle-0000001c;2", "") in new stack
 ````
 
-Note: SMS_BASE64 truncate message of more than 2000 character, this is an expected behavior, 
-it is due to the size limitation of asterisk's dialplan variable. You can use the 
+Note: SMS_BASE64 truncate message of more than 1024 byte, this is an expected behavior, 
+it is to avoid asterisk buffer overflow. You can use the 
 SMS_TEXT_SPLIT_COUNT=n and SMS_BASE64_PART_0..n-1 variables to retrieve very long SMS. 
-In order to reassemble the message you must concatenate all the parts THEN decode.
+In order to reassemble the message you must decode each part then concatenate.
 
 #Requirement
 

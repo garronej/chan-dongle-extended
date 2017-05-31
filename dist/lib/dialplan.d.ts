@@ -1,4 +1,3 @@
-import { ExecQueue } from "ts-exec-queue";
 import { Message, StatusReport } from "ts-gsm-modem";
 export interface DongleIdentifier {
     name: string;
@@ -7,7 +6,5 @@ export interface DongleIdentifier {
     number: string;
     provider: string;
 }
-export declare namespace dialplan {
-    const notifyStatusReport: ((dongle: DongleIdentifier, statusReport: StatusReport, callback?: (() => void) | undefined) => Promise<void>) & ExecQueue;
-    const notifySms: ((dongle: DongleIdentifier, message: Message, callback?: (() => void) | undefined) => Promise<void>) & ExecQueue;
-}
+export declare function notifyStatusReport(dongle: DongleIdentifier, statusReport: StatusReport): Promise<void>;
+export declare function notifySms(dongle: DongleIdentifier, message: Message): Promise<void>;

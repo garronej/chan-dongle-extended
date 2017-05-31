@@ -11,12 +11,14 @@ import Event= UserEvent.Event;
 import Response= UserEvent.Response;
 import Request= UserEvent.Request;
 
-import { dialplan } from "./dialplan";
+import * as dialplan from "./dialplan";
 
 import * as _debug from "debug";
 let debug = _debug("_main.ami");
 
 const client= DongleExtendedClient.localhost();
+
+
 
 client.evtUserEvent.attach(({ actionid, event, action, userevent, privilege, ...prettyEvt }) => debug(prettyEvt));
 
@@ -89,6 +91,8 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
     });
 
     modem.evtMessage.attach(async message => {
+
+        debug(" we got a message from modem");
 
         let appData = await appStorage.read();
 
@@ -189,6 +193,8 @@ client.evtUserEvent.attach(Request.matchEvt, async evtRequest => {
 
     if (Request.SendMessage.matchEvt(evtRequest)) {
 
+        debug("======>", { evtRequest } );
+
         if (!activeModems.has(evtRequest.imei))
             return replyError(`Dongle imei: ${evtRequest.imei} not found`);
 
@@ -196,10 +202,13 @@ client.evtUserEvent.attach(Request.matchEvt, async evtRequest => {
 
         let text = Request.SendMessage.reassembleText(evtRequest);
 
+        debug("on send le message avec modem");
+
         let messageId = await modem.sendMessage(
             evtRequest.number,
             text
         );
+
 
         if (isNaN(messageId))
             return replyError("Message not send");
