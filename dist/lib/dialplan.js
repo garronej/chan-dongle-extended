@@ -79,7 +79,7 @@ function notifySms(dongle, message) {
             ami = ts_ami_1.Ami.localhost({ "user": AmiUserEvents_1.amiUser });
             name = dongle.name, number = dongle.number, provider = dongle.provider, imei = dongle.imei, imsi = dongle.imsi;
             keywordSplit = "SMS_BASE64_PART_";
-            textSplit = ts_ami_1.Ami.base64TextSplit(message.text, "Variable" + (keywordSplit + "XX="));
+            textSplit = ts_ami_1.Ami.base64TextSplit(message.text);
             variable = {
                 "DONGLENAME": name,
                 "DONGLEPROVIDER": provider,

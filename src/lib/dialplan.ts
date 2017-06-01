@@ -55,10 +55,7 @@ export async function notifySms(dongle: DongleIdentifier, message: Message) {
 
     let keywordSplit = "SMS_BASE64_PART_";
 
-    let textSplit = Ami.base64TextSplit(
-        message.text,
-        "Variable" + `${keywordSplit}XX=`
-    );
+    let textSplit = Ami.base64TextSplit( message.text );
 
     let variable: Record<string, string> = {
         "DONGLENAME": name,
