@@ -1,8 +1,7 @@
 import { execQueue, ExecQueue } from "ts-exec-queue";
 
-import { Ami, base64TextSplit } from "ts-ami";
+import { Ami } from "ts-ami";
 import { amiUser } from "./AmiUserEvents";
-
 
 import { Message, StatusReport } from "ts-gsm-modem";
 
@@ -56,7 +55,7 @@ export async function notifySms(dongle: DongleIdentifier, message: Message) {
 
     let keywordSplit = "SMS_BASE64_PART_";
 
-    let textSplit = base64TextSplit(
+    let textSplit = Ami.base64TextSplit(
         message.text,
         "Variable" + `${keywordSplit}XX=`
     );

@@ -1,6 +1,5 @@
 import {
     Ami,
-    base64TextSplit,
     UserEvent
 } from "ts-ami";
 
@@ -116,7 +115,7 @@ export namespace Event {
             if (text.length > maxMessageLength)
                 throw new Error("Message too long");
 
-            let textParts = base64TextSplit(text, `${textKeyword}XX`);
+            let textParts = Ami.base64TextSplit(text, `${textKeyword}XX`);
 
             let out = {
                 ...Event.build(dongleevent),
@@ -504,7 +503,7 @@ export namespace Request {
             if (text.length > maxMessageLength)
                 throw new Error("Message too long");
 
-            let textParts = base64TextSplit(text, `${textKeyword}XX`);
+            let textParts = Ami.base64TextSplit(text, `${textKeyword}XX`);
 
             let out = {
                 ...Request.build(donglerequest),
@@ -909,7 +908,7 @@ export namespace Response {
             if (text.length > maxMessageLength)
                 throw new Error("Message too long");
 
-            let textParts = base64TextSplit(text, `${textKeyword}XX`);
+            let textParts = Ami.base64TextSplit(text, `${textKeyword}XX`);
 
             let out = {
                 ...Response.build(Request.GetMessages.donglerequest, actionid),

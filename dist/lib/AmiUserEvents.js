@@ -57,7 +57,7 @@ var Event;
         function build(imei, number, date, text) {
             if (text.length > maxMessageLength)
                 throw new Error("Message too long");
-            var textParts = ts_ami_1.base64TextSplit(text, textKeyword + "XX");
+            var textParts = ts_ami_1.Ami.base64TextSplit(text, textKeyword + "XX");
             var out = __assign({}, Event.build(NewMessage.dongleevent), { imei: imei,
                 number: number,
                 date: date, "textsplitcount": "" + textParts.length });
@@ -234,7 +234,7 @@ var Request;
         function build(imei, number, text) {
             if (text.length > maxMessageLength)
                 throw new Error("Message too long");
-            var textParts = ts_ami_1.base64TextSplit(text, textKeyword + "XX");
+            var textParts = ts_ami_1.Ami.base64TextSplit(text, textKeyword + "XX");
             var out = __assign({}, Request.build(SendMessage.donglerequest), { imei: imei,
                 number: number, "textsplitcount": "" + textParts.length });
             for (var i = 0; i < textParts.length; i++)
@@ -443,7 +443,7 @@ var Response;
         function build(actionid, number, date, text) {
             if (text.length > maxMessageLength)
                 throw new Error("Message too long");
-            var textParts = ts_ami_1.base64TextSplit(text, textKeyword + "XX");
+            var textParts = ts_ami_1.Ami.base64TextSplit(text, textKeyword + "XX");
             var out = __assign({}, Response.build(Request.GetMessages.donglerequest, actionid), { number: number,
                 date: date, "textsplitcount": "" + textParts.length });
             for (var i = 0; i < textParts.length; i++)
