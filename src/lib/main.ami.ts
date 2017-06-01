@@ -19,8 +19,6 @@ let debug = _debug("_main.ami");
 
 let ami= Ami.localhost({ user });
 
-console.log(Ami.base64TextSplit);
-
 //ami.evtUserEvent.attach(({ actionid, event, action, userevent, privilege, ...prettyEvt }) => debug(prettyEvt));
 
 activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
