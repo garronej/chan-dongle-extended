@@ -64,6 +64,7 @@ var vendorIds = Object.keys(gsm_modem_connection_1.recordIfNum);
 var ini_extended_1 = require("ini-extended");
 var chanDongleConfManager_1 = require("../lib/chanDongleConfManager");
 require("colors");
+var AmiUserEvents_1 = require("../lib/AmiUserEvents");
 program
     .command("postinstall")
     .description([
@@ -224,7 +225,7 @@ function mkPersistDir() {
 }
 function enableManager() {
     return __awaiter(this, void 0, void 0, function () {
-        var general, dongle_ext_user, error_1;
+        var general, user, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -234,8 +235,8 @@ function enableManager() {
                         "bindaddr": "127.0.0.1",
                         "displayconnects": "yes"
                     };
-                    dongle_ext_user = {
-                        "secret": Date.now().toString(),
+                    user = {
+                        "secret": "" + Date.now(),
                         "deny": "0.0.0.0/0.0.0.0",
                         "permit": "0.0.0.0/0.0.0.0",
                         //"read": "system,user,config,agi",
@@ -251,7 +252,11 @@ function enableManager() {
                         }
                         catch (error) { }
                     }
-                    return [4 /*yield*/, writeFileAssertSuccess(managerConfPath, ini_extended_1.ini.stringify({ general: general, dongle_ext_user: dongle_ext_user }))];
+                    return [4 /*yield*/, writeFileAssertSuccess(managerConfPath, ini_extended_1.ini.stringify((function () {
+                            var out = { general: general };
+                            out[AmiUserEvents_1.amiUser] = user;
+                            return out;
+                        })()))];
                 case 1:
                     _a.sent();
                     return [4 /*yield*/, run("chmod u+r,g+r,o+r " + managerConfPath)];

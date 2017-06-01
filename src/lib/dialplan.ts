@@ -1,8 +1,8 @@
 import { execQueue, ExecQueue } from "ts-exec-queue";
-import {
-    DongleExtendedClient,
-    textSplitBase64ForAmiSplitFirst
-} from "chan-dongle-extended-client";
+
+import { Ami, base64TextSplit } from "ts-ami";
+import { amiUser } from "./AmiUserEvents";
+
 
 import { Message, StatusReport } from "ts-gsm-modem";
 
@@ -24,7 +24,7 @@ export interface DongleIdentifier {
 
 export async function notifyStatusReport(dongle: DongleIdentifier, statusReport: StatusReport) {
 
-    let ami = DongleExtendedClient.localhost().ami;
+    let ami = Ami.localhost({ "user": amiUser });
 
     let { name, number, provider, imei, imsi } = dongle;
     let { dischargeTime, isDelivered, messageId, status, recipient } = statusReport;
@@ -50,13 +50,13 @@ export async function notifySms(dongle: DongleIdentifier, message: Message) {
 
     debug("start notify sms");
 
-    let ami = DongleExtendedClient.localhost().ami;
+    let ami = Ami.localhost({ "user": amiUser });
 
     let { name, number, provider, imei, imsi } = dongle;
 
     let keywordSplit = "SMS_BASE64_PART_";
 
-    let textSplit = textSplitBase64ForAmiSplitFirst(
+    let textSplit = base64TextSplit(
         message.text,
         "Variable" + `${keywordSplit}XX=`
     );

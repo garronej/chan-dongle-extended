@@ -34,15 +34,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __rest = (this && this.__rest) || function (s, e) {
-    var t = {};
-    for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p) && e.indexOf(p) < 0)
-        t[p] = s[p];
-    if (s != null && typeof Object.getOwnPropertySymbols === "function")
-        for (var i = 0, p = Object.getOwnPropertySymbols(s); i < p.length; i++) if (e.indexOf(p[i]) < 0)
-            t[p[i]] = s[p[i]];
-    return t;
-};
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;
@@ -72,24 +63,19 @@ var __values = (this && this.__values) || function (o) {
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var main_1 = require("./main");
-var appStorage_1 = require("./appStorage");
-var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
-var Event = chan_dongle_extended_client_1.UserEvent.Event;
-var Response = chan_dongle_extended_client_1.UserEvent.Response;
-var Request = chan_dongle_extended_client_1.UserEvent.Request;
+var appStorage = require("./appStorage");
+var ts_ami_1 = require("ts-ami");
+var AmiUserEvents_1 = require("./AmiUserEvents");
 var dialplan = require("./dialplan");
 var _debug = require("debug");
 var debug = _debug("_main.ami");
-var client = chan_dongle_extended_client_1.DongleExtendedClient.localhost();
-client.evtUserEvent.attach(function (_a) {
-    var actionid = _a.actionid, event = _a.event, action = _a.action, userevent = _a.userevent, privilege = _a.privilege, prettyEvt = __rest(_a, ["actionid", "event", "action", "userevent", "privilege"]);
-    return debug(prettyEvt);
-});
+var ami = ts_ami_1.Ami.localhost({ user: AmiUserEvents_1.amiUser });
+//ami.evtUserEvent.attach(({ actionid, event, action, userevent, privilege, ...prettyEvt }) => debug(prettyEvt));
 main_1.activeModems.evtSet.attach(function (_a) {
     var _b = __read(_a, 2), _c = _b[0], modem = _c.modem, dongleName = _c.dongleName, imei = _b[1];
     return __awaiter(_this, void 0, void 0, function () {
         var _this = this;
-        var appData, imsi;
+        var appData, imsi, dongleIdentifier;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -100,27 +86,28 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         debug("for SIM ICCID: " + modem.iccid);
                     else
                         debug("for dongle IMEI: " + modem.imei + ", because SIM ICCID is not readable with this dongle when SIM is locked");
-                    return [4 /*yield*/, appStorage_1.appStorage.read()];
+                    return [4 /*yield*/, appStorage.read()];
                 case 1:
                     appData = _a.sent();
                     appData.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
                     appData.release();
                     _a.label = 2;
                 case 2:
-                    client.postUserEventAction(Event.NewActiveDongle.buildAction(imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || ""));
+                    ami.userEvent(AmiUserEvents_1.Event.NewActiveDongle.build(imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || ""));
                     imsi = modem.imsi;
+                    dongleIdentifier = {
+                        "name": dongleName,
+                        "number": modem.number || "",
+                        imei: imei,
+                        imsi: imsi,
+                        "provider": modem.serviceProviderName || ""
+                    };
                     modem.evtMessageStatusReport.attach(function (statusReport) { return __awaiter(_this, void 0, void 0, function () {
                         var messageId, dischargeTime, isDelivered, status, recipient;
                         return __generator(this, function (_a) {
                             messageId = statusReport.messageId, dischargeTime = statusReport.dischargeTime, isDelivered = statusReport.isDelivered, status = statusReport.status, recipient = statusReport.recipient;
-                            client.postUserEventAction(Event.MessageStatusReport.buildAction(imei, messageId.toString(), dischargeTime.toISOString(), isDelivered ? "true" : "false", status, recipient));
-                            dialplan.notifyStatusReport({
-                                "name": dongleName,
-                                "number": modem.number || "",
-                                imei: imei,
-                                imsi: imsi,
-                                "provider": modem.serviceProviderName || ""
-                            }, statusReport);
+                            ami.userEvent(AmiUserEvents_1.Event.MessageStatusReport.build(imei, "" + messageId, dischargeTime.toISOString(), isDelivered ? "true" : "false", status, recipient));
+                            dialplan.notifyStatusReport(dongleIdentifier, statusReport);
                             return [2 /*return*/];
                         });
                     }); });
@@ -129,8 +116,8 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
-                                    debug(" we got a message from modem");
-                                    return [4 /*yield*/, appStorage_1.appStorage.read()];
+                                    debug("we got a message from modem");
+                                    return [4 /*yield*/, appStorage.read()];
                                 case 1:
                                     appData = _a.sent();
                                     if (!appData.messages[imsi])
@@ -138,14 +125,8 @@ main_1.activeModems.evtSet.attach(function (_a) {
                                     appData.messages[imsi].push(message);
                                     appData.release();
                                     number = message.number, date = message.date, text = message.text;
-                                    client.postUserEventAction(chan_dongle_extended_client_1.UserEvent.Event.NewMessage.buildAction(imei, number, date.toISOString(), text));
-                                    dialplan.notifySms({
-                                        "name": dongleName,
-                                        "number": modem.number || "",
-                                        imei: imei,
-                                        imsi: imsi,
-                                        "provider": modem.serviceProviderName || ""
-                                    }, message);
+                                    ami.userEvent(AmiUserEvents_1.Event.NewMessage.build(imei, number, date.toISOString(), text));
+                                    dialplan.notifySms(dongleIdentifier, message);
                                     return [2 /*return*/];
                             }
                         });
@@ -157,7 +138,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
 });
 main_1.activeModems.evtDelete.attach(function (_a) {
     var _b = __read(_a, 1), modem = _b[0].modem;
-    return client.postUserEventAction(Event.DongleDisconnect.buildAction(modem.imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || ""));
+    return ami.userEvent(AmiUserEvents_1.Event.DongleDisconnect.build(modem.imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || ""));
 });
 main_1.lockedModems.evtSet.attach(function (_a) {
     var _b = __read(_a, 2), _c = _b[0], iccid = _c.iccid, pinState = _c.pinState, tryLeft = _c.tryLeft, callback = _c.callback, imei = _b[1];
@@ -167,7 +148,7 @@ main_1.lockedModems.evtSet.attach(function (_a) {
             switch (_a.label) {
                 case 0:
                     debug("Locked modem IMEI: " + imei + ",ICCID: " + iccid + ", " + pinState + ", " + tryLeft);
-                    return [4 /*yield*/, appStorage_1.appStorage.read()];
+                    return [4 /*yield*/, appStorage.read()];
                 case 1:
                     appData = _a.sent();
                     pin = appData.pins[iccid || imei];
@@ -180,35 +161,33 @@ main_1.lockedModems.evtSet.attach(function (_a) {
                         callback(pin);
                     }
                     else
-                        client.postUserEventAction(chan_dongle_extended_client_1.UserEvent.Event.RequestUnlockCode.buildAction(imei, iccid, pinState, tryLeft.toString()));
+                        ami.userEvent(AmiUserEvents_1.Event.RequestUnlockCode.build(imei, iccid, pinState, "" + tryLeft));
                     return [2 /*return*/];
             }
         });
     });
 });
-client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __awaiter(_this, void 0, void 0, function () {
-    var actionid, command, replyError, modem, text, messageId, imei, _a, modem, accessPoint, id, _b, _c, imei, _d, iccid, pinState, tryLeft, e_1_1, imsi, appData, messages, messages_1, messages_1_1, _e, number, date, text, e_2_1, modem, contacts, contacts_1, contacts_1_1, _f, index, name_1, number, e_3_1, modem, name_2, number, contact, modem, index, _g, _h, imei, modem, iccid, imsi, number, serviceProviderName, e_4_1, imei, lockedModem, pinState, tryLeft, unlockCallback, pin, puk, newpin, e_1, _j, e_2, _k, e_3, _l, e_4, _m;
+ami.evtUserEvent.attach(AmiUserEvents_1.Request.match, function (evtRequest) { return __awaiter(_this, void 0, void 0, function () {
+    var actionid, command, replyError, modem, text, messageId, imei, _a, modem, accessPoint, _b, _c, imei, _d, iccid, pinState, tryLeft, e_1_1, imsi, appData, messages, messages_1, messages_1_1, _e, number, date, text, e_2_1, modem, contacts, contacts_1, contacts_1_1, _f, index, name_1, number, e_3_1, modem, name_2, number, contact, modem, index, _g, _h, imei, modem, iccid, imsi, number, serviceProviderName, e_4_1, imei, lockedModem, pinState, tryLeft, unlockCallback, pin, puk, newpin, e_1, _j, e_2, _k, e_3, _l, e_4, _m;
     return __generator(this, function (_o) {
         switch (_o.label) {
             case 0:
                 actionid = evtRequest.actionid, command = evtRequest.command;
-                replyError = function (errorMessage) { return client.postUserEventAction(Response.buildAction(command, actionid, errorMessage)); };
-                if (!Request.SendMessage.matchEvt(evtRequest)) return [3 /*break*/, 2];
-                debug("======>", { evtRequest: evtRequest });
+                replyError = function (errorMessage) { return ami.userEvent(AmiUserEvents_1.Response.build(actionid, errorMessage)); };
+                if (!AmiUserEvents_1.Request.SendMessage.match(evtRequest)) return [3 /*break*/, 2];
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 modem = main_1.activeModems.get(evtRequest.imei).modem;
-                text = Request.SendMessage.reassembleText(evtRequest);
-                debug("on send le message avec modem");
+                text = AmiUserEvents_1.Request.SendMessage.reassembleText(evtRequest);
                 return [4 /*yield*/, modem.sendMessage(evtRequest.number, text)];
             case 1:
                 messageId = _o.sent();
                 if (isNaN(messageId))
                     return [2 /*return*/, replyError("Message not send")];
-                client.postUserEventAction(Response.SendMessage.buildAction(actionid, messageId.toString()));
-                return [3 /*break*/, 50];
+                ami.userEvent(AmiUserEvents_1.Response.SendMessage.build(actionid, "" + messageId));
+                return [3 /*break*/, 54];
             case 2:
-                if (!Request.UpdateNumber.matchEvt(evtRequest)) return [3 /*break*/, 4];
+                if (!AmiUserEvents_1.Request.UpdateNumber.match(evtRequest)) return [3 /*break*/, 4];
                 imei = evtRequest.imei;
                 if (!main_1.activeModems.has(imei))
                     return [2 /*return*/, replyError("Dongle imei: " + imei + " not found")];
@@ -216,17 +195,15 @@ client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __aw
                 return [4 /*yield*/, modem.writeNumber(evtRequest.number)];
             case 3:
                 _o.sent();
-                client.postUserEventAction(Response.buildAction(Request.UpdateNumber.keyword, actionid));
-                id = "Dongle" + imei.substring(0, 3) + imei.substring(imei.length - 3);
-                client.ami.postAction({
-                    "action": "DongleRestart",
-                    "device": id,
+                ami.userEvent(AmiUserEvents_1.Response.build(actionid));
+                ami.postAction("DongleRestart", {
+                    "device": main_1.activeModems.get(imei).dongleName,
                     "when": "gracefully"
                 });
-                return [3 /*break*/, 50];
+                return [3 /*break*/, 54];
             case 4:
-                if (!Request.GetLockedDongles.matchEvt(evtRequest)) return [3 /*break*/, 14];
-                return [4 /*yield*/, client.postUserEventAction(Response.GetLockedDongles.Infos.buildAction(actionid, main_1.lockedModems.size.toString()))];
+                if (!AmiUserEvents_1.Request.GetLockedDongles.match(evtRequest)) return [3 /*break*/, 14];
+                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.GetLockedDongles_first.build(actionid, "" + main_1.lockedModems.size))];
             case 5:
                 _o.sent();
                 _o.label = 6;
@@ -238,7 +215,7 @@ client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __aw
                 if (!!_c.done) return [3 /*break*/, 10];
                 imei = _c.value;
                 _d = main_1.lockedModems.get(imei), iccid = _d.iccid, pinState = _d.pinState, tryLeft = _d.tryLeft;
-                return [4 /*yield*/, client.postUserEventAction(Response.GetLockedDongles.Entry.buildAction(actionid, imei, iccid, pinState, tryLeft.toString()))];
+                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.GetLockedDongles_follow.build(actionid, imei, iccid, pinState, "" + tryLeft))];
             case 8:
                 _o.sent();
                 _o.label = 9;
@@ -256,20 +233,20 @@ client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __aw
                 }
                 finally { if (e_1) throw e_1.error; }
                 return [7 /*endfinally*/];
-            case 13: return [3 /*break*/, 50];
+            case 13: return [3 /*break*/, 54];
             case 14:
-                if (!Request.GetMessages.matchEvt(evtRequest)) return [3 /*break*/, 25];
+                if (!AmiUserEvents_1.Request.GetMessages.match(evtRequest)) return [3 /*break*/, 25];
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 imsi = main_1.activeModems.get(evtRequest.imei).modem.imsi;
-                return [4 /*yield*/, appStorage_1.appStorage.read()];
+                return [4 /*yield*/, appStorage.read()];
             case 15:
                 appData = _o.sent();
                 messages = appData.messages[imsi] || [];
                 if (evtRequest.flush === "true" && messages.length)
                     delete appData.messages[imsi];
                 appData.release();
-                return [4 /*yield*/, client.postUserEventAction(Response.GetMessages.Infos.buildAction(actionid, messages.length.toString()))];
+                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.GetMessages_first.build(actionid, "" + messages.length))];
             case 16:
                 _o.sent();
                 _o.label = 17;
@@ -280,7 +257,7 @@ client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __aw
             case 18:
                 if (!!messages_1_1.done) return [3 /*break*/, 21];
                 _e = messages_1_1.value, number = _e.number, date = _e.date, text = _e.text;
-                return [4 /*yield*/, client.postUserEventAction(Response.GetMessages.Entry.buildAction(actionid, number, date.toISOString(), text))];
+                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.GetMessages_follow.build(actionid, number, date.toISOString(), text))];
             case 19:
                 _o.sent();
                 _o.label = 20;
@@ -298,14 +275,14 @@ client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __aw
                 }
                 finally { if (e_2) throw e_2.error; }
                 return [7 /*endfinally*/];
-            case 24: return [3 /*break*/, 50];
+            case 24: return [3 /*break*/, 54];
             case 25:
-                if (!Request.GetSimPhonebook.matchEvt(evtRequest)) return [3 /*break*/, 35];
+                if (!AmiUserEvents_1.Request.GetSimPhonebook.match(evtRequest)) return [3 /*break*/, 35];
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 modem = main_1.activeModems.get(evtRequest.imei).modem;
                 contacts = modem.contacts;
-                return [4 /*yield*/, client.postUserEventAction(Response.GetSimPhonebook.Infos.buildAction(actionid, modem.contactNameMaxLength.toString(), modem.numberMaxLength.toString(), modem.storageLeft.toString(), contacts.length.toString()))];
+                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.GetSimPhonebook_first.build(actionid, "" + modem.contactNameMaxLength, "" + modem.numberMaxLength, "" + modem.storageLeft, "" + contacts.length))];
             case 26:
                 _o.sent();
                 _o.label = 27;
@@ -316,7 +293,7 @@ client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __aw
             case 28:
                 if (!!contacts_1_1.done) return [3 /*break*/, 31];
                 _f = contacts_1_1.value, index = _f.index, name_1 = _f.name, number = _f.number;
-                return [4 /*yield*/, client.postUserEventAction(Response.GetSimPhonebook.Entry.buildAction(actionid, index.toString(), name_1, number))];
+                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.GetSimPhonebook_follow.build(actionid, "" + index, name_1, number))];
             case 29:
                 _o.sent();
                 _o.label = 30;
@@ -334,9 +311,9 @@ client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __aw
                 }
                 finally { if (e_3) throw e_3.error; }
                 return [7 /*endfinally*/];
-            case 34: return [3 /*break*/, 50];
+            case 34: return [3 /*break*/, 54];
             case 35:
-                if (!Request.CreateContact.matchEvt(evtRequest)) return [3 /*break*/, 37];
+                if (!AmiUserEvents_1.Request.CreateContact.match(evtRequest)) return [3 /*break*/, 38];
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 modem = main_1.activeModems.get(evtRequest.imei).modem;
@@ -347,10 +324,12 @@ client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __aw
                 return [4 /*yield*/, modem.createContact(number, name_2)];
             case 36:
                 contact = _o.sent();
-                client.postUserEventAction(Response.CreateContact.buildAction(actionid, contact.index.toString(), contact.name, contact.number));
-                return [3 /*break*/, 50];
+                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.CreateContact.build(actionid, "" + contact.index, contact.name, contact.number))];
             case 37:
-                if (!Request.DeleteContact.matchEvt(evtRequest)) return [3 /*break*/, 39];
+                _o.sent();
+                return [3 /*break*/, 54];
+            case 38:
+                if (!AmiUserEvents_1.Request.DeleteContact.match(evtRequest)) return [3 /*break*/, 41];
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 modem = main_1.activeModems.get(evtRequest.imei).modem;
@@ -358,73 +337,75 @@ client.evtUserEvent.attach(Request.matchEvt, function (evtRequest) { return __aw
                 if (!modem.getContact(index))
                     return [2 /*return*/, replyError("Contact index " + index + " does not exist")];
                 return [4 /*yield*/, modem.deleteContact(index)];
-            case 38:
-                _o.sent();
-                client.postUserEventAction(Response.buildAction(Request.DeleteContact.keyword, actionid));
-                return [3 /*break*/, 50];
             case 39:
-                if (!Request.GetActiveDongles.matchEvt(evtRequest)) return [3 /*break*/, 49];
-                return [4 /*yield*/, client.postUserEventAction(Response.GetActiveDongles.Infos.buildAction(actionid, main_1.activeModems.size.toString()))];
+                _o.sent();
+                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.build(actionid))];
             case 40:
                 _o.sent();
-                _o.label = 41;
+                return [3 /*break*/, 54];
             case 41:
-                _o.trys.push([41, 46, 47, 48]);
-                _g = __values(main_1.activeModems.keysAsArray()), _h = _g.next();
-                _o.label = 42;
+                if (!AmiUserEvents_1.Request.GetActiveDongles.match(evtRequest)) return [3 /*break*/, 51];
+                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.GetActiveDongles_first.build(actionid, "" + main_1.activeModems.size))];
             case 42:
-                if (!!_h.done) return [3 /*break*/, 45];
+                _o.sent();
+                _o.label = 43;
+            case 43:
+                _o.trys.push([43, 48, 49, 50]);
+                _g = __values(main_1.activeModems.keysAsArray()), _h = _g.next();
+                _o.label = 44;
+            case 44:
+                if (!!_h.done) return [3 /*break*/, 47];
                 imei = _h.value;
                 modem = main_1.activeModems.get(imei).modem;
                 iccid = modem.iccid, imsi = modem.imsi, number = modem.number, serviceProviderName = modem.serviceProviderName;
-                return [4 /*yield*/, client.postUserEventAction(Response.GetActiveDongles.Entry.buildAction(actionid, imei, iccid, imsi, number || "", serviceProviderName || ""))];
-            case 43:
+                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.GetActiveDongles_follow.build(actionid, imei, iccid, imsi, number || "", serviceProviderName || ""))];
+            case 45:
                 _o.sent();
-                _o.label = 44;
-            case 44:
-                _h = _g.next();
-                return [3 /*break*/, 42];
-            case 45: return [3 /*break*/, 48];
+                _o.label = 46;
             case 46:
+                _h = _g.next();
+                return [3 /*break*/, 44];
+            case 47: return [3 /*break*/, 50];
+            case 48:
                 e_4_1 = _o.sent();
                 e_4 = { error: e_4_1 };
-                return [3 /*break*/, 48];
-            case 47:
+                return [3 /*break*/, 50];
+            case 49:
                 try {
                     if (_h && !_h.done && (_m = _g.return)) _m.call(_g);
                 }
                 finally { if (e_4) throw e_4.error; }
                 return [7 /*endfinally*/];
-            case 48: return [3 /*break*/, 50];
-            case 49:
-                if (Request.UnlockDongle.matchEvt(evtRequest)) {
-                    imei = evtRequest.imei;
-                    lockedModem = main_1.lockedModems.get(imei);
-                    if (!lockedModem)
-                        return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
-                    pinState = lockedModem.pinState, tryLeft = lockedModem.tryLeft;
-                    unlockCallback = lockedModem.callback;
-                    if (pinState === "SIM PIN") {
-                        pin = evtRequest.pin;
-                        if (!pin)
-                            return [2 /*return*/, replyError("Wrong parameter, no PIN provided")];
-                        unlockCallback(pin);
-                    }
-                    else if (pinState === "SIM PUK") {
-                        puk = evtRequest.puk, newpin = evtRequest.newpin;
-                        if (!puk || !newpin)
-                            return [2 /*return*/, replyError("Wrong parameter, no PUK and NEW PIN requested")];
-                        unlockCallback(puk, newpin);
-                    }
-                    else
-                        return [2 /*return*/, replyError(pinState + ", not supported")];
-                    main_1.lockedModems.delete(imei);
-                    client.postUserEventAction(Response.buildAction(Request.UnlockDongle.keyword, actionid));
+            case 50: return [3 /*break*/, 54];
+            case 51:
+                if (!AmiUserEvents_1.Request.UnlockDongle.match(evtRequest)) return [3 /*break*/, 53];
+                imei = evtRequest.imei;
+                lockedModem = main_1.lockedModems.get(imei);
+                if (!lockedModem)
+                    return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
+                pinState = lockedModem.pinState, tryLeft = lockedModem.tryLeft;
+                unlockCallback = lockedModem.callback;
+                if (pinState === "SIM PIN") {
+                    pin = evtRequest.pin;
+                    if (!pin)
+                        return [2 /*return*/, replyError("Wrong parameter, no PIN provided")];
+                    unlockCallback(pin);
+                }
+                else if (pinState === "SIM PUK") {
+                    puk = evtRequest.puk, newpin = evtRequest.newpin;
+                    if (!puk || !newpin)
+                        return [2 /*return*/, replyError("Wrong parameter, no PUK and NEW PIN requested")];
+                    unlockCallback(puk, newpin);
                 }
                 else
-                    return [2 /*return*/, replyError("Unknown command " + command)];
-                _o.label = 50;
-            case 50: return [2 /*return*/];
+                    return [2 /*return*/, replyError(pinState + ", not supported")];
+                main_1.lockedModems.delete(imei);
+                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.build(actionid))];
+            case 52:
+                _o.sent();
+                return [3 /*break*/, 54];
+            case 53: return [2 /*return*/, replyError("Unknown command " + command)];
+            case 54: return [2 /*return*/];
         }
     });
 }); });

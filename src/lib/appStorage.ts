@@ -1,6 +1,6 @@
 import * as storage from "node-persist";
 import * as path from "path";
-import { Message } from "chan-dongle-extended-client";
+import { Message } from "ts-gsm-modem";
 import { execQueue } from "ts-exec-queue";
 
 export const JSON_parse_WithDate= (str: string) => JSON.parse(
@@ -21,84 +21,45 @@ export type AppData = {
     };
 }
 
-const defaultStorageData: AppData= {
+const defaultStorageData: AppData = {
     "pins": {},
     "messages": {}
 };
 
-export type ReadOutput= AppData & { readonly release: () => Promise<void> };
+export type ReadOutput = AppData & { readonly release: () => Promise<void> };
 
-let init= false;
+let init = false;
 
-export namespace appStorage {
 
-    const cluster = {};
+const queue = execQueue({}, "WRITE_FS",
+    async (provider: (storageData: ReadOutput) => void, callback: () => void) => {
 
-    const queue = execQueue(cluster, "WRITE_FS",
-        async (provider: (storageData: ReadOutput) => void, callback: () => void) => {
+        if (!init) {
 
-            if( !init ){
-
-                await storage.init({
-                    "dir": path.join(__dirname, "..", "..", ".node-persist", "storage"),
-                    "parse": JSON_parse_WithDate
-                });
-
-                init= true;
-
-            }
-
-            let appData: AppData = (await storage.getItem("appData")) || defaultStorageData;
-
-            provider({
-                ...appData,
-                "release": async (): Promise<void> => {
-                    await storage.setItem("appData", appData);
-                    callback();
-                }
+            await storage.init({
+                "dir": path.join(__dirname, "..", "..", ".node-persist", "storage"),
+                "parse": JSON_parse_WithDate
             });
 
+            init = true;
+
         }
-    );
 
-    export async function read(): Promise<ReadOutput> {
+        let appData: AppData = (await storage.getItem("appData")) || defaultStorageData;
 
-        return new Promise<any>(resolve => queue(resolve, () => {} ));
+        provider({
+            ...appData,
+            "release": async (): Promise<void> => {
+                await storage.setItem("appData", appData);
+                callback();
+            }
+        });
 
     }
+);
 
-    /*
-    const queue = execQueue(cluster, "WRITE",
-        (provider: (storageData: StorageData & { readonly release: () => Promise<void> }) => void, callback: () => void): void => {
+export function read(): Promise<ReadOutput> {
 
-            if (!init) {
-
-                storage.initSync({
-                    "dir": path.join(__dirname, "..", "..", ".node-persist", "storage"),
-                    "parse": JSON_parse_WithDate
-                });
-
-                init = true;
-
-            }
-
-            storage.getItem("storageData", (error, value) => {
-
-                let storageData: StorageData = value || defaultStorageData;
-
-                provider({
-                    ...storageData,
-                    "release": async (): Promise<void> => {
-                        await storage.setItem("storageData", storageData);
-                        callback();
-                    }
-                });
-
-            });
-
-        }
-    );
-    */
-
+    return new Promise<any>(resolve => queue(resolve, () => { }));
 
 }

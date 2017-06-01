@@ -17,8 +17,9 @@ import * as program from "commander";
 import { recordIfNum } from "gsm-modem-connection";
 const vendorIds = Object.keys(recordIfNum);
 import { ini } from "ini-extended";
-import { chanDongleConfManager} from "../lib/chanDongleConfManager";
+import { chanDongleConfManager } from "../lib/chanDongleConfManager";
 import "colors";
+import { amiUser } from "../lib/AmiUserEvents";
 
 
 
@@ -154,8 +155,9 @@ async function enableManager() {
         "displayconnects": "yes"
     };
 
-    const dongle_ext_user = {
-        "secret": Date.now().toString(),
+
+    let user = {
+        "secret": `${Date.now()}`,
         "deny": "0.0.0.0/0.0.0.0",
         "permit": "0.0.0.0/0.0.0.0",
         //"read": "system,user,config,agi",
@@ -173,7 +175,20 @@ async function enableManager() {
         } catch (error) { }
     }
 
-    await writeFileAssertSuccess(managerConfPath, ini.stringify({ general, dongle_ext_user }));
+    await writeFileAssertSuccess(
+        managerConfPath,
+        ini.stringify(
+            (() => {
+
+                let out: any = { general };
+
+                out[amiUser] = user;
+
+                return out;
+
+            })()
+        )
+    );
 
     await run(`chmod u+r,g+r,o+r ${managerConfPath}`);
 
@@ -184,7 +199,6 @@ async function enableManager() {
     } catch (error) { }
 
     console.log("Asterisk Manager successfully enabled");
-
 
 }
 
@@ -201,7 +215,6 @@ async function setUdevRules() {
         ].join("");
 
         rules += `${match}ACTION=="add" MODE="0666", GROUP="root"\n`;
-
 
     }
 

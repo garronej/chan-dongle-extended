@@ -10,8 +10,6 @@ import { chanDongleConfManager } from "./chanDongleConfManager";
 import { Tty0tty } from "./Tty0tty";
 import { lockedModems, activeModems } from "./main";
 
-import * as pr from "ts-promisify";
-
 import * as _debug from "debug";
 let debug = _debug("_main.bridge");
 
@@ -48,8 +46,12 @@ activeModems.evtSet.attach(async ([{ modem, accessPoint, dongleName }]) => {
 
         debug("Dongle removed from chan dongle config");
 
-        if (portVirtual.isOpen()){
-            await pr.typed(portVirtual, portVirtual.close)();
+        if (portVirtual.isOpen()) {
+
+            await new Promise<void>(
+                resolve => portVirtual.close(() => resolve())
+            );
+
             debug("Virtual port closed");
         }
 
@@ -65,7 +67,7 @@ activeModems.evtSet.attach(async ([{ modem, accessPoint, dongleName }]) => {
 
     portVirtual.on("data", (buff: Buffer) => {
 
-        if( modem.isTerminated ) return;
+        if (modem.isTerminated) return;
 
         let command = buff.toString("utf8") + "\r";
 

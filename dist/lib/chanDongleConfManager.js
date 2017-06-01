@@ -38,8 +38,9 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var fs_1 = require("fs");
 var ini_extended_1 = require("ini-extended");
 var ts_exec_queue_1 = require("ts-exec-queue");
-var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
 var path = require("path");
+var ts_ami_1 = require("ts-ami");
+var AmiUserEvents_1 = require("./AmiUserEvents");
 var astConfPath = path.join("/etc", "asterisk");
 var dongleConfPath = path.join(astConfPath, "dongle.conf");
 var _debug = require("debug");
@@ -165,10 +166,7 @@ function reloadChanDongle() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient.localhost().ami.postAction({
-                        "action": "DongleReload",
-                        "when": "gracefully"
-                    })];
+                case 0: return [4 /*yield*/, ts_ami_1.Ami.localhost({ "user": AmiUserEvents_1.amiUser }).postAction("DongleReload", { "when": "gracefully" })];
                 case 1:
                     _a.sent();
                     debug("update chan_dongle config");

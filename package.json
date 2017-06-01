@@ -1,13 +1,11 @@
 {
   "name": "chan-dongle-extended",
-  "version": "1.4.2",
+  "version": "1.5.0",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
   "scripts": {
     "tsc": "./node_modules/.bin/tsc -p ./tsconfig.json && chmod +x ./dist/bin/*.js",
-    "postinstall": "if [ $(id -u) -eq 0  ]; then (node ./dist/bin/scripts postinstall); else (sudo node ./dist/bin/scripts postinstall); fi",
-    "preuninstall": "if [ $(id -u) -eq 0  ]; then (node ./dist/bin/scripts preuninstall); else (sudo node ./dist/bin/scripts preuninstall); fi",
     "start": "/bin/bash ./src/bin/start.sh"
   },
   "repository": {
@@ -29,7 +27,7 @@
   "author": "Joseph Garrone",
   "license": "MIT",
   "dependencies": {
-    "chan-dongle-extended-client": "garronej/chan-dongle-extended-client",
+    "chan-dongle-extended-client": "github:garronej/chan-dongle-extended-client",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
     "debug": "^2.6.1",
@@ -40,10 +38,10 @@
     "rejection-tracker": "github:garronej/rejection-tracker",
     "timer-extended": "garronej/timer-extended",
     "trackable-map": "garronej/trackable-map",
+    "ts-ami": "github:garronej/ts-ami",
     "ts-events-extended": "garronej/ts-events-extended",
     "ts-exec-queue": "garronej/ts-exec-queue",
-    "ts-gsm-modem": "garronej/ts-gsm-modem",
-    "ts-promisify": "garronej/ts-promisify"
+    "ts-gsm-modem": "garronej/ts-gsm-modem"
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",

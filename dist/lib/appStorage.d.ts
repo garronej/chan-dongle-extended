@@ -1,4 +1,4 @@
-import { Message } from "chan-dongle-extended-client";
+import { Message } from "ts-gsm-modem";
 export declare const JSON_parse_WithDate: (str: string) => any;
 export declare type AppData = {
     pins: {
@@ -11,6 +11,4 @@ export declare type AppData = {
 export declare type ReadOutput = AppData & {
     readonly release: () => Promise<void>;
 };
-export declare namespace appStorage {
-    function read(): Promise<ReadOutput>;
-}
+export declare function read(): Promise<ReadOutput>;

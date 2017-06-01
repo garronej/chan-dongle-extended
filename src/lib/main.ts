@@ -7,7 +7,7 @@ import {
 } from "ts-gsm-modem";
 import { Monitor, AccessPoint } from "gsm-modem-connection";
 import { TrackableMap } from "trackable-map";
-import { appStorage } from "./appStorage";
+import * as appStorage from "./appStorage";
 
 import * as _debug from "debug";
 let debug = _debug("_main");
@@ -25,15 +25,10 @@ export const lockedModems = new TrackableMap<string, {
     callback: UnlockCodeProviderCallback;
 }>();
 
-namespace Validation {
-    export interface StringValidator {
-        isAcceptable(s: string): boolean;
-    }
-}
 
 
 if (process.env["NODE_ENV"] !== "production") require("./repl");
-require("./evtLogger");
+import "./evtLogger";
 
 import "./main.ami";
 import "./main.bridge";
@@ -53,6 +48,7 @@ Monitor.evtModemConnect.attach(async accessPoint => {
             lockedModems.set(imei, { iccid, pinState, tryLeft, callback })
     });
 
+
     if (error) {
         debug("Initialization error".red, error);
 
@@ -65,12 +61,10 @@ Monitor.evtModemConnect.attach(async accessPoint => {
             else
                 debug(`for dongle IMEI: ${modem.imei}, because SIM ICCID is not readable with this dongle when SIM is locked`);
 
-            console.log("lock");
             let appData = await appStorage.read();
 
             appData.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
 
-            console.log("unlock");
             appData.release();
 
 
@@ -82,7 +76,6 @@ Monitor.evtModemConnect.attach(async accessPoint => {
 
     if (!hasSim)
         return debug("No sim!".red);
-
 
 
     let dongleName = "Dongle" + modem.imei.substring(0, 3) + modem.imei.substring(modem.imei.length - 3);

@@ -1,8 +1,10 @@
 import { writeFile, readFileSync } from "fs";
 import { ini } from "ini-extended";
 import { execQueue, ExecQueue } from "ts-exec-queue";
-import { DongleExtendedClient } from "chan-dongle-extended-client";
 import * as path from "path";
+
+import { Ami } from "ts-ami";
+import { amiUser } from "./AmiUserEvents";
 
 const astConfPath= path.join("/etc", "asterisk");
 const dongleConfPath= path.join(astConfPath, "dongle.conf");
@@ -158,10 +160,10 @@ function update(): Promise<void> {
 
 export async function reloadChanDongle() {
 
-    await DongleExtendedClient.localhost().ami.postAction({
-        "action": "DongleReload",
-        "when": "gracefully"
-    });
+    await Ami.localhost({ "user": amiUser }).postAction(
+        "DongleReload",
+        { "when": "gracefully" }
+    );
 
     debug("update chan_dongle config");
 
@@ -178,7 +180,7 @@ function loadConfig(): ModuleConfiguration {
         );
 
         defaults.autodeletesms = "false";
-        defaults.disablesms= "no";
+        defaults.disablesms = "no";
         general.interval = "10000";
 
         return { general, defaults };

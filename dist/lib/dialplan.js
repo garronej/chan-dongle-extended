@@ -35,7 +35,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
+var ts_ami_1 = require("ts-ami");
+var AmiUserEvents_1 = require("./AmiUserEvents");
 var chanDongleConfManager_1 = require("./chanDongleConfManager");
 var dialplanContext = chanDongleConfManager_1.chanDongleConfManager.getConfig().defaults.context;
 var _debug = require("debug");
@@ -46,7 +47,7 @@ function notifyStatusReport(dongle, statusReport) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    ami = chan_dongle_extended_client_1.DongleExtendedClient.localhost().ami;
+                    ami = ts_ami_1.Ami.localhost({ "user": AmiUserEvents_1.amiUser });
                     name = dongle.name, number = dongle.number, provider = dongle.provider, imei = dongle.imei, imsi = dongle.imsi;
                     dischargeTime = statusReport.dischargeTime, isDelivered = statusReport.isDelivered, messageId = statusReport.messageId, status = statusReport.status, recipient = statusReport.recipient;
                     variable = {
@@ -75,10 +76,10 @@ function notifySms(dongle, message) {
         var ami, name, number, provider, imei, imsi, keywordSplit, textSplit, variable, i;
         return __generator(this, function (_a) {
             debug("start notify sms");
-            ami = chan_dongle_extended_client_1.DongleExtendedClient.localhost().ami;
+            ami = ts_ami_1.Ami.localhost({ "user": AmiUserEvents_1.amiUser });
             name = dongle.name, number = dongle.number, provider = dongle.provider, imei = dongle.imei, imsi = dongle.imsi;
             keywordSplit = "SMS_BASE64_PART_";
-            textSplit = chan_dongle_extended_client_1.textSplitBase64ForAmiSplitFirst(message.text, "Variable" + (keywordSplit + "XX="));
+            textSplit = ts_ami_1.base64TextSplit(message.text, "Variable" + (keywordSplit + "XX="));
             variable = {
                 "DONGLENAME": name,
                 "DONGLEPROVIDER": provider,

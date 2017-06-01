@@ -56,7 +56,7 @@ require("rejection-tracker").main(__dirname, "..", "..");
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var gsm_modem_connection_1 = require("gsm-modem-connection");
 var trackable_map_1 = require("trackable-map");
-var appStorage_1 = require("./appStorage");
+var appStorage = require("./appStorage");
 var _debug = require("debug");
 var debug = _debug("_main");
 exports.activeModems = new trackable_map_1.TrackableMap();
@@ -91,12 +91,10 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
                     debug("for SIM ICCID: " + modem.iccid);
                 else
                     debug("for dongle IMEI: " + modem.imei + ", because SIM ICCID is not readable with this dongle when SIM is locked");
-                console.log("lock");
-                return [4 /*yield*/, appStorage_1.appStorage.read()];
+                return [4 /*yield*/, appStorage.read()];
             case 2:
                 appData = _b.sent();
                 appData.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
-                console.log("unlock");
                 appData.release();
                 _b.label = 3;
             case 3:

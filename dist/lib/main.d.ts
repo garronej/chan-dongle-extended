@@ -12,5 +12,6 @@ export declare const lockedModems: TrackableMap<string, {
     tryLeft: number;
     callback: UnlockCodeProviderCallback;
 }>;
+import "./evtLogger";
 import "./main.ami";
 import "./main.bridge";

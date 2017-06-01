@@ -58,7 +58,6 @@ var ts_gsm_modem_1 = require("ts-gsm-modem");
 var chanDongleConfManager_1 = require("./chanDongleConfManager");
 var Tty0tty_1 = require("./Tty0tty");
 var main_1 = require("./main");
-var pr = require("ts-promisify");
 var _debug = require("debug");
 var debug = _debug("_main.bridge");
 main_1.activeModems.evtSet.attach(function (_a) {
@@ -93,7 +92,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                                     _a.sent();
                                     debug("Dongle removed from chan dongle config");
                                     if (!portVirtual.isOpen()) return [3 /*break*/, 3];
-                                    return [4 /*yield*/, pr.typed(portVirtual, portVirtual.close)()];
+                                    return [4 /*yield*/, new Promise(function (resolve) { return portVirtual.close(function () { return resolve(); }); })];
                                 case 2:
                                     _a.sent();
                                     debug("Virtual port closed");
