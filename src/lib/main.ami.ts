@@ -76,7 +76,7 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
             Event.MessageStatusReport.build(
                 imei,
                 `${messageId}`,
-                dischargeTime.toISOString(),
+                isNaN(dischargeTime.getTime()) ? `${dischargeTime}` : dischargeTime.toISOString(),
                 isDelivered ? "true" : "false",
                 status,
                 recipient

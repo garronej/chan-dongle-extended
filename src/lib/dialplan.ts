@@ -34,7 +34,7 @@ export async function notifyStatusReport(dongle: DongleIdentifier, statusReport:
         "DONGLEIMEI": imei,
         "DONGLEIMSI": imsi,
         "DONGLENUMBER": number,
-        "STATUS_REPORT_DISCHARGE_TIME": dischargeTime.toISOString(),
+        "STATUS_REPORT_DISCHARGE_TIME": isNaN(dischargeTime.getTime())?`${dischargeTime}`:dischargeTime.toISOString(),
         "STATUS_REPORT_IS_DELIVERED": `${isDelivered}`,
         "STATUS_REPORT_ID": `${messageId}`,
         "STATUS_REPORT_STATUS": status,

@@ -106,7 +106,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         var messageId, dischargeTime, isDelivered, status, recipient;
                         return __generator(this, function (_a) {
                             messageId = statusReport.messageId, dischargeTime = statusReport.dischargeTime, isDelivered = statusReport.isDelivered, status = statusReport.status, recipient = statusReport.recipient;
-                            ami.userEvent(AmiUserEvents_1.Event.MessageStatusReport.build(imei, "" + messageId, dischargeTime.toISOString(), isDelivered ? "true" : "false", status, recipient));
+                            ami.userEvent(AmiUserEvents_1.Event.MessageStatusReport.build(imei, "" + messageId, isNaN(dischargeTime.getTime()) ? "" + dischargeTime : dischargeTime.toISOString(), isDelivered ? "true" : "false", status, recipient));
                             dialplan.notifyStatusReport(dongleIdentifier, statusReport);
                             return [2 /*return*/];
                         });
