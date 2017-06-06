@@ -49,41 +49,6 @@ export namespace Event {
     }
 
 
-    export interface RequestUnlockCode extends Event {
-        dongleevent: typeof RequestUnlockCode.dongleevent;
-        imei: string;
-        iccid: string;
-        pinstate: LockedPinState;
-        tryleft: string;
-    }
-
-    export namespace RequestUnlockCode {
-
-        export const dongleevent = "RequestUnlockCode";
-
-        export function match(evt: UserEvent): evt is RequestUnlockCode {
-            return (
-                Event.match(evt) &&
-                evt.dongleevent === dongleevent
-            );
-        }
-
-        export function build(
-            imei: string,
-            iccid: string,
-            pinstate: LockedPinState,
-            tryleft: string
-        ): RequestUnlockCode {
-            return {
-                ...Event.build(dongleevent),
-                imei,
-                iccid,
-                pinstate,
-                tryleft
-            } as RequestUnlockCode;
-        }
-
-    }
 
     export interface NewMessage extends Event {
         dongleevent: typeof NewMessage.dongleevent;
@@ -182,8 +147,8 @@ export namespace Event {
 
     }
 
-    export interface DongleDisconnect extends Event {
-        dongleevent: typeof DongleDisconnect.dongleevent;
+    export interface ActiveDongleDisconnect extends Event {
+        dongleevent: typeof ActiveDongleDisconnect.dongleevent;
         imei: string;
         iccid: string;
         imsi: string;
@@ -191,11 +156,11 @@ export namespace Event {
         serviceprovider: string;
     }
 
-    export namespace DongleDisconnect {
+    export namespace ActiveDongleDisconnect {
 
-        export const dongleevent = "DongleDisconnect";
+        export const dongleevent = "ActiveDongleDisconnect";
 
-        export function match(evt: UserEvent): evt is DongleDisconnect {
+        export function match(evt: UserEvent): evt is ActiveDongleDisconnect {
             return (
                 Event.match(evt) &&
                 evt.dongleevent === dongleevent
@@ -208,7 +173,7 @@ export namespace Event {
             imsi: string,
             number: string,
             serviceprovider: string
-        ): DongleDisconnect {
+        ): ActiveDongleDisconnect {
             return {
                 ...Event.build(dongleevent),
                 imei,
@@ -216,7 +181,80 @@ export namespace Event {
                 imsi,
                 number,
                 serviceprovider
-            } as DongleDisconnect;
+            } as ActiveDongleDisconnect;
+        }
+
+    }
+
+    export interface RequestUnlockCode extends Event {
+        dongleevent: typeof RequestUnlockCode.dongleevent;
+        imei: string;
+        iccid: string;
+        pinstate: LockedPinState;
+        tryleft: string;
+    }
+
+    export namespace RequestUnlockCode {
+
+        export const dongleevent = "RequestUnlockCode";
+
+        export function match(evt: UserEvent): evt is RequestUnlockCode {
+            return (
+                Event.match(evt) &&
+                evt.dongleevent === dongleevent
+            );
+        }
+
+        export function build(
+            imei: string,
+            iccid: string,
+            pinstate: LockedPinState,
+            tryleft: string
+        ): RequestUnlockCode {
+            return {
+                ...Event.build(dongleevent),
+                imei,
+                iccid,
+                pinstate,
+                tryleft
+            } as RequestUnlockCode;
+        }
+
+    }
+
+
+    export interface LockedDongleDisconnect extends Event {
+        dongleevent: typeof LockedDongleDisconnect.dongleevent;
+        imei: string;
+        iccid: string;
+        pinstate: LockedPinState;
+        tryleft: string;
+    }
+
+    export namespace LockedDongleDisconnect {
+
+        export const dongleevent = "LockedDongleDisconnect";
+
+        export function match(evt: UserEvent): evt is RequestUnlockCode {
+            return (
+                Event.match(evt) &&
+                evt.dongleevent === dongleevent
+            );
+        }
+
+        export function build(
+            imei: string,
+            iccid: string,
+            pinstate: LockedPinState,
+            tryleft: string
+        ): RequestUnlockCode {
+            return {
+                ...Event.build(dongleevent),
+                imei,
+                iccid,
+                pinstate,
+                tryleft
+            } as RequestUnlockCode;
         }
 
     }

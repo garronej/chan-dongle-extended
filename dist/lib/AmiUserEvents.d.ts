@@ -10,18 +10,6 @@ export declare namespace Event {
     const userevent: string;
     function match(evt: UserEvent): evt is Event;
     function build(dongleevent: string): Event;
-    interface RequestUnlockCode extends Event {
-        dongleevent: typeof RequestUnlockCode.dongleevent;
-        imei: string;
-        iccid: string;
-        pinstate: LockedPinState;
-        tryleft: string;
-    }
-    namespace RequestUnlockCode {
-        const dongleevent = "RequestUnlockCode";
-        function match(evt: UserEvent): evt is RequestUnlockCode;
-        function build(imei: string, iccid: string, pinstate: LockedPinState, tryleft: string): RequestUnlockCode;
-    }
     interface NewMessage extends Event {
         dongleevent: typeof NewMessage.dongleevent;
         imei: string;
@@ -49,18 +37,42 @@ export declare namespace Event {
         function match(evt: UserEvent): evt is NewActiveDongle;
         function build(imei: string, iccid: string, imsi: string, number: string, serviceprovider: string): NewActiveDongle;
     }
-    interface DongleDisconnect extends Event {
-        dongleevent: typeof DongleDisconnect.dongleevent;
+    interface ActiveDongleDisconnect extends Event {
+        dongleevent: typeof ActiveDongleDisconnect.dongleevent;
         imei: string;
         iccid: string;
         imsi: string;
         number: string;
         serviceprovider: string;
     }
-    namespace DongleDisconnect {
-        const dongleevent = "DongleDisconnect";
-        function match(evt: UserEvent): evt is DongleDisconnect;
-        function build(imei: string, iccid: string, imsi: string, number: string, serviceprovider: string): DongleDisconnect;
+    namespace ActiveDongleDisconnect {
+        const dongleevent = "ActiveDongleDisconnect";
+        function match(evt: UserEvent): evt is ActiveDongleDisconnect;
+        function build(imei: string, iccid: string, imsi: string, number: string, serviceprovider: string): ActiveDongleDisconnect;
+    }
+    interface RequestUnlockCode extends Event {
+        dongleevent: typeof RequestUnlockCode.dongleevent;
+        imei: string;
+        iccid: string;
+        pinstate: LockedPinState;
+        tryleft: string;
+    }
+    namespace RequestUnlockCode {
+        const dongleevent = "RequestUnlockCode";
+        function match(evt: UserEvent): evt is RequestUnlockCode;
+        function build(imei: string, iccid: string, pinstate: LockedPinState, tryleft: string): RequestUnlockCode;
+    }
+    interface LockedDongleDisconnect extends Event {
+        dongleevent: typeof LockedDongleDisconnect.dongleevent;
+        imei: string;
+        iccid: string;
+        pinstate: LockedPinState;
+        tryleft: string;
+    }
+    namespace LockedDongleDisconnect {
+        const dongleevent = "LockedDongleDisconnect";
+        function match(evt: UserEvent): evt is RequestUnlockCode;
+        function build(imei: string, iccid: string, pinstate: LockedPinState, tryleft: string): RequestUnlockCode;
     }
     interface MessageStatusReport extends Event {
         dongleevent: typeof MessageStatusReport.dongleevent;

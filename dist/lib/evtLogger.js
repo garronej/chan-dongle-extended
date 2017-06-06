@@ -18,7 +18,8 @@ var _loop_1 = function (evtName) {
 };
 try {
     for (var _a = __values([
-        "evtDongleDisconnect",
+        "evtActiveDongleDisconnect",
+        "evtLockedDongleDisconnect",
         "evtMessageStatusReport",
         "evtNewActiveDongle",
         "evtNewMessage",

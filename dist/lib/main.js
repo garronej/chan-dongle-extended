@@ -55,6 +55,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("rejection-tracker").main(__dirname, "..", "..");
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var gsm_modem_connection_1 = require("gsm-modem-connection");
+var ts_events_extended_1 = require("ts-events-extended");
 var trackable_map_1 = require("trackable-map");
 var appStorage = require("./appStorage");
 var _debug = require("debug");
@@ -70,15 +71,22 @@ debug("Daemon started!");
 gsm_modem_connection_1.Monitor.evtModemDisconnect.attach(function (accessPoint) { return debug("DISCONNECT: " + accessPoint.toString()); });
 gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { return __awaiter(_this, void 0, void 0, function () {
     var _this = this;
-    var _a, error, modem, hasSim, appData, dongleName;
+    var evtDisconnect, _a, error, modem, hasSim, appData, dongleName;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 debug("CONNECT: " + accessPoint.toString());
+                evtDisconnect = new ts_events_extended_1.VoidSyncEvent();
                 return [4 /*yield*/, ts_gsm_modem_1.Modem.create({
                         "path": accessPoint.dataIfPath,
                         "unlockCodeProvider": function (imei, iccid, pinState, tryLeft, callback) {
-                            return exports.lockedModems.set(imei, { iccid: iccid, pinState: pinState, tryLeft: tryLeft, callback: callback });
+                            gsm_modem_connection_1.Monitor.evtModemDisconnect.attachOnce(function (_a) {
+                                var id = _a.id;
+                                return id === accessPoint.id;
+                            }, function () { return evtDisconnect.post(); });
+                            exports.lockedModems.set(imei, {
+                                iccid: iccid, pinState: pinState, tryLeft: tryLeft, callback: callback, evtDisconnect: evtDisconnect
+                            });
                         }
                     })];
             case 1:
@@ -98,7 +106,7 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
                 appData.release();
                 _b.label = 3;
             case 3:
-                exports.lockedModems.delete(modem.imei);
+                evtDisconnect.post();
                 return [2 /*return*/];
             case 4:
                 if (!hasSim)

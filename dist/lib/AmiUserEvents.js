@@ -30,22 +30,6 @@ var Event;
         return __assign({}, buildUserEvent(Event.userevent), { dongleevent: dongleevent });
     }
     Event.build = build;
-    var RequestUnlockCode;
-    (function (RequestUnlockCode) {
-        RequestUnlockCode.dongleevent = "RequestUnlockCode";
-        function match(evt) {
-            return (Event.match(evt) &&
-                evt.dongleevent === RequestUnlockCode.dongleevent);
-        }
-        RequestUnlockCode.match = match;
-        function build(imei, iccid, pinstate, tryleft) {
-            return __assign({}, Event.build(RequestUnlockCode.dongleevent), { imei: imei,
-                iccid: iccid,
-                pinstate: pinstate,
-                tryleft: tryleft });
-        }
-        RequestUnlockCode.build = build;
-    })(RequestUnlockCode = Event.RequestUnlockCode || (Event.RequestUnlockCode = {}));
     var NewMessage;
     (function (NewMessage) {
         NewMessage.dongleevent = "NewMessage";
@@ -91,23 +75,55 @@ var Event;
         }
         NewActiveDongle.build = build;
     })(NewActiveDongle = Event.NewActiveDongle || (Event.NewActiveDongle = {}));
-    var DongleDisconnect;
-    (function (DongleDisconnect) {
-        DongleDisconnect.dongleevent = "DongleDisconnect";
+    var ActiveDongleDisconnect;
+    (function (ActiveDongleDisconnect) {
+        ActiveDongleDisconnect.dongleevent = "ActiveDongleDisconnect";
         function match(evt) {
             return (Event.match(evt) &&
-                evt.dongleevent === DongleDisconnect.dongleevent);
+                evt.dongleevent === ActiveDongleDisconnect.dongleevent);
         }
-        DongleDisconnect.match = match;
+        ActiveDongleDisconnect.match = match;
         function build(imei, iccid, imsi, number, serviceprovider) {
-            return __assign({}, Event.build(DongleDisconnect.dongleevent), { imei: imei,
+            return __assign({}, Event.build(ActiveDongleDisconnect.dongleevent), { imei: imei,
                 iccid: iccid,
                 imsi: imsi,
                 number: number,
                 serviceprovider: serviceprovider });
         }
-        DongleDisconnect.build = build;
-    })(DongleDisconnect = Event.DongleDisconnect || (Event.DongleDisconnect = {}));
+        ActiveDongleDisconnect.build = build;
+    })(ActiveDongleDisconnect = Event.ActiveDongleDisconnect || (Event.ActiveDongleDisconnect = {}));
+    var RequestUnlockCode;
+    (function (RequestUnlockCode) {
+        RequestUnlockCode.dongleevent = "RequestUnlockCode";
+        function match(evt) {
+            return (Event.match(evt) &&
+                evt.dongleevent === RequestUnlockCode.dongleevent);
+        }
+        RequestUnlockCode.match = match;
+        function build(imei, iccid, pinstate, tryleft) {
+            return __assign({}, Event.build(RequestUnlockCode.dongleevent), { imei: imei,
+                iccid: iccid,
+                pinstate: pinstate,
+                tryleft: tryleft });
+        }
+        RequestUnlockCode.build = build;
+    })(RequestUnlockCode = Event.RequestUnlockCode || (Event.RequestUnlockCode = {}));
+    var LockedDongleDisconnect;
+    (function (LockedDongleDisconnect) {
+        LockedDongleDisconnect.dongleevent = "LockedDongleDisconnect";
+        function match(evt) {
+            return (Event.match(evt) &&
+                evt.dongleevent === LockedDongleDisconnect.dongleevent);
+        }
+        LockedDongleDisconnect.match = match;
+        function build(imei, iccid, pinstate, tryleft) {
+            return __assign({}, Event.build(LockedDongleDisconnect.dongleevent), { imei: imei,
+                iccid: iccid,
+                pinstate: pinstate,
+                tryleft: tryleft });
+        }
+        LockedDongleDisconnect.build = build;
+    })(LockedDongleDisconnect = Event.LockedDongleDisconnect || (Event.LockedDongleDisconnect = {}));
     var MessageStatusReport;
     (function (MessageStatusReport) {
         MessageStatusReport.dongleevent = "MessageStatusReport";

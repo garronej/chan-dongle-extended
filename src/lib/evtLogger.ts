@@ -3,9 +3,9 @@ import { DongleExtendedClient } from "chan-dongle-extended-client";
 import * as _debug from "debug";
 let debug= _debug("_evtLogger");
 
-
 for (let evtName of [
-    "evtDongleDisconnect",
+    "evtActiveDongleDisconnect",
+    "evtLockedDongleDisconnect",
     "evtMessageStatusReport",
     "evtNewActiveDongle",
     "evtNewMessage",

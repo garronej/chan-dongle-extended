@@ -138,15 +138,20 @@ main_1.activeModems.evtSet.attach(function (_a) {
 });
 main_1.activeModems.evtDelete.attach(function (_a) {
     var _b = __read(_a, 1), modem = _b[0].modem;
-    return ami.userEvent(AmiUserEvents_1.Event.DongleDisconnect.build(modem.imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || ""));
+    return ami.userEvent(AmiUserEvents_1.Event.ActiveDongleDisconnect.build(modem.imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || ""));
 });
 main_1.lockedModems.evtSet.attach(function (_a) {
-    var _b = __read(_a, 2), _c = _b[0], iccid = _c.iccid, pinState = _c.pinState, tryLeft = _c.tryLeft, callback = _c.callback, imei = _b[1];
+    var _b = __read(_a, 2), _c = _b[0], iccid = _c.iccid, pinState = _c.pinState, tryLeft = _c.tryLeft, callback = _c.callback, evtDisconnect = _c.evtDisconnect, imei = _b[1];
     return __awaiter(_this, void 0, void 0, function () {
         var appData, pin;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
+                    evtDisconnect.attachOnce(function () {
+                        ami.userEvent(AmiUserEvents_1.Event.LockedDongleDisconnect.build(imei, iccid, pinState, "" + tryLeft));
+                        main_1.lockedModems.delete(imei);
+                    });
+                    main_1.lockedModems.evtDelete.attachOnce(function (lockedModem_imei) { return lockedModem_imei[1] === imei; }, function () { return evtDisconnect.detach(); });
                     debug("Locked modem IMEI: " + imei + ",ICCID: " + iccid + ", " + pinState + ", " + tryLeft);
                     return [4 /*yield*/, appStorage.read()];
                 case 1:

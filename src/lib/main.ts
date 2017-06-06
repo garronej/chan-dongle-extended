@@ -6,24 +6,31 @@ import {
     AtMessage
 } from "ts-gsm-modem";
 import { Monitor, AccessPoint } from "gsm-modem-connection";
+import { VoidSyncEvent } from "ts-events-extended";
 import { TrackableMap } from "trackable-map";
 import * as appStorage from "./appStorage";
+
 
 import * as _debug from "debug";
 let debug = _debug("_main");
 
-export const activeModems = new TrackableMap<string, {
+export interface ActiveModem {
     modem: Modem;
     accessPoint: AccessPoint;
     dongleName: string;
-}>();
+}
 
-export const lockedModems = new TrackableMap<string, {
+export const activeModems = new TrackableMap<string, ActiveModem>();
+
+export interface LockedModem {
     iccid: string;
     pinState: AtMessage.LockedPinState;
     tryLeft: number;
     callback: UnlockCodeProviderCallback;
-}>();
+    evtDisconnect: VoidSyncEvent;
+}
+
+export const lockedModems = new TrackableMap<string, LockedModem>();
 
 
 
@@ -41,11 +48,23 @@ Monitor.evtModemConnect.attach(async accessPoint => {
 
     debug(`CONNECT: ${accessPoint.toString()}`);
 
+    let evtDisconnect = new VoidSyncEvent();
+
     let [error, modem, hasSim] = await Modem.create({
         "path": accessPoint.dataIfPath,
         "unlockCodeProvider":
-        (imei, iccid, pinState, tryLeft, callback) =>
-            lockedModems.set(imei, { iccid, pinState, tryLeft, callback })
+        (imei, iccid, pinState, tryLeft, callback) => {
+
+            Monitor.evtModemDisconnect.attachOnce(
+                ({ id })=> id === accessPoint.id,
+                ()=> evtDisconnect.post()
+            );
+
+            lockedModems.set(imei, {
+                iccid, pinState, tryLeft, callback, evtDisconnect
+            });
+
+        }
     });
 
 
@@ -70,7 +89,7 @@ Monitor.evtModemConnect.attach(async accessPoint => {
 
         }
 
-        lockedModems.delete(modem.imei);
+        evtDisconnect.post();
         return;
     }
 

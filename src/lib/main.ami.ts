@@ -111,9 +111,7 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
             )
         );
 
-
         dialplan.notifySms( dongleIdentifier, message);
-
 
     });
 
@@ -123,7 +121,7 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
 
 activeModems.evtDelete.attach(
     ([{ modem }]) => ami.userEvent(
-        Event.DongleDisconnect.build(
+        Event.ActiveDongleDisconnect.build(
             modem.imei,
             modem.iccid,
             modem.imsi,
@@ -135,7 +133,28 @@ activeModems.evtDelete.attach(
 
 
 lockedModems.evtSet.attach(
-    async ([{ iccid, pinState, tryLeft, callback }, imei]) => {
+    async ([{ iccid, pinState, tryLeft, callback, evtDisconnect }, imei]) => {
+
+        evtDisconnect.attachOnce(() => {
+
+            ami.userEvent(
+                Event.LockedDongleDisconnect.build(
+                    imei,
+                    iccid,
+                    pinState,
+                    `${tryLeft}`
+                )
+            );
+
+            lockedModems.delete(imei);
+
+        });
+
+        lockedModems.evtDelete.attachOnce(
+            lockedModem_imei => lockedModem_imei[1] === imei,
+            () => evtDisconnect.detach()
+        );
+
 
         debug(`Locked modem IMEI: ${imei},ICCID: ${iccid}, ${pinState}, ${tryLeft}`);
 
