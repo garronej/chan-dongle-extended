@@ -326,7 +326,7 @@ var Request;
 })(Request = exports.Request || (exports.Request = {}));
 var Response;
 (function (Response) {
-    Response.userevent = "DongleExt Response";
+    Response.userevent = usereventPrefix + "Response";
     function match(actionid) {
         return function (evt) {
             return (evt.actionid === actionid &&

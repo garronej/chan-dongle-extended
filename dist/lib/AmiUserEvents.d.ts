@@ -196,7 +196,7 @@ export interface Response extends UserEvent {
     error?: string;
 }
 export declare namespace Response {
-    const userevent = "DongleExt Response";
+    const userevent: string;
     function match(actionid: string): (evt: UserEvent) => evt is Response;
     function build(actionid: string, error?: string): Response;
     interface SendMessage extends Response {

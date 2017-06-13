@@ -678,7 +678,7 @@ export interface Response extends UserEvent {
 
 export namespace Response {
 
-    export const userevent = "DongleExt Response";
+    export const userevent = `${usereventPrefix}Response`;
 
     export function match(actionid: string) {
         return (evt: UserEvent): evt is Response => {
