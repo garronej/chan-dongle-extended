@@ -5,5 +5,5 @@ export declare class Tty0tty {
     static getPair(): Tty0tty;
     release(): void;
     private available;
-    private constructor(leftEnd, rightEnd);
+    private constructor();
 }

@@ -509,4 +509,3 @@ var Response;
     })(GetActiveDongles_follow = Response.GetActiveDongles_follow || (Response.GetActiveDongles_follow = {}));
 })(Response = exports.Response || (exports.Response = {}));
 /*END RESPONSE*/
-//# sourceMappingURL=AmiUserEvents.js.map

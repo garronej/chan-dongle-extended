@@ -54,15 +54,14 @@ export const defaultConfig = {
 
 
 export type ModuleConfiguration={
-    general: typeof defaultConfig['general'],
-    defaults: typeof defaultConfig['defaults'],
+    general: typeof defaultConfig['general'];
+    defaults: typeof defaultConfig['defaults'];
     [dongleName: string]: {
-        audio?: string;
-        data?: string;
-        rxgain?: string,
-        txgain?: string,
-    };
+        audio: string;
+        data: string;
+    } | any;
 };
+
 
 
 let config: ModuleConfiguration | undefined = undefined;
@@ -106,10 +105,7 @@ export namespace chanDongleConfManager {
             };
             */
 
-            config[dongleName] = {
-                "audio": audio,
-                "data": data
-            };
+            config[dongleName] = { audio, data };
 
             await update();
 

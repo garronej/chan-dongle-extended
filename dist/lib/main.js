@@ -53,6 +53,8 @@ var __read = (this && this.__read) || function (o, n) {
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 require("rejection-tracker").main(__dirname, "..", "..");
+//"postinstall": "if [ $(id -u) -eq 0  ]; then (node ./dist/bin/scripts postinstall); else (sudo node ./dist/bin/scripts postinstall); fi",
+// lrwxrwxrwx 1 root pi 36 Apr 15 09:46 /usr/local/lib/node_modules/chan-dongle-extended -> /home/pi/github/chan-dongle-extended
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var gsm_modem_connection_1 = require("gsm-modem-connection");
 var ts_events_extended_1 = require("ts-events-extended");
@@ -145,4 +147,3 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
         }
     });
 }); });
-//# sourceMappingURL=main.js.map

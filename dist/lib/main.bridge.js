@@ -68,8 +68,8 @@ main_1.activeModems.evtSet.attach(function (_a) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (1 + 1 === 2) {
-                        debug("chan_dongle bridge disabled");
+                    if (1 + 1 === 3) {
+                        debug("chan_dongle bridge disabled !");
                         return [2 /*return*/];
                     }
                     voidModem = Tty0tty_1.Tty0tty.getPair();
@@ -155,4 +155,3 @@ main_1.activeModems.evtSet.attach(function (_a) {
         });
     });
 });
-//# sourceMappingURL=main.bridge.js.map

@@ -173,7 +173,7 @@ main_1.lockedModems.evtSet.attach(function (_a) {
     });
 });
 ami.evtUserEvent.attach(AmiUserEvents_1.Request.match, function (evtRequest) { return __awaiter(_this, void 0, void 0, function () {
-    var actionid, command, replyError, modem, text, messageId, imei, _a, modem, accessPoint, _b, _c, imei, _d, iccid, pinState, tryLeft, e_1_1, imsi, appData, messages, messages_1, messages_1_1, _e, number, date, text, e_2_1, modem, contacts, contacts_1, contacts_1_1, _f, index, name_1, number, e_3_1, modem, name_2, number, contact, modem, index, _g, _h, imei, modem, iccid, imsi, number, serviceProviderName, e_4_1, imei, lockedModem, pinState, tryLeft, unlockCallback, pin, puk, newpin, e_1, _j, e_2, _k, e_3, _l, e_4, _m;
+    var actionid, command, replyError, modem, text, messageId, imei, _a, modem, accessPoint, _b, _c, imei, _d, iccid, pinState, tryLeft, e_1_1, imsi, appData, messages, messages_1, messages_1_1, _e, number, date, text, e_2_1, modem, contacts, contacts_1, contacts_1_1, _f, index, name, number, e_3_1, modem, name, number, contact, modem, index, _g, _h, imei, modem, iccid, imsi, number, serviceProviderName, e_4_1, imei, lockedModem, pinState, tryLeft, unlockCallback, pin, puk, newpin, e_1, _j, e_2, _k, e_3, _l, e_4, _m;
     return __generator(this, function (_o) {
         switch (_o.label) {
             case 0:
@@ -297,8 +297,8 @@ ami.evtUserEvent.attach(AmiUserEvents_1.Request.match, function (evtRequest) { r
                 _o.label = 28;
             case 28:
                 if (!!contacts_1_1.done) return [3 /*break*/, 31];
-                _f = contacts_1_1.value, index = _f.index, name_1 = _f.name, number = _f.number;
-                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.GetSimPhonebook_follow.build(actionid, "" + index, name_1, number))];
+                _f = contacts_1_1.value, index = _f.index, name = _f.name, number = _f.number;
+                return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.GetSimPhonebook_follow.build(actionid, "" + index, name, number))];
             case 29:
                 _o.sent();
                 _o.label = 30;
@@ -322,11 +322,11 @@ ami.evtUserEvent.attach(AmiUserEvents_1.Request.match, function (evtRequest) { r
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 modem = main_1.activeModems.get(evtRequest.imei).modem;
-                name_2 = evtRequest.name, number = evtRequest.number;
+                name = evtRequest.name, number = evtRequest.number;
                 //TODO: validate params.
                 if (!modem.storageLeft)
                     return [2 /*return*/, replyError("No storage space left on SIM")];
-                return [4 /*yield*/, modem.createContact(number, name_2)];
+                return [4 /*yield*/, modem.createContact(number, name)];
             case 36:
                 contact = _o.sent();
                 return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.CreateContact.build(actionid, "" + contact.index, contact.name, contact.number))];
@@ -414,4 +414,3 @@ ami.evtUserEvent.attach(AmiUserEvents_1.Request.match, function (evtRequest) { r
         }
     });
 }); });
-//# sourceMappingURL=main.ami.js.map

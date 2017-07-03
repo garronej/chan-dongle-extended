@@ -116,10 +116,7 @@ var chanDongleConfManager;
                             "txgain": "-20"
                         };
                         */
-                        config[dongleName] = {
-                            "audio": audio,
-                            "data": data
-                        };
+                        config[dongleName] = { audio: audio, data: data };
                         return [4 /*yield*/, update()];
                     case 1:
                         _a.sent();
@@ -188,4 +185,3 @@ function loadConfig() {
         return exports.defaultConfig;
     }
 }
-//# sourceMappingURL=chanDongleConfManager.js.map

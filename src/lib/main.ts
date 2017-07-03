@@ -1,5 +1,8 @@
 require("rejection-tracker").main(__dirname, "..", "..");
 
+ //"postinstall": "if [ $(id -u) -eq 0  ]; then (node ./dist/bin/scripts postinstall); else (sudo node ./dist/bin/scripts postinstall); fi",
+ // lrwxrwxrwx 1 root pi 36 Apr 15 09:46 /usr/local/lib/node_modules/chan-dongle-extended -> /home/pi/github/chan-dongle-extended
+
 import {
     Modem,
     UnlockCodeProviderCallback,

@@ -411,4 +411,3 @@ function getImei(options) {
         });
     });
 }
-//# sourceMappingURL=cli.js.map

@@ -34,4 +34,3 @@ finally {
     finally { if (e_1) throw e_1.error; }
 }
 var e_1, _c;
-//# sourceMappingURL=evtLogger.js.map

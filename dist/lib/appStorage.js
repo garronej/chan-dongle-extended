@@ -93,4 +93,3 @@ function read() {
     return new Promise(function (resolve) { return queue(resolve, function () { }); });
 }
 exports.read = read;
-//# sourceMappingURL=appStorage.js.map

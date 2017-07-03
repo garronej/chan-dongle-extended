@@ -38,11 +38,9 @@ export declare type ModuleConfiguration = {
     general: typeof defaultConfig['general'];
     defaults: typeof defaultConfig['defaults'];
     [dongleName: string]: {
-        audio?: string;
-        data?: string;
-        rxgain?: string;
-        txgain?: string;
-    };
+        audio: string;
+        data: string;
+    } | any;
 };
 export declare namespace chanDongleConfManager {
     function getConfig(): ModuleConfiguration;

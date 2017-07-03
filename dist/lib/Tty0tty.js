@@ -39,13 +39,12 @@ var Tty0tty = (function () {
     Tty0tty.prototype.release = function () {
         this.available = true;
     };
+    Tty0tty.store = (function () {
+        var out = [];
+        for (var i = 0; i <= 6; i += 2)
+            out.push(new Tty0tty("/dev/tnt" + i, "/dev/tnt" + (i + 1)));
+        return out;
+    })();
     return Tty0tty;
 }());
-Tty0tty.store = (function () {
-    var out = [];
-    for (var i = 0; i <= 6; i += 2)
-        out.push(new Tty0tty("/dev/tnt" + i, "/dev/tnt" + (i + 1)));
-    return out;
-})();
 exports.Tty0tty = Tty0tty;
-//# sourceMappingURL=Tty0tty.js.map

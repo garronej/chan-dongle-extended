@@ -158,7 +158,7 @@ Or do it your way...
 
 * Install the module
 ``` bash
-$ sudo npm install --unsafe-perm -g garronej/chan-dongle-extended
+$ sudo npm install --unsafe-perm -g garronej/chan-dongle-extended && sudo dongle-extended-admin postinstall
 ```
 
 PS: You don't need --unsafe-perm if you use npm link
@@ -167,3 +167,31 @@ PS: You don't need --unsafe-perm if you use npm link
 ``` bash
 $ sudo dongle-extended-admin preuninstall && sudo  npm uninstall --unsafe-perm -g chan-dongle-extended
 ```
+
+#For dev:
+
+* Install
+``` bash
+$ git clone https://github.com/garronej/chan-dongle-extended
+$ cd chan-dongle-extended
+$ npm install
+$ sudo npm link
+$ sudo dongle-extended-admin postinstall
+```
+* Run
+``` bash
+$ npm start
+```
+* Uninstall
+``` bash
+$ sudo dongle-extended-admin preuninstall
+$ sudo npm unlink -g chan-dongle-extended
+```
+
+
+
+
+
+
+
+
