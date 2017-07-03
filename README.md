@@ -1,4 +1,4 @@
-# chan-dongle-extended
+# Chan-dongle-extended
 
 NOTE: This work in progress the API is likely to change greatly.
 
@@ -55,7 +55,7 @@ More info on every command by typing e.g: `dongle unlock --help`
 All the listed commands are accessible via Asterisk Manager ( documentation incoming )
 The module has a specific JavaScript client: `garronej/chan-dongle-extended-client`
 
-#Dialplan example:
+# Dialplan example:
 
 In this example we reply "OK, got you! 👌" to any message we receive
 
@@ -130,7 +130,7 @@ it is to avoid asterisk buffer overflow. You can use the
 SMS_TEXT_SPLIT_COUNT=n and SMS_BASE64_PART_0..n-1 variables to retrieve very long SMS. 
 In order to reassemble the message you must decode each part then concatenate.
 
-#Requirement
+# Requirement
 
 * `node >= 4.0.0`
 * `asterisk and chan_dongle`
@@ -142,7 +142,7 @@ In order to reassemble the message you must decode each part then concatenate.
 
 Note: Before installing you may want to backup your dongle.conf file.
 
-#Installation guide ( on raspbian, can be adapted to other linux distribution )
+# Installation guide ( on raspbian, can be adapted to other linux distribution )
 
 * Install general dependencies:
 ````bash
@@ -163,12 +163,12 @@ $ sudo npm install --unsafe-perm -g garronej/chan-dongle-extended && sudo dongle
 
 PS: You don't need --unsafe-perm if you use npm link
 
-#Uninstall
+# Uninstall
 ``` bash
 $ sudo dongle-extended-admin preuninstall && sudo  npm uninstall --unsafe-perm -g chan-dongle-extended
 ```
 
-#For dev:
+# For dev:
 
 * Install
 ``` bash
@@ -187,11 +187,3 @@ $ npm start
 $ sudo dongle-extended-admin preuninstall
 $ sudo npm unlink -g chan-dongle-extended
 ```
-
-
-
-
-
-
-
-
