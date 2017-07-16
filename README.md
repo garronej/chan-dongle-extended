@@ -157,26 +157,45 @@ Follow the instructions @: https://gist.github.com/garronej/6a1eecb9dde9d9184014
 Or do it your way...
 
 * Install the module
+
+If you can globaly install package without root privilege ( cf: https://docs.npmjs.com/getting-started/fixing-npm-permissions )
+Then logged with your user profile ( eg "pi" or "admin" )
+```` bash
+$  npm install -g garronej/chan-dongle-extended
+$  sudo $(which dongle-extended-admin) postinstall
+````
+The second line will install a systemd service to start the daemon and optionaly to load it at boot time.
+You will be asked to tell which user will run the daemon, you should should use your unix user profile ( eg: user: pi, group: pi )
+
+Alternatively, if you can't install npm package globaly:
 ``` bash
 $ sudo npm install --unsafe-perm -g garronej/chan-dongle-extended && sudo dongle-extended-admin postinstall
 ```
 
-PS: You don't need --unsafe-perm if you use npm link
 
 # Uninstall
+
+```` bash
+$  sudo $(which dongle-extended-admin) preuninstall
+$  npm install -g garronej/chan-dongle-extended
+````
+
+Alternatively: 
+
 ``` bash
 $ sudo dongle-extended-admin preuninstall && sudo  npm uninstall --unsafe-perm -g chan-dongle-extended
 ```
 
 # For dev:
 
+
 * Install
 ``` bash
 $ git clone https://github.com/garronej/chan-dongle-extended
 $ cd chan-dongle-extended
 $ npm install
-$ sudo npm link
-$ sudo dongle-extended-admin postinstall
+$ npm link
+$ sudo $(which dongle-extended-admin) postinstall
 ```
 * Run
 ``` bash
@@ -184,6 +203,6 @@ $ npm start
 ```
 * Uninstall
 ``` bash
-$ sudo dongle-extended-admin preuninstall
-$ sudo npm unlink -g chan-dongle-extended
+$ sudo $(which dongle-extended-admin) preuninstall
+$ npm unlink -g chan-dongle-extended
 ```
