@@ -204,5 +204,5 @@ $ npm start
 * Uninstall
 ``` bash
 $ sudo node dist/bin/scripts.js preuninstall
-$ rm ~/.nmp-global/bin/dongle
+$ rm ~/.npm-global/bin/dongle
 ```
