@@ -194,8 +194,8 @@ $ sudo dongle-extended-admin preuninstall && sudo  npm uninstall --unsafe-perm -
 $ git clone https://github.com/garronej/chan-dongle-extended
 $ cd chan-dongle-extended
 $ npm install
-$ npm link
-$ sudo $(which dongle-extended-admin) postinstall
+$ ln -s $(pwd)/dist/bin/cli.js ~/.npm-global/bin/dongle
+$ sudo node dist/bin/scripts.js postinstall
 ```
 * Run
 ``` bash
@@ -203,6 +203,6 @@ $ npm start
 ```
 * Uninstall
 ``` bash
-$ sudo $(which dongle-extended-admin) preuninstall
-$ npm unlink -g chan-dongle-extended
+$ sudo node dist/bin/scripts.js preuninstall
+$ rm ~/.nmp-global/bin/dongle
 ```
