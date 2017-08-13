@@ -25,7 +25,7 @@
     "PIN"
   ],
   "author": "Joseph Garrone",
-  "license": "MIT",
+  "license": "GNU GPLv3",
   "dependencies": {
     "chan-dongle-extended-client": "github:garronej/chan-dongle-extended-client",
     "colors": "^1.1.2",
