@@ -73,7 +73,7 @@ activeModems.evtSet.attach(async ([{ modem, accessPoint, dongleName }]) => {
 
         let forwardResp = (rawResp: string) => {
 
-            if (modem.runCommand.isRunning) {
+            if (modem.runCommand_isRunning) {
                 debug([
                     `Newer command from chanDongle`,
                     `dropping ${JSON.stringify(rawResp)} response to ${JSON.stringify(command)} command`
@@ -98,15 +98,15 @@ activeModems.evtSet.attach(async ([{ modem, accessPoint, dongleName }]) => {
             return;
         }
 
-        if (modem.runCommand.isRunning) {
+        if (modem.runCommand_isRunning) {
 
             debug([
                 `a command is already running`,
-                `${modem.runCommand.queuedCalls.length} command in stack`,
+                `${modem.runCommand_queuedCallCount} command in stack`,
                 `flushing the pending command in stack`
             ].join("\n").yellow);
 
-            modem.runCommand.cancelAllQueuedCalls();
+            modem.runCommand_cancelAllQueuedCalls();
         }
 
         modem.runCommand(command, {

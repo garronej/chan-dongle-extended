@@ -1,6 +1,6 @@
 import { writeFile, readFileSync } from "fs";
 import { ini } from "ini-extended";
-import { execQueue, ExecQueue } from "ts-exec-queue";
+import * as runExclusive from "run-exclusive";
 import * as path from "path";
 
 import { Ami } from "ts-ami";
@@ -68,7 +68,7 @@ let config: ModuleConfiguration | undefined = undefined;
 
 export namespace chanDongleConfManager {
 
-    const cluster = {};
+    const groupRef= runExclusive.createGroupRef();
 
     export function getConfig(): ModuleConfiguration {
 
@@ -78,21 +78,19 @@ export namespace chanDongleConfManager {
 
     }
 
-    export const reset = execQueue(cluster, "WRITE",
-        async (callback?: () => void) => {
+    export const reset = runExclusive.build(groupRef,
+        async () => {
 
             if (!config) config = loadConfig();
 
             await update();
 
-            callback!();
-
         }
     );
 
 
-    export const addDongle = execQueue(cluster, "WRITE",
-        async ({ dongleName, data, audio }: DongleConf, callback?: () => void) => {
+    export const addDongle = runExclusive.build(groupRef,
+        async ({ dongleName, data, audio }: DongleConf) => {
 
             if (!config) config = loadConfig();
 
@@ -109,21 +107,17 @@ export namespace chanDongleConfManager {
 
             await update();
 
-            callback!();
-
         }
     );
 
-    export const removeDongle = execQueue(cluster, "WRITE",
-        async (dongleName: string, callback?: () => void) => {
+    export const removeDongle = runExclusive.build(groupRef,
+        async (dongleName: string) => {
 
             if (!config) config = loadConfig();
 
             delete config[dongleName];
 
             await update();
-
-            callback!();
 
         }
     );

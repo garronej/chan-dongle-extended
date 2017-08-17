@@ -27,11 +27,11 @@
   "author": "Joseph Garrone",
   "license": "GNU GPLv2",
   "dependencies": {
-    "chan-dongle-extended-client": "github:garronej/chan-dongle-extended-client",
+    "chan-dongle-extended-client": "git+https://a30f7432b117d8320cc21cc03513817c3f08d4b6:x-oauth-basic@github.com/garronej/chan-dongle-extended-client.git",
     "colors": "^1.1.2",
     "commander": "^2.9.0",
     "debug": "^2.6.1",
-    "gsm-modem-connection": "garronej/gsm-modem-connection",
+    "gsm-modem-connection": "git+https://a30f7432b117d8320cc21cc03513817c3f08d4b6:x-oauth-basic@github.com/garronej/gsm-modem-connection",
     "ini-extended": "github:garronej/ini-extended",
     "js-base64": "^2.1.9",
     "node-persist": "^2.0.10",
@@ -40,8 +40,7 @@
     "trackable-map": "garronej/trackable-map",
     "ts-ami": "github:garronej/ts-ami",
     "ts-events-extended": "garronej/ts-events-extended",
-    "ts-exec-queue": "garronej/ts-exec-queue",
-    "ts-gsm-modem": "garronej/ts-gsm-modem"
+    "ts-gsm-modem": "git+https://a30f7432b117d8320cc21cc03513817c3f08d4b6:x-oauth-basic@github.com/garronej/ts-gsm-modem"
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",

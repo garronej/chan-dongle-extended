@@ -46,7 +46,7 @@ var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var storage = require("node-persist");
 var path = require("path");
-var ts_exec_queue_1 = require("ts-exec-queue");
+var runExclusive = require("run-exclusive");
 exports.JSON_parse_WithDate = function (str) { return JSON.parse(str, function (_, value) {
     return (typeof value === "string" &&
         value.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/)) ? new Date(value) : value;
@@ -56,7 +56,7 @@ var defaultStorageData = {
     "messages": {}
 };
 var init = false;
-var queue = ts_exec_queue_1.execQueue({}, "WRITE_FS", function (provider, callback) { return __awaiter(_this, void 0, void 0, function () {
+var queue = runExclusive.buildCb(function (provider, callback) { return __awaiter(_this, void 0, void 0, function () {
     var _this = this;
     var appData;
     return __generator(this, function (_a) {

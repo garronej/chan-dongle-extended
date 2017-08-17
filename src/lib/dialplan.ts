@@ -1,5 +1,3 @@
-import { execQueue, ExecQueue } from "ts-exec-queue";
-
 import { Ami } from "ts-ami";
 import { amiUser } from "./AmiUserEvents";
 
@@ -73,7 +71,6 @@ export async function notifySms(dongle: DongleIdentifier, message: Message) {
         variable[`${keywordSplit}${i}`] = textSplit[i];
 
     ami.originateLocalChannel(dialplanContext, "reassembled-sms", variable);
-
 
 }
 

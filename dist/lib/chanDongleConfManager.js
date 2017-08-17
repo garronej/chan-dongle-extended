@@ -37,7 +37,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs_1 = require("fs");
 var ini_extended_1 = require("ini-extended");
-var ts_exec_queue_1 = require("ts-exec-queue");
+var runExclusive = require("run-exclusive");
 var path = require("path");
 var ts_ami_1 = require("ts-ami");
 var AmiUserEvents_1 = require("./AmiUserEvents");
@@ -79,14 +79,14 @@ var config = undefined;
 var chanDongleConfManager;
 (function (chanDongleConfManager) {
     var _this = this;
-    var cluster = {};
+    var groupRef = runExclusive.createGroupRef();
     function getConfig() {
         if (!config)
             config = loadConfig();
         return config;
     }
     chanDongleConfManager.getConfig = getConfig;
-    chanDongleConfManager.reset = ts_exec_queue_1.execQueue(cluster, "WRITE", function (callback) { return __awaiter(_this, void 0, void 0, function () {
+    chanDongleConfManager.reset = runExclusive.build(groupRef, function () { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -95,12 +95,11 @@ var chanDongleConfManager;
                     return [4 /*yield*/, update()];
                 case 1:
                     _a.sent();
-                    callback();
                     return [2 /*return*/];
             }
         });
     }); });
-    chanDongleConfManager.addDongle = ts_exec_queue_1.execQueue(cluster, "WRITE", function (_a, callback) {
+    chanDongleConfManager.addDongle = runExclusive.build(groupRef, function (_a) {
         var dongleName = _a.dongleName, data = _a.data, audio = _a.audio;
         return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
@@ -120,13 +119,12 @@ var chanDongleConfManager;
                         return [4 /*yield*/, update()];
                     case 1:
                         _a.sent();
-                        callback();
                         return [2 /*return*/];
                 }
             });
         });
     });
-    chanDongleConfManager.removeDongle = ts_exec_queue_1.execQueue(cluster, "WRITE", function (dongleName, callback) { return __awaiter(_this, void 0, void 0, function () {
+    chanDongleConfManager.removeDongle = runExclusive.build(groupRef, function (dongleName) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -136,7 +134,6 @@ var chanDongleConfManager;
                     return [4 /*yield*/, update()];
                 case 1:
                     _a.sent();
-                    callback();
                     return [2 /*return*/];
             }
         });

@@ -1,4 +1,3 @@
-import { ExecQueue } from "ts-exec-queue";
 export interface DongleConf {
     dongleName: string;
     data: string;
@@ -44,8 +43,8 @@ export declare type ModuleConfiguration = {
 };
 export declare namespace chanDongleConfManager {
     function getConfig(): ModuleConfiguration;
-    const reset: ((callback?: (() => void) | undefined) => Promise<void>) & ExecQueue;
-    const addDongle: (({dongleName, data, audio}: DongleConf, callback?: (() => void) | undefined) => Promise<void>) & ExecQueue;
-    const removeDongle: ((dongleName: string, callback?: (() => void) | undefined) => Promise<void>) & ExecQueue;
+    const reset: () => Promise<void>;
+    const addDongle: ({dongleName, data, audio}: DongleConf) => Promise<void>;
+    const removeDongle: (dongleName: string) => Promise<void>;
 }
 export declare function reloadChanDongle(): Promise<void>;

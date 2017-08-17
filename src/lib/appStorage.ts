@@ -1,7 +1,7 @@
 import * as storage from "node-persist";
 import * as path from "path";
 import { Message } from "ts-gsm-modem";
-import { execQueue } from "ts-exec-queue";
+import * as runExclusive from "run-exclusive";
 
 export const JSON_parse_WithDate= (str: string) => JSON.parse(
         str,
@@ -31,7 +31,7 @@ export type ReadOutput = AppData & { readonly release: () => Promise<void> };
 let init = false;
 
 
-const queue = execQueue({}, "WRITE_FS",
+const queue = runExclusive.buildCb(
     async (provider: (storageData: ReadOutput) => void, callback: () => void) => {
 
         if (!init) {

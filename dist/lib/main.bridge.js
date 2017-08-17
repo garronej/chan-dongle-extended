@@ -112,7 +112,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                             return;
                         var command = buff.toString("utf8") + "\r";
                         var forwardResp = function (rawResp) {
-                            if (modem.runCommand.isRunning) {
+                            if (modem.runCommand_isRunning) {
                                 debug([
                                     "Newer command from chanDongle",
                                     "dropping " + JSON.stringify(rawResp) + " response to " + JSON.stringify(command) + " command"
@@ -129,13 +129,13 @@ main_1.activeModems.evtSet.attach(function (_a) {
                             forwardResp("\r\nOK\r\n");
                             return;
                         }
-                        if (modem.runCommand.isRunning) {
+                        if (modem.runCommand_isRunning) {
                             debug([
                                 "a command is already running",
-                                modem.runCommand.queuedCalls.length + " command in stack",
+                                modem.runCommand_queuedCallCount + " command in stack",
                                 "flushing the pending command in stack"
                             ].join("\n").yellow);
-                            modem.runCommand.cancelAllQueuedCalls();
+                            modem.runCommand_cancelAllQueuedCalls();
                         }
                         modem.runCommand(command, {
                             "recoverable": true,
