@@ -460,7 +460,7 @@ var Response;
             if (text.length > maxMessageLength)
                 throw new Error("Message too long");
             var textParts = ts_ami_1.Ami.base64TextSplit(text);
-            var out = __assign({}, Response.build(Request.GetMessages.donglerequest, actionid), { number: number,
+            var out = __assign({}, Response.build(actionid), { number: number,
                 date: date, "textsplitcount": "" + textParts.length });
             for (var i = 0; i < textParts.length; i++)
                 out["" + textKeyword + i] = textParts[i];

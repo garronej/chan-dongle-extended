@@ -949,7 +949,7 @@ export namespace Response {
             let textParts = Ami.base64TextSplit(text);
 
             let out = {
-                ...Response.build(Request.GetMessages.donglerequest, actionid),
+                ...Response.build(actionid),
                 number,
                 date,
                 "textsplitcount": `${textParts.length}`,
