@@ -91,6 +91,7 @@ activeModems.evtSet.attach(async ([{ modem, accessPoint, dongleName }]) => {
 
         if (
             command === "ATZ\r" ||
+            command === "AT\r" ||
             command.match(/^AT\+CNMI=/)
         ) {
             debug("fake resp...");

@@ -124,6 +124,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         };
                         debug("from chan_dongle: " + JSON.stringify(command));
                         if (command === "ATZ\r" ||
+                            command === "AT\r" ||
                             command.match(/^AT\+CNMI=/)) {
                             debug("fake resp...");
                             forwardResp("\r\nOK\r\n");

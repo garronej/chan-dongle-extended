@@ -241,14 +241,12 @@ ami.evtUserEvent.attach(AmiUserEvents_1.Request.match, function (evtRequest) { r
             case 13: return [3 /*break*/, 54];
             case 14:
                 if (!AmiUserEvents_1.Request.GetMessages.match(evtRequest)) return [3 /*break*/, 25];
-                debug("Got request get messages");
                 if (!main_1.activeModems.has(evtRequest.imei))
                     return [2 /*return*/, replyError("Dongle imei: " + evtRequest.imei + " not found")];
                 imsi = main_1.activeModems.get(evtRequest.imei).modem.imsi;
                 return [4 /*yield*/, appStorage.read()];
             case 15:
                 appData = _o.sent();
-                debug("Got appData", appData);
                 messages = appData.messages[imsi] || [];
                 if (evtRequest.flush === "true" && messages.length)
                     delete appData.messages[imsi];
@@ -267,7 +265,6 @@ ami.evtUserEvent.attach(AmiUserEvents_1.Request.match, function (evtRequest) { r
                 return [4 /*yield*/, ami.userEvent(AmiUserEvents_1.Response.GetMessages_follow.build(actionid, number, date.toISOString(), text))];
             case 19:
                 _o.sent();
-                console.log("first event sent");
                 _o.label = 20;
             case 20:
                 messages_1_1 = messages_1.next();
