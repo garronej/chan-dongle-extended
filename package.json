@@ -36,6 +36,7 @@
     "js-base64": "^2.1.9",
     "node-persist": "^2.0.10",
     "rejection-tracker": "github:garronej/rejection-tracker",
+    "run-exclusive": "github:garronej/run-exclusive",
     "timer-extended": "garronej/timer-extended",
     "trackable-map": "garronej/trackable-map",
     "ts-ami": "github:garronej/ts-ami",
