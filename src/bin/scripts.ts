@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
+const serviceName= "dongle-extended";
+
 import * as path from "path";
 const modulePath = path.join(__dirname, "..", "..");
-const systemdServicePath = path.join("/etc", "systemd", "system", "dongle-extended.service");
-const udevRulesPath = path.join("/etc", "udev", "rules.d", "99-dongle-extended.rules");
+const systemdServicePath = path.join("/etc", "systemd", "system", `${serviceName}.service`);
+const udevRulesPath = path.join("/etc", "udev", "rules.d", `99-${serviceName}.rules`);
 const astConfPath= path.join("/etc", "asterisk");
 const dongleConfPath= path.join(astConfPath, "dongle.conf");
 const managerConfPath= path.join(astConfPath, "manager.conf");
@@ -30,7 +32,7 @@ program
         "Create udev rules for granting R/W access on dongles on connect",
         "and disable the wwan network interface created by the dongles",
         "Enable Asterisk Manager and create a user for this module",
-        "Register a systemd service: dongle-extended.service"
+        `Register a systemd service: ${serviceName}.service`
     ].join(" "))
     .action(async () => {
 
@@ -126,9 +128,9 @@ async function installService() {
         `Chan dongle extended service installed!`.green,
         `${systemdServicePath}: \n\n ${service}`,
         `To run the service:`.yellow,
-        `sudo systemctl start dongle-extended`,
+        `sudo systemctl start ${serviceName}`,
         `To automatically start the service on boot:`.yellow,
-        `sudo systemctl enable dongle-extended`,
+        `sudo systemctl enable ${serviceName}`,
     ].join("\n"));
 
 }
@@ -320,9 +322,9 @@ async function removeService() {
 
     try {
 
-        await run("systemctl stop dongle-extended.service");
+        await run(`systemctl stop ${serviceName}.service`);
 
-        await run("systemctl disable dongle-extended.service");
+        await run(`systemctl disable ${serviceName}.service`);
 
     } catch (error) { }
 
@@ -330,7 +332,7 @@ async function removeService() {
 
     await run("systemctl daemon-reload");
 
-    console.log("dongle-extended.service removed from systemd".green);
+    console.log(`${serviceName}.service removed from systemd`.green);
 
 }
 

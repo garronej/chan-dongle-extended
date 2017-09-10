@@ -47,10 +47,11 @@ var __values = (this && this.__values) || function (o) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
+var serviceName = "dongle-extended";
 var path = require("path");
 var modulePath = path.join(__dirname, "..", "..");
-var systemdServicePath = path.join("/etc", "systemd", "system", "dongle-extended.service");
-var udevRulesPath = path.join("/etc", "udev", "rules.d", "99-dongle-extended.rules");
+var systemdServicePath = path.join("/etc", "systemd", "system", serviceName + ".service");
+var udevRulesPath = path.join("/etc", "udev", "rules.d", "99-" + serviceName + ".rules");
 var astConfPath = path.join("/etc", "asterisk");
 var dongleConfPath = path.join(astConfPath, "dongle.conf");
 var managerConfPath = path.join(astConfPath, "manager.conf");
@@ -72,7 +73,7 @@ program
     "Create udev rules for granting R/W access on dongles on connect",
     "and disable the wwan network interface created by the dongles",
     "Enable Asterisk Manager and create a user for this module",
-    "Register a systemd service: dongle-extended.service"
+    "Register a systemd service: " + serviceName + ".service"
 ].join(" "))
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
     return __generator(this, function (_a) {
@@ -196,9 +197,9 @@ function installService() {
                         "Chan dongle extended service installed!".green,
                         systemdServicePath + ": \n\n " + service,
                         "To run the service:".yellow,
-                        "sudo systemctl start dongle-extended",
+                        "sudo systemctl start " + serviceName,
                         "To automatically start the service on boot:".yellow,
-                        "sudo systemctl enable dongle-extended",
+                        "sudo systemctl enable " + serviceName,
                     ].join("\n"));
                     return [2 /*return*/];
             }
@@ -430,10 +431,10 @@ function removeService() {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 3, , 4]);
-                    return [4 /*yield*/, run("systemctl stop dongle-extended.service")];
+                    return [4 /*yield*/, run("systemctl stop " + serviceName + ".service")];
                 case 1:
                     _a.sent();
-                    return [4 /*yield*/, run("systemctl disable dongle-extended.service")];
+                    return [4 /*yield*/, run("systemctl disable " + serviceName + ".service")];
                 case 2:
                     _a.sent();
                     return [3 /*break*/, 4];
@@ -448,7 +449,7 @@ function removeService() {
                     return [4 /*yield*/, run("systemctl daemon-reload")];
                 case 5:
                     _a.sent();
-                    console.log("dongle-extended.service removed from systemd".green);
+                    console.log((serviceName + ".service removed from systemd").green);
                     return [2 /*return*/];
             }
         });
