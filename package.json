@@ -1,6 +1,6 @@
 {
   "name": "chan-dongle-extended",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
@@ -25,7 +25,7 @@
     "PIN"
   ],
   "author": "Joseph Garrone",
-  "license": "GNU GPLv2",
+  "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
     "chan-dongle-extended-client": "git+https://a30f7432b117d8320cc21cc03513817c3f08d4b6:x-oauth-basic@github.com/garronej/chan-dongle-extended-client.git",
     "colors": "^1.1.2",

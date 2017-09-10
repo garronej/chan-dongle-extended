@@ -8,8 +8,7 @@ import {
     Response, 
     Request, 
     amiUser as user 
-} from "./AmiUserEvents";
-
+} from "chan-dongle-extended-client";
 
 import * as dialplan from "./dialplan";
 

@@ -10,7 +10,7 @@ var __values = (this && this.__values) || function (o) {
     };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var Tty0tty = (function () {
+var Tty0tty = /** @class */ (function () {
     function Tty0tty(leftEnd, rightEnd) {
         this.leftEnd = leftEnd;
         this.rightEnd = rightEnd;

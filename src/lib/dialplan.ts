@@ -1,5 +1,5 @@
 import { Ami } from "ts-ami";
-import { amiUser } from "./AmiUserEvents";
+import { amiUser } from "chan-dongle-extended-client/";
 
 import { Message, StatusReport } from "ts-gsm-modem";
 

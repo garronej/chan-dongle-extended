@@ -4,10 +4,12 @@ import * as runExclusive from "run-exclusive";
 import * as path from "path";
 
 import { Ami } from "ts-ami";
-import { amiUser } from "./AmiUserEvents";
 
-const astConfPath= path.join("/etc", "asterisk");
-const dongleConfPath= path.join(astConfPath, "dongle.conf");
+import { amiUser } from "chan-dongle-extended-client";
+
+
+const astConfPath = path.join("/etc", "asterisk");
+const dongleConfPath = path.join(astConfPath, "dongle.conf");
 
 import * as _debug from "debug";
 let debug = _debug("_ChanDongleConfManager");
@@ -53,7 +55,7 @@ export const defaultConfig = {
 
 
 
-export type ModuleConfiguration={
+export type ModuleConfiguration = {
     general: typeof defaultConfig['general'];
     defaults: typeof defaultConfig['defaults'];
     [dongleName: string]: {
@@ -68,7 +70,7 @@ let config: ModuleConfiguration | undefined = undefined;
 
 export namespace chanDongleConfManager {
 
-    const groupRef= runExclusive.createGroupRef();
+    const groupRef = runExclusive.createGroupRef();
 
     export function getConfig(): ModuleConfiguration {
 
