@@ -49,7 +49,7 @@ var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 require("rejection-tracker").main(__dirname, "..", "..");
 var program = require("commander");
-var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
+var _chan_dongle_extended_client_1 = require("../_chan-dongle-extended-client");
 var storage = require("node-persist");
 var path = require("path");
 var js_base64_1 = require("js-base64");
@@ -62,7 +62,7 @@ program
     var dongles;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient.localhost().getActiveDongles()];
+            case 0: return [4 /*yield*/, _chan_dongle_extended_client_1.DongleExtendedClient.localhost().getActiveDongles()];
             case 1:
                 dongles = _a.sent();
                 console.log(JSON.stringify(dongles, null, 2));
@@ -78,7 +78,7 @@ program
     var dongles;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient.localhost().getLockedDongles()];
+            case 0: return [4 /*yield*/, _chan_dongle_extended_client_1.DongleExtendedClient.localhost().getLockedDongles()];
             case 1:
                 dongles = _a.sent();
                 console.log(JSON.stringify(dongles, null, 2));
@@ -102,7 +102,7 @@ program
                     console.log("Error: command malformed".red);
                     process.exit(-1);
                 }
-                client = chan_dongle_extended_client_1.DongleExtendedClient.localhost();
+                client = _chan_dongle_extended_client_1.DongleExtendedClient.localhost();
                 arrImei = [];
                 _g.label = 1;
             case 1:
@@ -190,7 +190,7 @@ program
                     console.log(options.optionHelp());
                     process.exit(-1);
                 }
-                client = chan_dongle_extended_client_1.DongleExtendedClient.localhost();
+                client = _chan_dongle_extended_client_1.DongleExtendedClient.localhost();
                 if (!options.pin) return [3 /*break*/, 3];
                 return [4 /*yield*/, client.unlockDongle(imei, options.pin)];
             case 2:
@@ -238,7 +238,7 @@ program
             case 1:
                 imei = _a.sent();
                 text = textBase64 ? js_base64_1.Base64.decode(textBase64) : JSON.parse("\"" + text + "\"");
-                return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient
+                return [4 /*yield*/, _chan_dongle_extended_client_1.DongleExtendedClient
                         .localhost()
                         .sendMessage(imei, number, text)];
             case 2:
@@ -260,7 +260,7 @@ program
             case 0: return [4 /*yield*/, getImei(options)];
             case 1:
                 imei = _a.sent();
-                return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient
+                return [4 /*yield*/, _chan_dongle_extended_client_1.DongleExtendedClient
                         .localhost()
                         .getSimPhonebook(imei)];
             case 2:
@@ -291,7 +291,7 @@ program
                 return [4 /*yield*/, getImei(options)];
             case 1:
                 imei = _a.sent();
-                return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient
+                return [4 /*yield*/, _chan_dongle_extended_client_1.DongleExtendedClient
                         .localhost()
                         .createContact(imei, name, number)];
             case 2:
@@ -321,7 +321,7 @@ program
                 return [4 /*yield*/, getImei(options)];
             case 1:
                 imei = _a.sent();
-                return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient
+                return [4 /*yield*/, _chan_dongle_extended_client_1.DongleExtendedClient
                         .localhost()
                         .updateNumber(imei, number)];
             case 2:
@@ -351,7 +351,7 @@ program
                 return [4 /*yield*/, getImei(options)];
             case 1:
                 imei = _a.sent();
-                return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient
+                return [4 /*yield*/, _chan_dongle_extended_client_1.DongleExtendedClient
                         .localhost()
                         .deleteContact(imei, parseInt(index))];
             case 2:
@@ -376,7 +376,7 @@ program
                 return [4 /*yield*/, getImei(options)];
             case 1:
                 imei = _a.sent();
-                return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient
+                return [4 /*yield*/, _chan_dongle_extended_client_1.DongleExtendedClient
                         .localhost()
                         .getMessages(imei, flush)];
             case 2:

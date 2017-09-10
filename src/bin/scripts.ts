@@ -19,7 +19,7 @@ const vendorIds = Object.keys(recordIfNum);
 import { ini } from "ini-extended";
 import { chanDongleConfManager } from "../lib/chanDongleConfManager";
 import "colors";
-import { amiUser } from "chan-dongle-extended-client";
+import { amiUser } from "../_chan-dongle-extended-client";
 
 
 

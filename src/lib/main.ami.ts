@@ -8,9 +8,11 @@ import {
     Response, 
     Request, 
     amiUser as user 
-} from "chan-dongle-extended-client";
+} from "../_chan-dongle-extended-client";
 
 import * as dialplan from "./dialplan";
+
+import { chanDongleConfManager } from "./chanDongleConfManager";
 
 import * as _debug from "debug";
 let debug = _debug("_main.ami");
@@ -445,6 +447,14 @@ ami.evtUserEvent.attach(Request.match, async evtRequest => {
             )
         );
 
+    } else if (Request.GetConfig.match(evtRequest)) {
+
+        await ami.userEvent(
+            Response.GetConfig.build(
+                actionid,
+                chanDongleConfManager.getConfig()
+            )
+        );
 
     } else
         return replyError(`Unknown command ${command}`);

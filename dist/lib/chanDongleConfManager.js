@@ -40,41 +40,12 @@ var ini_extended_1 = require("ini-extended");
 var runExclusive = require("run-exclusive");
 var path = require("path");
 var ts_ami_1 = require("ts-ami");
-var chan_dongle_extended_client_1 = require("chan-dongle-extended-client");
+var _chan_dongle_extended_client_1 = require("../_chan-dongle-extended-client");
+var defaultConfig = _chan_dongle_extended_client_1.typesDef.defaultConfig;
 var astConfPath = path.join("/etc", "asterisk");
 var dongleConfPath = path.join(astConfPath, "dongle.conf");
 var _debug = require("debug");
 var debug = _debug("_ChanDongleConfManager");
-exports.defaultConfig = {
-    "general": {
-        "interval": "10000000",
-        "jbenable": "no",
-        "jbmaxsize": "100",
-        "jbimpl": "fixed"
-    },
-    "defaults": {
-        "context": "from-dongle",
-        "group": "0",
-        "rxgain": "0",
-        "txgain": "0",
-        "autodeletesms": "no",
-        "resetdongle": "yes",
-        "u2diag": "-1",
-        "usecallingpres": "yes",
-        "callingpres": "allowed_passed_screen",
-        "disablesms": "no",
-        "language": "en",
-        "smsaspdu": "yes",
-        "mindtmfgap": "45",
-        "mindtmfduration": "80",
-        "mindtmfinterval": "200",
-        "callwaiting": "auto",
-        "disable": "no",
-        "initstate": "start",
-        "exten": "+12345678987",
-        "dtmf": "relax"
-    }
-};
 var config = undefined;
 var chanDongleConfManager;
 (function (chanDongleConfManager) {
@@ -160,7 +131,7 @@ function reloadChanDongle() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, ts_ami_1.Ami.localhost({ "user": chan_dongle_extended_client_1.amiUser }).postAction("DongleReload", { "when": "gracefully" })];
+                case 0: return [4 /*yield*/, ts_ami_1.Ami.localhost({ "user": _chan_dongle_extended_client_1.amiUser }).postAction("DongleReload", { "when": "gracefully" })];
                 case 1:
                     _a.sent();
                     debug("update chan_dongle config");
@@ -179,6 +150,6 @@ function loadConfig() {
         return { general: general, defaults: defaults };
     }
     catch (error) {
-        return exports.defaultConfig;
+        return defaultConfig;
     }
 }

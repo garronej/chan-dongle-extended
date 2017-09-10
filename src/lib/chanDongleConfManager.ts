@@ -5,7 +5,10 @@ import * as path from "path";
 
 import { Ami } from "ts-ami";
 
-import { amiUser } from "chan-dongle-extended-client";
+import { amiUser, typesDef } from "../_chan-dongle-extended-client";
+
+import defaultConfig= typesDef.defaultConfig;
+import ModuleConfiguration= typesDef.ModuleConfiguration;
 
 
 const astConfPath = path.join("/etc", "asterisk");
@@ -20,50 +23,6 @@ export interface DongleConf {
     data: string;
     audio: string;
 }
-
-
-export const defaultConfig = {
-    "general": {
-        "interval": "10000000",
-        "jbenable": "no",
-        "jbmaxsize": "100",
-        "jbimpl": "fixed"
-    },
-    "defaults": {
-        "context": "from-dongle",
-        "group": "0",
-        "rxgain": "0",
-        "txgain": "0",
-        "autodeletesms": "no",
-        "resetdongle": "yes",
-        "u2diag": "-1",
-        "usecallingpres": "yes",
-        "callingpres": "allowed_passed_screen",
-        "disablesms": "no",
-        "language": "en",
-        "smsaspdu": "yes",
-        "mindtmfgap": "45",
-        "mindtmfduration": "80",
-        "mindtmfinterval": "200",
-        "callwaiting": "auto",
-        "disable": "no",
-        "initstate": "start",
-        "exten": "+12345678987",
-        "dtmf": "relax"
-    }
-};
-
-
-
-export type ModuleConfiguration = {
-    general: typeof defaultConfig['general'];
-    defaults: typeof defaultConfig['defaults'];
-    [dongleName: string]: {
-        audio: string;
-        data: string;
-    } | any;
-};
-
 
 
 let config: ModuleConfiguration | undefined = undefined;

@@ -2,7 +2,7 @@
 require("rejection-tracker").main(__dirname, "..", "..");
 
 import * as program from "commander";
-import { DongleExtendedClient } from "chan-dongle-extended-client";
+import { DongleExtendedClient } from "../_chan-dongle-extended-client";
 import * as storage from "node-persist";
 import * as path from "path";
 import { Base64 } from "js-base64";
