@@ -30,7 +30,6 @@ export type ReadOutput = AppData & { readonly release: () => Promise<void> };
 
 let init = false;
 
-
 const queue = runExclusive.buildCb(
     async (provider: (storageData: ReadOutput) => void, callback: () => void) => {
 
@@ -50,6 +49,7 @@ const queue = runExclusive.buildCb(
         provider({
             ...appData,
             "release": async (): Promise<void> => {
+                limitSize(appData);
                 await storage.setItem("appData", appData);
                 callback();
             }
@@ -57,6 +57,32 @@ const queue = runExclusive.buildCb(
 
     }
 );
+
+function limitSize(appData: AppData){
+
+    const maxNumberOfMessages= 1300;
+    const reduceTo= 1000;
+
+    for( let imsi of Object.keys(appData.messages) ){
+
+        let messages= appData.messages[imsi];
+
+        if( messages.length <= maxNumberOfMessages ) continue;
+
+        let sortedMessages= messages.sort(
+            (i, j)=> i.date.getTime() - j.date.getTime()
+        );
+
+        messages= [];
+
+        for( let i= sortedMessages.length - reduceTo; i<sortedMessages.length; i++ )
+            messages.push(sortedMessages[i]);
+
+        appData.messages[imsi]= messages;
+
+    }
+
+}
 
 export function read(): Promise<ReadOutput> {
 
