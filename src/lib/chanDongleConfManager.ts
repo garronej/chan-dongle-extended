@@ -5,7 +5,7 @@ import * as path from "path";
 
 import { Ami } from "ts-ami";
 
-import { amiUser, typesDef } from "../_chan-dongle-extended-client";
+import { amiUser, typesDef } from "../chan-dongle-extended-client";
 
 import defaultConfig= typesDef.defaultConfig;
 import ModuleConfiguration= typesDef.ModuleConfiguration;

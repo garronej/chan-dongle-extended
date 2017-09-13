@@ -10,10 +10,10 @@ var __values = (this && this.__values) || function (o) {
     };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var _chan_dongle_extended_client_1 = require("../_chan-dongle-extended-client");
+var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
 var _debug = require("debug");
 var debug = _debug("_evtLogger");
-var client = _chan_dongle_extended_client_1.DongleExtendedClient.localhost();
+var client = chan_dongle_extended_client_1.DongleExtendedClient.localhost();
 var _loop_1 = function (evtName) {
     if (!evtName.match(/^evt/))
         return "continue";

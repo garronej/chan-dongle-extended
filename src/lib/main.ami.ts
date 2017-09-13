@@ -8,7 +8,7 @@ import {
     Response, 
     Request, 
     amiUser as user 
-} from "../_chan-dongle-extended-client";
+} from "../chan-dongle-extended-client";
 
 import * as dialplan from "./dialplan";
 
@@ -106,6 +106,7 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
         ami.userEvent(
             Event.NewMessage.build(
                 imei,
+                imsi,
                 number,
                 date.toISOString(),
                 text

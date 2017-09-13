@@ -1,4 +1,4 @@
-import { typesDef } from "../_chan-dongle-extended-client";
+import { typesDef } from "../chan-dongle-extended-client";
 import ModuleConfiguration = typesDef.ModuleConfiguration;
 export interface DongleConf {
     dongleName: string;

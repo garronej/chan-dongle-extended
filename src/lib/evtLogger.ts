@@ -1,4 +1,4 @@
-import { DongleExtendedClient } from "../_chan-dongle-extended-client";
+import { DongleExtendedClient } from "../chan-dongle-extended-client";
 
 import * as _debug from "debug";
 let debug= _debug("_evtLogger");
