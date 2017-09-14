@@ -11,8 +11,8 @@ import {
 import { Monitor, AccessPoint } from "gsm-modem-connection";
 import { VoidSyncEvent } from "ts-events-extended";
 import { TrackableMap } from "trackable-map";
+import * as runExclusive from "run-exclusive";
 import * as appStorage from "./appStorage";
-
 
 import * as _debug from "debug";
 let debug = _debug("_main");
@@ -34,8 +34,6 @@ export interface LockedModem {
 }
 
 export const lockedModems = new TrackableMap<string, LockedModem>();
-
-
 
 if (process.env["NODE_ENV"] !== "production") require("./repl");
 import "./evtLogger";
@@ -59,8 +57,8 @@ Monitor.evtModemConnect.attach(async accessPoint => {
         (imei, iccid, pinState, tryLeft, callback) => {
 
             Monitor.evtModemDisconnect.attachOnce(
-                ({ id })=> id === accessPoint.id,
-                ()=> evtDisconnect.post()
+                ({ id }) => id === accessPoint.id,
+                () => evtDisconnect.post()
             );
 
             lockedModems.set(imei, {
@@ -89,7 +87,6 @@ Monitor.evtModemConnect.attach(async accessPoint => {
 
             appData.release();
 
-
         }
 
         evtDisconnect.post();
@@ -99,32 +96,30 @@ Monitor.evtModemConnect.attach(async accessPoint => {
     if (!hasSim)
         return debug("No sim!".red);
 
-
-    let dongleName = "Dongle" + modem.imei.substring(0, 3) + modem.imei.substring(modem.imei.length - 3);
+    let dongleName= generateDongleName(accessPoint.audioIfPath);
 
     activeModems.set(modem.imei, { modem, accessPoint, dongleName });
 
-
-    modem.evtTerminate.attachOnce( async error => {
+    modem.evtTerminate.attachOnce(async error => {
 
         debug("Modem evt terminate");
 
-        if( error )
+        if (error)
             debug("terminate reason: ", error);
 
         activeModems.delete(modem.imei);
 
-        if( Monitor.connectedModems.indexOf( accessPoint ) >= 0 ){
+        if (Monitor.connectedModems.indexOf(accessPoint) >= 0) {
 
             debug("Modem still connected");
 
-            try{
+            try {
 
                 await Monitor.evtModemDisconnect.waitFor(ac => ac === accessPoint, 5000);
 
                 debug("Modem as really disconnected");
-                
-            }catch(timeout){
+
+            } catch (timeout) {
 
                 debug("Modem still here, re-initializing");
 
@@ -135,7 +130,29 @@ Monitor.evtModemConnect.attach(async accessPoint => {
         }
 
 
-
     });
 
 });
+
+
+function generateDongleName(audioIfPath: string): string {
+
+    let dongleIdNum: number;
+
+    let match = audioIfPath.match(/^\/dev\/ttyUSB([0-9]+)$/);
+
+    if (match) {
+
+        dongleIdNum = parseInt(match[1]);
+
+    } else {
+
+        dongleIdNum = (function getRandomArbitrary(min, max) {
+            return Math.floor(Math.random() * (max - min) + min);
+        })(0, 1000000);
+
+    }
+
+    return `Dongle${dongleIdNum}`;
+
+}

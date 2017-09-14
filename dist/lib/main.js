@@ -113,7 +113,7 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
             case 4:
                 if (!hasSim)
                     return [2 /*return*/, debug("No sim!".red)];
-                dongleName = "Dongle" + modem.imei.substring(0, 3) + modem.imei.substring(modem.imei.length - 3);
+                dongleName = generateDongleName(accessPoint.audioIfPath);
                 exports.activeModems.set(modem.imei, { modem: modem, accessPoint: accessPoint, dongleName: dongleName });
                 modem.evtTerminate.attachOnce(function (error) { return __awaiter(_this, void 0, void 0, function () {
                     var timeout_1;
@@ -147,3 +147,16 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
         }
     });
 }); });
+function generateDongleName(audioIfPath) {
+    var dongleIdNum;
+    var match = audioIfPath.match(/^\/dev\/ttyUSB([0-9]+)$/);
+    if (match) {
+        dongleIdNum = parseInt(match[1]);
+    }
+    else {
+        dongleIdNum = (function getRandomArbitrary(min, max) {
+            return Math.floor(Math.random() * (max - min) + min);
+        })(0, 1000000);
+    }
+    return "Dongle" + dongleIdNum;
+}
