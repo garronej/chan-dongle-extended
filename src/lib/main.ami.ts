@@ -76,6 +76,7 @@ activeModems.evtSet.attach(async ([{ modem, dongleName }, imei]) => {
         ami.userEvent(
             Event.MessageStatusReport.build(
                 imei,
+                imsi,
                 `${messageId}`,
                 isNaN(dischargeTime.getTime()) ? `${dischargeTime}` : dischargeTime.toISOString(),
                 isDelivered ? "true" : "false",
