@@ -3,6 +3,7 @@ import { AccessPoint } from "gsm-modem-connection";
 import { VoidSyncEvent } from "ts-events-extended";
 import { TrackableMap } from "trackable-map";
 export declare function getDongleName(accessPoint: AccessPoint): string;
+export declare function storeSimPin(modem: Modem): Promise<void>;
 export interface LockedModem {
     imei: string;
     iccid: string;

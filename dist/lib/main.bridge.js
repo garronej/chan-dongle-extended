@@ -127,7 +127,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         if (command === "ATZ\r" ||
                             command === "AT\r" ||
                             command.match(/^AT\+CNMI=/)) {
-                            debug("fake resp...");
+                            debug("Auto generated resp...");
                             forwardResp("\r\nOK\r\n");
                             return;
                         }

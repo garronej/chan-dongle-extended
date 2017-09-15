@@ -73,7 +73,6 @@ activeModems.evtSet.attach(
             modem.terminate(new Error("Bridge serialport error"));
         });
 
-
         portVirtual.on("data", (buff: Buffer) => {
 
             if (modem.isTerminated) return;
@@ -103,7 +102,7 @@ activeModems.evtSet.attach(
                 command === "AT\r" ||
                 command.match(/^AT\+CNMI=/)
             ) {
-                debug("fake resp...");
+                debug("Auto generated resp...");
                 forwardResp("\r\nOK\r\n");
                 return;
             }

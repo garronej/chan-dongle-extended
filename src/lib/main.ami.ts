@@ -1,7 +1,8 @@
 import {
     activeModems,
     lockedModems,
-    getDongleName
+    getDongleName,
+    storeSimPin
 } from "./main";
 import * as appStorage from "./appStorage";
 
@@ -34,25 +35,7 @@ activeModems.evtSet.attach(
 
         debug(`New active modem ${imei}`);
 
-        if (modem.pin) {
-
-            debug(`Persistent storing of pin: ${modem.pin}`);
-
-            if (modem.iccidAvailableBeforeUnlock)
-                debug(`for SIM ICCID: ${modem.iccid}`);
-            else
-                debug([
-                    `for dongle IMEI: ${modem.imei}, because SIM ICCID `,
-                    `is not readable with this dongle when SIM is locked`
-                ].join(""));
-
-            let appData = await appStorage.read();
-
-            appData.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
-
-            appData.release();
-
-        }
+        storeSimPin(modem);
 
         ami.userEvent(
             Event.NewActiveDongle.build(
@@ -170,15 +153,14 @@ lockedModems.evtSet.attach(
 
         let pin = appData.pins[iccid || imei];
 
-        if (pin) delete appData.pins[iccid || imei];
-
-        appData.release();
-
         if (pin && pinState === "SIM PIN" && tryLeft === 3) {
             debug(`Using stored pin ${pin} for unlocking dongle`);
             lockedModems.delete(accessPoint);
             callback(pin);
-        } else
+        } else {
+
+            if (pin) delete appData.pins[iccid || imei];
+
             ami.userEvent(
                 Event.RequestUnlockCode.build(
                     imei,
@@ -187,6 +169,10 @@ lockedModems.evtSet.attach(
                     `${tryLeft}`
                 )
             );
+
+        }
+
+        appData.release();
 
     }
 );
@@ -436,7 +422,7 @@ ami.evtUserEvent.attach(Request.match, async evtRequest => {
         if (!lockedModem)
             return replyError(`Dongle imei: ${imei} not found`);
 
-        let { pinState, tryLeft } = lockedModem;
+        let { pinState } = lockedModem;
         let unlockCallback = lockedModem.callback;
 
         if (pinState === "SIM PIN") {

@@ -76,69 +76,51 @@ main_1.activeModems.evtSet.attach(function (_a) {
     var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];
     return __awaiter(_this, void 0, void 0, function () {
         var _this = this;
-        var dongleName, imei, appData, imsi, dongleIdentifier;
+        var dongleName, imei, imsi, dongleIdentifier;
         return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    dongleName = main_1.getDongleName(accessPoint);
-                    imei = modem.imei;
-                    debug("New active modem " + imei);
-                    if (!modem.pin) return [3 /*break*/, 2];
-                    debug("Persistent storing of pin: " + modem.pin);
-                    if (modem.iccidAvailableBeforeUnlock)
-                        debug("for SIM ICCID: " + modem.iccid);
-                    else
-                        debug([
-                            "for dongle IMEI: " + modem.imei + ", because SIM ICCID ",
-                            "is not readable with this dongle when SIM is locked"
-                        ].join(""));
-                    return [4 /*yield*/, appStorage.read()];
-                case 1:
-                    appData = _a.sent();
-                    appData.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
-                    appData.release();
-                    _a.label = 2;
-                case 2:
-                    ami.userEvent(chan_dongle_extended_client_1.Event.NewActiveDongle.build(imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || ""));
-                    imsi = modem.imsi;
-                    dongleIdentifier = {
-                        "name": dongleName,
-                        "number": modem.number || "",
-                        imei: imei,
-                        imsi: imsi,
-                        "provider": modem.serviceProviderName || ""
-                    };
-                    modem.evtMessageStatusReport.attach(function (statusReport) { return __awaiter(_this, void 0, void 0, function () {
-                        var messageId, dischargeTime, isDelivered, status, recipient;
-                        return __generator(this, function (_a) {
-                            messageId = statusReport.messageId, dischargeTime = statusReport.dischargeTime, isDelivered = statusReport.isDelivered, status = statusReport.status, recipient = statusReport.recipient;
-                            ami.userEvent(chan_dongle_extended_client_1.Event.MessageStatusReport.build(imei, imsi, "" + messageId, isNaN(dischargeTime.getTime()) ? "" + dischargeTime : dischargeTime.toISOString(), isDelivered ? "true" : "false", status, recipient));
-                            dialplan.notifyStatusReport(dongleIdentifier, statusReport);
-                            return [2 /*return*/];
-                        });
-                    }); });
-                    modem.evtMessage.attach(function (message) { return __awaiter(_this, void 0, void 0, function () {
-                        var appData, number, date, text;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    debug("we got a message from modem");
-                                    return [4 /*yield*/, appStorage.read()];
-                                case 1:
-                                    appData = _a.sent();
-                                    if (!appData.messages[imsi])
-                                        appData.messages[imsi] = [];
-                                    appData.messages[imsi].push(message);
-                                    appData.release();
-                                    number = message.number, date = message.date, text = message.text;
-                                    ami.userEvent(chan_dongle_extended_client_1.Event.NewMessage.build(imei, imsi, number, date.toISOString(), text));
-                                    dialplan.notifySms(dongleIdentifier, message);
-                                    return [2 /*return*/];
-                            }
-                        });
-                    }); });
+            dongleName = main_1.getDongleName(accessPoint);
+            imei = modem.imei;
+            debug("New active modem " + imei);
+            main_1.storeSimPin(modem);
+            ami.userEvent(chan_dongle_extended_client_1.Event.NewActiveDongle.build(imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || ""));
+            imsi = modem.imsi;
+            dongleIdentifier = {
+                "name": dongleName,
+                "number": modem.number || "",
+                imei: imei,
+                imsi: imsi,
+                "provider": modem.serviceProviderName || ""
+            };
+            modem.evtMessageStatusReport.attach(function (statusReport) { return __awaiter(_this, void 0, void 0, function () {
+                var messageId, dischargeTime, isDelivered, status, recipient;
+                return __generator(this, function (_a) {
+                    messageId = statusReport.messageId, dischargeTime = statusReport.dischargeTime, isDelivered = statusReport.isDelivered, status = statusReport.status, recipient = statusReport.recipient;
+                    ami.userEvent(chan_dongle_extended_client_1.Event.MessageStatusReport.build(imei, imsi, "" + messageId, isNaN(dischargeTime.getTime()) ? "" + dischargeTime : dischargeTime.toISOString(), isDelivered ? "true" : "false", status, recipient));
+                    dialplan.notifyStatusReport(dongleIdentifier, statusReport);
                     return [2 /*return*/];
-            }
+                });
+            }); });
+            modem.evtMessage.attach(function (message) { return __awaiter(_this, void 0, void 0, function () {
+                var appData, number, date, text;
+                return __generator(this, function (_a) {
+                    switch (_a.label) {
+                        case 0:
+                            debug("we got a message from modem");
+                            return [4 /*yield*/, appStorage.read()];
+                        case 1:
+                            appData = _a.sent();
+                            if (!appData.messages[imsi])
+                                appData.messages[imsi] = [];
+                            appData.messages[imsi].push(message);
+                            appData.release();
+                            number = message.number, date = message.date, text = message.text;
+                            ami.userEvent(chan_dongle_extended_client_1.Event.NewMessage.build(imei, imsi, number, date.toISOString(), text));
+                            dialplan.notifySms(dongleIdentifier, message);
+                            return [2 /*return*/];
+                    }
+                });
+            }); });
+            return [2 /*return*/];
         });
     });
 });
@@ -167,23 +149,24 @@ main_1.lockedModems.evtSet.attach(function (_a) {
                 case 1:
                     appData = _a.sent();
                     pin = appData.pins[iccid || imei];
-                    if (pin)
-                        delete appData.pins[iccid || imei];
-                    appData.release();
                     if (pin && pinState === "SIM PIN" && tryLeft === 3) {
                         debug("Using stored pin " + pin + " for unlocking dongle");
                         main_1.lockedModems.delete(accessPoint);
                         callback(pin);
                     }
-                    else
+                    else {
+                        if (pin)
+                            delete appData.pins[iccid || imei];
                         ami.userEvent(chan_dongle_extended_client_1.Event.RequestUnlockCode.build(imei, iccid, pinState, "" + tryLeft));
+                    }
+                    appData.release();
                     return [2 /*return*/];
             }
         });
     });
 });
 ami.evtUserEvent.attach(chan_dongle_extended_client_1.Request.match, function (evtRequest) { return __awaiter(_this, void 0, void 0, function () {
-    var actionid, command, replyError, imei_1, modem, text, messageId, imei_2, modem, _a, _b, lockedModem, imei, iccid, pinState, tryLeft, e_1_1, imei_3, modem, imsi, appData, messages, messages_1, messages_1_1, _c, number, date, text, e_2_1, imei_4, modem, contactNameMaxLength, numberMaxLength, storageLeft, contacts, contacts_1, contacts_1_1, _d, index, name, number, e_3_1, imei_5, modem, name, number, contact, imei_6, modem, index, _e, _f, modem, imei, iccid, imsi, number, serviceProviderName, e_4_1, imei_7, lockedModem, pinState, tryLeft, unlockCallback, pin, puk, newpin, e_1, _g, e_2, _h, e_3, _j, e_4, _k;
+    var actionid, command, replyError, imei_1, modem, text, messageId, imei_2, modem, _a, _b, lockedModem, imei, iccid, pinState, tryLeft, e_1_1, imei_3, modem, imsi, appData, messages, messages_1, messages_1_1, _c, number, date, text, e_2_1, imei_4, modem, contactNameMaxLength, numberMaxLength, storageLeft, contacts, contacts_1, contacts_1_1, _d, index, name, number, e_3_1, imei_5, modem, name, number, contact, imei_6, modem, index, _e, _f, modem, imei, iccid, imsi, number, serviceProviderName, e_4_1, imei_7, lockedModem, pinState, unlockCallback, pin, puk, newpin, e_1, _g, e_2, _h, e_3, _j, e_4, _k;
     return __generator(this, function (_l) {
         switch (_l.label) {
             case 0:
@@ -403,7 +386,7 @@ ami.evtUserEvent.attach(chan_dongle_extended_client_1.Request.match, function (e
                 lockedModem = main_1.lockedModems.find(function (lockedModem) { return lockedModem.imei === imei_7; });
                 if (!lockedModem)
                     return [2 /*return*/, replyError("Dongle imei: " + imei_7 + " not found")];
-                pinState = lockedModem.pinState, tryLeft = lockedModem.tryLeft;
+                pinState = lockedModem.pinState;
                 unlockCallback = lockedModem.callback;
                 if (pinState === "SIM PIN") {
                     pin = evtRequest.pin;
