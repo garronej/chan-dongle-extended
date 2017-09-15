@@ -75,6 +75,7 @@ import "./main.bridge";
 
 debug("Daemon started!");
 
+const accessPointOfModemWithoutSim= new Set<AccessPoint>();
 
 const onModemConnect = runExclusive.build(
     async (accessPoint: AccessPoint) => {
@@ -120,7 +121,17 @@ const onModemConnect = runExclusive.build(
             return;
         }
 
-        if (!hasSim) return debug("No sim!".red);
+        if (!hasSim){
+
+            debug("No sim!".red);
+
+            accessPointOfModemWithoutSim.add(accessPoint);
+
+            modem.terminate();
+
+            return;
+
+        }
 
         activeModems.set(accessPoint, modem);
 
@@ -149,8 +160,13 @@ Monitor.evtModemDisconnect.attach(accessPoint => debug(`DISCONNECT: ${accessPoin
 
         await new Promise(resolve => setTimeout(resolve, 5000));
 
-        for (let accessPoint of Monitor.connectedModems) 
+        for (let accessPoint of Monitor.connectedModems){
+
+            if( accessPointOfModemWithoutSim.has(accessPoint) ) continue;
+
             onModemConnect(accessPoint);
+
+        }
 
     }
 

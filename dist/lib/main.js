@@ -115,6 +115,7 @@ require("./evtLogger");
 require("./main.ami");
 require("./main.bridge");
 debug("Daemon started!");
+var accessPointOfModemWithoutSim = new Set();
 var onModemConnect = runExclusive.build(function (accessPoint) { return __awaiter(_this, void 0, void 0, function () {
     var _this = this;
     var evtDisconnect, _a, error, modem, hasSim;
@@ -152,8 +153,12 @@ var onModemConnect = runExclusive.build(function (accessPoint) { return __awaite
                     evtDisconnect.post();
                     return [2 /*return*/];
                 }
-                if (!hasSim)
-                    return [2 /*return*/, debug("No sim!".red)];
+                if (!hasSim) {
+                    debug("No sim!".red);
+                    accessPointOfModemWithoutSim.add(accessPoint);
+                    modem.terminate();
+                    return [2 /*return*/];
+                }
                 exports.activeModems.set(accessPoint, modem);
                 //TODO send periodical AT to keep alive while up
                 modem.evtTerminate.attachOnce(function (error) { return __awaiter(_this, void 0, void 0, function () {
@@ -184,6 +189,8 @@ gsm_modem_connection_1.Monitor.evtModemDisconnect.attach(function (accessPoint) 
                     try {
                         for (_a = __values(gsm_modem_connection_1.Monitor.connectedModems), _b = _a.next(); !_b.done; _b = _a.next()) {
                             accessPoint = _b.value;
+                            if (accessPointOfModemWithoutSim.has(accessPoint))
+                                continue;
                             onModemConnect(accessPoint);
                         }
                     }
