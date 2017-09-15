@@ -102,9 +102,21 @@ activeModems.evtSet.attach(
                 command === "AT\r" ||
                 command.match(/^AT\+CNMI=/)
             ) {
+
                 debug("Auto generated resp...");
                 forwardResp("\r\nOK\r\n");
                 return;
+
+            } else if (command === "AT+COPS?\r") {
+
+                let sp = modem.serviceProviderName ?
+                    modem.serviceProviderName.substring(0, 15) :
+                    "Unknown";
+
+                debug("Auto respond to CORPS");
+                forwardResp(`\r\n+COPS: 0,0,"${sp}",0\r\n\r\nOK\r\n`);
+                return;
+
             }
 
             if (modem.runCommand_isRunning) {
