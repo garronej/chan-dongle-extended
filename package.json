@@ -1,6 +1,6 @@
 {
   "name": "chan-dongle-extended",
-  "version": "1.7.0",
+  "version": "1.8.0",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
@@ -34,6 +34,7 @@
     "gsm-modem-connection": "git+https://a30f7432b117d8320cc21cc03513817c3f08d4b6:x-oauth-basic@github.com/garronej/gsm-modem-connection",
     "ini-extended": "github:garronej/ini-extended",
     "js-base64": "^2.1.9",
+    "md5": "^2.2.1",
     "node-persist": "^2.0.10",
     "rejection-tracker": "github:garronej/rejection-tracker",
     "run-exclusive": "github:garronej/run-exclusive",

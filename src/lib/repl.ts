@@ -19,9 +19,8 @@ Object.defineProperty(context, "accessPoints", {
 });
 
 Object.defineProperty(context, "modem", {
-    "get": () => (activeModems.valuesAsArray()[0] || {}).modem
+    "get": () => activeModems.valuesAsArray()[0]
 });
-
 
 Object.assign(context, { activeModems, lockedModems });
 

@@ -61,10 +61,10 @@ var main_1 = require("./main");
 var _debug = require("debug");
 var debug = _debug("_main.bridge");
 main_1.activeModems.evtSet.attach(function (_a) {
-    var _b = __read(_a, 1), _c = _b[0], modem = _c.modem, accessPoint = _c.accessPoint, dongleName = _c.dongleName;
+    var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];
     return __awaiter(_this, void 0, void 0, function () {
         var _this = this;
-        var voidModem, portVirtual;
+        var dongleName, voidModem, portVirtual;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -72,6 +72,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         debug("chan_dongle bridge disabled !");
                         return [2 /*return*/];
                     }
+                    dongleName = main_1.getDongleName(accessPoint);
                     voidModem = Tty0tty_1.Tty0tty.getPair();
                     chanDongleConfManager_1.chanDongleConfManager.addDongle({
                         dongleName: dongleName,

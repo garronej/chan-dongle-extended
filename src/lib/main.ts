@@ -3,6 +3,7 @@ require("rejection-tracker").main(__dirname, "..", "..");
  //"postinstall": "if [ $(id -u) -eq 0  ]; then (node ./dist/bin/scripts postinstall); else (sudo node ./dist/bin/scripts postinstall); fi",
  // lrwxrwxrwx 1 root pi 36 Apr 15 09:46 /usr/local/lib/node_modules/chan-dongle-extended -> /home/pi/github/chan-dongle-extended
 
+import * as md5 from "md5";
 import {
     Modem,
     UnlockCodeProviderCallback,
@@ -17,15 +18,19 @@ import * as appStorage from "./appStorage";
 import * as _debug from "debug";
 let debug = _debug("_main");
 
-export interface ActiveModem {
-    modem: Modem;
-    accessPoint: AccessPoint;
-    dongleName: string;
+
+export function getDongleName(accessPoint: AccessPoint) {
+
+    let { audioIfPath }= accessPoint;
+
+    let match = audioIfPath.match(/^\/dev\/ttyUSB([0-9]+)$/);
+
+    return `Dongle${match?match[1]:md5(audioIfPath).substring(0,6)}`;
+
 }
 
-export const activeModems = new TrackableMap<string, ActiveModem>();
-
 export interface LockedModem {
+    imei: string;
     iccid: string;
     pinState: AtMessage.LockedPinState;
     tryLeft: number;
@@ -33,7 +38,9 @@ export interface LockedModem {
     evtDisconnect: VoidSyncEvent;
 }
 
-export const lockedModems = new TrackableMap<string, LockedModem>();
+export const lockedModems = new TrackableMap<AccessPoint, LockedModem>();
+
+export const activeModems = new TrackableMap<AccessPoint, Modem>();
 
 if (process.env["NODE_ENV"] !== "production") require("./repl");
 import "./evtLogger";
@@ -45,6 +52,19 @@ debug("Daemon started!");
 
 Monitor.evtModemDisconnect.attach(accessPoint => debug(`DISCONNECT: ${accessPoint.toString()}`));
 
+/*
+Monitor.evtModemConnect.attach(
+    runExclusive.build(
+        async (accessPoint: AccessPoint) => {
+
+
+
+
+        }
+    )
+);
+*/
+
 Monitor.evtModemConnect.attach(async accessPoint => {
 
     debug(`CONNECT: ${accessPoint.toString()}`);
@@ -53,17 +73,23 @@ Monitor.evtModemConnect.attach(async accessPoint => {
 
     let [error, modem, hasSim] = await Modem.create({
         "path": accessPoint.dataIfPath,
-        "unlockCodeProvider":
-        (imei, iccid, pinState, tryLeft, callback) => {
+        "unlockCodeProvider": (imei, iccid, pinState, tryLeft, callback) => {
 
             Monitor.evtModemDisconnect.attachOnce(
                 ({ id }) => id === accessPoint.id,
                 () => evtDisconnect.post()
             );
 
-            lockedModems.set(imei, {
-                iccid, pinState, tryLeft, callback, evtDisconnect
-            });
+            let lockedModem: LockedModem = {
+                imei,
+                iccid,
+                pinState,
+                tryLeft,
+                callback,
+                evtDisconnect
+            };
+
+            lockedModems.set(accessPoint, lockedModem);
 
         }
     });
@@ -96,9 +122,7 @@ Monitor.evtModemConnect.attach(async accessPoint => {
     if (!hasSim)
         return debug("No sim!".red);
 
-    let dongleName= generateDongleName(accessPoint.audioIfPath);
-
-    activeModems.set(modem.imei, { modem, accessPoint, dongleName });
+    activeModems.set(accessPoint, modem );
 
     modem.evtTerminate.attachOnce(async error => {
 
@@ -107,7 +131,7 @@ Monitor.evtModemConnect.attach(async accessPoint => {
         if (error)
             debug("terminate reason: ", error);
 
-        activeModems.delete(modem.imei);
+        activeModems.delete(accessPoint);
 
         if (Monitor.connectedModems.indexOf(accessPoint) >= 0) {
 
@@ -134,25 +158,3 @@ Monitor.evtModemConnect.attach(async accessPoint => {
 
 });
 
-
-function generateDongleName(audioIfPath: string): string {
-
-    let dongleIdNum: number;
-
-    let match = audioIfPath.match(/^\/dev\/ttyUSB([0-9]+)$/);
-
-    if (match) {
-
-        dongleIdNum = parseInt(match[1]);
-
-    } else {
-
-        dongleIdNum = (function getRandomArbitrary(min, max) {
-            return Math.floor(Math.random() * (max - min) + min);
-        })(0, 1000000);
-
-    }
-
-    return `Dongle${dongleIdNum}`;
-
-}

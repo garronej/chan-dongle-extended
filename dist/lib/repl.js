@@ -66,7 +66,7 @@ Object.defineProperty(context, "accessPoints", {
     "get": function () { return gsm_modem_connection_1.Monitor.connectedModems; }
 });
 Object.defineProperty(context, "modem", {
-    "get": function () { return (main_1.activeModems.valuesAsArray()[0] || {}).modem; }
+    "get": function () { return main_1.activeModems.valuesAsArray()[0]; }
 });
 Object.assign(context, { activeModems: main_1.activeModems, lockedModems: main_1.lockedModems });
 context.run = function (command) {

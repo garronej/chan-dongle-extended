@@ -55,6 +55,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("rejection-tracker").main(__dirname, "..", "..");
 //"postinstall": "if [ $(id -u) -eq 0  ]; then (node ./dist/bin/scripts postinstall); else (sudo node ./dist/bin/scripts postinstall); fi",
 // lrwxrwxrwx 1 root pi 36 Apr 15 09:46 /usr/local/lib/node_modules/chan-dongle-extended -> /home/pi/github/chan-dongle-extended
+var md5 = require("md5");
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var gsm_modem_connection_1 = require("gsm-modem-connection");
 var ts_events_extended_1 = require("ts-events-extended");
@@ -62,8 +63,14 @@ var trackable_map_1 = require("trackable-map");
 var appStorage = require("./appStorage");
 var _debug = require("debug");
 var debug = _debug("_main");
-exports.activeModems = new trackable_map_1.TrackableMap();
+function getDongleName(accessPoint) {
+    var audioIfPath = accessPoint.audioIfPath;
+    var match = audioIfPath.match(/^\/dev\/ttyUSB([0-9]+)$/);
+    return "Dongle" + (match ? match[1] : md5(audioIfPath).substring(0, 6));
+}
+exports.getDongleName = getDongleName;
 exports.lockedModems = new trackable_map_1.TrackableMap();
+exports.activeModems = new trackable_map_1.TrackableMap();
 if (process.env["NODE_ENV"] !== "production")
     require("./repl");
 require("./evtLogger");
@@ -71,9 +78,21 @@ require("./main.ami");
 require("./main.bridge");
 debug("Daemon started!");
 gsm_modem_connection_1.Monitor.evtModemDisconnect.attach(function (accessPoint) { return debug("DISCONNECT: " + accessPoint.toString()); });
+/*
+Monitor.evtModemConnect.attach(
+    runExclusive.build(
+        async (accessPoint: AccessPoint) => {
+
+
+
+
+        }
+    )
+);
+*/
 gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { return __awaiter(_this, void 0, void 0, function () {
     var _this = this;
-    var evtDisconnect, _a, error, modem, hasSim, appData, dongleName;
+    var evtDisconnect, _a, error, modem, hasSim, appData;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
@@ -86,9 +105,15 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
                                 var id = _a.id;
                                 return id === accessPoint.id;
                             }, function () { return evtDisconnect.post(); });
-                            exports.lockedModems.set(imei, {
-                                iccid: iccid, pinState: pinState, tryLeft: tryLeft, callback: callback, evtDisconnect: evtDisconnect
-                            });
+                            var lockedModem = {
+                                imei: imei,
+                                iccid: iccid,
+                                pinState: pinState,
+                                tryLeft: tryLeft,
+                                callback: callback,
+                                evtDisconnect: evtDisconnect
+                            };
+                            exports.lockedModems.set(accessPoint, lockedModem);
                         }
                     })];
             case 1:
@@ -113,8 +138,7 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
             case 4:
                 if (!hasSim)
                     return [2 /*return*/, debug("No sim!".red)];
-                dongleName = generateDongleName(accessPoint.audioIfPath);
-                exports.activeModems.set(modem.imei, { modem: modem, accessPoint: accessPoint, dongleName: dongleName });
+                exports.activeModems.set(accessPoint, modem);
                 modem.evtTerminate.attachOnce(function (error) { return __awaiter(_this, void 0, void 0, function () {
                     var timeout_1;
                     return __generator(this, function (_a) {
@@ -123,7 +147,7 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
                                 debug("Modem evt terminate");
                                 if (error)
                                     debug("terminate reason: ", error);
-                                exports.activeModems.delete(modem.imei);
+                                exports.activeModems.delete(accessPoint);
                                 if (!(gsm_modem_connection_1.Monitor.connectedModems.indexOf(accessPoint) >= 0)) return [3 /*break*/, 4];
                                 debug("Modem still connected");
                                 _a.label = 1;
@@ -147,16 +171,3 @@ gsm_modem_connection_1.Monitor.evtModemConnect.attach(function (accessPoint) { r
         }
     });
 }); });
-function generateDongleName(audioIfPath) {
-    var dongleIdNum;
-    var match = audioIfPath.match(/^\/dev\/ttyUSB([0-9]+)$/);
-    if (match) {
-        dongleIdNum = parseInt(match[1]);
-    }
-    else {
-        dongleIdNum = (function getRandomArbitrary(min, max) {
-            return Math.floor(Math.random() * (max - min) + min);
-        })(0, 1000000);
-    }
-    return "Dongle" + dongleIdNum;
-}

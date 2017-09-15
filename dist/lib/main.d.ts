@@ -2,20 +2,17 @@ import { Modem, UnlockCodeProviderCallback, AtMessage } from "ts-gsm-modem";
 import { AccessPoint } from "gsm-modem-connection";
 import { VoidSyncEvent } from "ts-events-extended";
 import { TrackableMap } from "trackable-map";
-export interface ActiveModem {
-    modem: Modem;
-    accessPoint: AccessPoint;
-    dongleName: string;
-}
-export declare const activeModems: TrackableMap<string, ActiveModem>;
+export declare function getDongleName(accessPoint: AccessPoint): string;
 export interface LockedModem {
+    imei: string;
     iccid: string;
     pinState: AtMessage.LockedPinState;
     tryLeft: number;
     callback: UnlockCodeProviderCallback;
     evtDisconnect: VoidSyncEvent;
 }
-export declare const lockedModems: TrackableMap<string, LockedModem>;
+export declare const lockedModems: TrackableMap<AccessPoint, LockedModem>;
+export declare const activeModems: TrackableMap<AccessPoint, Modem>;
 import "./evtLogger";
 import "./main.ami";
 import "./main.bridge";
