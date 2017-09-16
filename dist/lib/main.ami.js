@@ -82,7 +82,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
             imei = modem.imei;
             debug("New active modem " + imei);
             main_1.storeSimPin(modem);
-            ami.userEvent(chan_dongle_extended_client_1.Event.NewActiveDongle.build(imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || ""));
+            ami.userEvent(chan_dongle_extended_client_1.Event.NewActiveDongle.build(imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || "", modem.isVoiceEnabled));
             imsi = modem.imsi;
             dongleIdentifier = {
                 "name": dongleName,
@@ -126,7 +126,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
 });
 main_1.activeModems.evtDelete.attach(function (_a) {
     var _b = __read(_a, 1), modem = _b[0];
-    return ami.userEvent(chan_dongle_extended_client_1.Event.ActiveDongleDisconnect.build(modem.imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || ""));
+    return ami.userEvent(chan_dongle_extended_client_1.Event.ActiveDongleDisconnect.build(modem.imei, modem.iccid, modem.imsi, modem.number || "", modem.serviceProviderName || "", modem.isVoiceEnabled));
 });
 main_1.lockedModems.evtSet.attach(function (_a) {
     var _b = __read(_a, 2), lockedModem = _b[0], accessPoint = _b[1];
@@ -361,7 +361,7 @@ ami.evtUserEvent.attach(chan_dongle_extended_client_1.Request.match, function (e
                 if (!!_f.done) return [3 /*break*/, 47];
                 modem = _f.value;
                 imei = modem.imei, iccid = modem.iccid, imsi = modem.imsi, number = modem.number, serviceProviderName = modem.serviceProviderName;
-                return [4 /*yield*/, ami.userEvent(chan_dongle_extended_client_1.Response.GetActiveDongles_follow.build(actionid, imei, iccid, imsi, number || "", serviceProviderName || ""))];
+                return [4 /*yield*/, ami.userEvent(chan_dongle_extended_client_1.Response.GetActiveDongles_follow.build(actionid, imei, iccid, imsi, number || "", serviceProviderName || "", modem.isVoiceEnabled))];
             case 45:
                 _l.sent();
                 _l.label = 46;

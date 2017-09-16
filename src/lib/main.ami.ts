@@ -43,7 +43,8 @@ activeModems.evtSet.attach(
                 modem.iccid,
                 modem.imsi,
                 modem.number || "",
-                modem.serviceProviderName || ""
+                modem.serviceProviderName || "",
+                modem.isVoiceEnabled
             )
         );
 
@@ -117,7 +118,8 @@ activeModems.evtDelete.attach(
             modem.iccid,
             modem.imsi,
             modem.number || "",
-            modem.serviceProviderName || ""
+            modem.serviceProviderName || "",
+            modem.isVoiceEnabled
         )
     )
 );
@@ -405,7 +407,8 @@ ami.evtUserEvent.attach(Request.match, async evtRequest => {
                     iccid,
                     imsi,
                     number || "",
-                    serviceProviderName || ""
+                    serviceProviderName || "",
+                    modem.isVoiceEnabled
                 )
             );
 

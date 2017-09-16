@@ -160,7 +160,6 @@ var onModemConnect = runExclusive.build(function (accessPoint) { return __awaite
                     return [2 /*return*/];
                 }
                 exports.activeModems.set(accessPoint, modem);
-                //TODO send periodical AT to keep alive while up
                 modem.evtTerminate.attachOnce(function (error) { return __awaiter(_this, void 0, void 0, function () {
                     return __generator(this, function (_a) {
                         debug("Modem evt terminate");

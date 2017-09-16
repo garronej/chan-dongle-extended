@@ -135,8 +135,6 @@ const onModemConnect = runExclusive.build(
 
         activeModems.set(accessPoint, modem);
 
-        //TODO send periodical AT to keep alive while up
-
         modem.evtTerminate.attachOnce(async error => {
 
             debug("Modem evt terminate");
