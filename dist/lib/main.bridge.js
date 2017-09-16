@@ -60,18 +60,15 @@ var Tty0tty_1 = require("./Tty0tty");
 var main_1 = require("./main");
 var _debug = require("debug");
 var debug = _debug("_main.bridge");
+var ok = "\r\nOK\r\n";
 main_1.activeModems.evtSet.attach(function (_a) {
     var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];
     return __awaiter(_this, void 0, void 0, function () {
         var _this = this;
-        var dongleName, voidModem, portVirtual;
+        var dongleName, voidModem, portVirtual, serviceProviderShort, forwardResp;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (1 + 1 === 3) {
-                        debug("chan_dongle bridge disabled !");
-                        return [2 /*return*/];
-                    }
                     dongleName = main_1.getDongleName(accessPoint);
                     voidModem = Tty0tty_1.Tty0tty.getPair();
                     chanDongleConfManager_1.chanDongleConfManager.addDongle({
@@ -108,45 +105,42 @@ main_1.activeModems.evtSet.attach(function (_a) {
                         debug("uncaught error serialPortVirtual", serialPortError);
                         modem.terminate(new Error("Bridge serialport error"));
                     });
+                    serviceProviderShort = (modem.serviceProviderName || "Unknown SP").substring(0, 15);
+                    forwardResp = function (rawResp) {
+                        if (modem.runCommand_isRunning) {
+                            debug(("Newer command from chanDongle, dropping " + JSON.stringify(rawResp)).red);
+                            return;
+                        }
+                        debug("response: " + JSON.stringify(rawResp).blue);
+                        portVirtual.writeAndDrain(rawResp);
+                    };
                     portVirtual.on("data", function (buff) {
                         if (modem.isTerminated)
                             return;
                         var command = buff.toString("utf8") + "\r";
-                        var forwardResp = function (rawResp) {
-                            if (modem.runCommand_isRunning) {
-                                debug([
-                                    "Newer command from chanDongle",
-                                    "dropping " + JSON.stringify(rawResp) + " response to " + JSON.stringify(command) + " command"
-                                ].join("\n").red);
-                                return;
-                            }
-                            debug("response: " + JSON.stringify(rawResp).blue);
-                            portVirtual.writeAndDrain(rawResp);
-                        };
                         debug("from chan_dongle: " + JSON.stringify(command));
                         if (command === "ATZ\r" ||
-                            command === "AT\r" ||
                             command.match(/^AT\+CNMI=/)) {
-                            debug("Auto generated resp...");
-                            forwardResp("\r\nOK\r\n");
+                            forwardResp(ok);
+                            return;
+                        }
+                        else if (command === "AT\r") {
+                            forwardResp(ok);
+                            modem.ping();
                             return;
                         }
                         else if (command === "AT+COPS?\r") {
-                            var sp = modem.serviceProviderName ?
-                                modem.serviceProviderName.substring(0, 15) :
-                                "Unknown";
-                            debug("Auto respond to CORPS");
-                            forwardResp("\r\n+COPS: 0,0,\"" + sp + "\",0\r\n\r\nOK\r\n");
+                            forwardResp("\r\n+COPS: 0,0,\"" + serviceProviderShort + "\",0\r\n" + ok);
                             return;
                         }
-                        if (modem.runCommand_isRunning) {
+                        if (modem.runCommand_queuedCallCount) {
                             debug([
-                                "a command is already running",
+                                "a command is already running and",
                                 modem.runCommand_queuedCallCount + " command in stack",
                                 "flushing the pending command in stack"
                             ].join("\n").yellow);
-                            modem.runCommand_cancelAllQueuedCalls();
                         }
+                        modem.runCommand_cancelAllQueuedCalls();
                         modem.runCommand(command, {
                             "recoverable": true,
                             "reportMode": ts_gsm_modem_1.AtMessage.ReportMode.NO_DEBUG_INFO,
@@ -157,7 +151,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                 case 1:
                     _a.sent();
                     modem.evtUnsolicitedAtMessage.attach(function (urc) {
-                        debug("forwarding urc: " + JSON.stringify(urc.raw));
+                        debug("forwarding urc: " + JSON.stringify(urc.raw).blue);
                         portVirtual.writeAndDrain(urc.raw);
                     });
                     return [2 /*return*/];

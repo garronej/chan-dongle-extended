@@ -17,15 +17,10 @@ import {
 import * as _debug from "debug";
 let debug = _debug("_main.bridge");
 
+const ok = "\r\nOK\r\n";
+
 activeModems.evtSet.attach(
     async ([modem, accessPoint]) => {
-
-        if (1 + 1 === 3) {
-
-            debug("chan_dongle bridge disabled !");
-
-            return;
-        }
 
         let dongleName = getDongleName(accessPoint);
 
@@ -73,62 +68,61 @@ activeModems.evtSet.attach(
             modem.terminate(new Error("Bridge serialport error"));
         });
 
+        const serviceProviderShort = (modem.serviceProviderName || "Unknown SP").substring(0, 15);
+
+        const forwardResp = (rawResp: string) => {
+
+            if (modem.runCommand_isRunning) {
+                debug(`Newer command from chanDongle, dropping ${JSON.stringify(rawResp)}`.red);
+                return;
+            }
+
+            debug("response: " + JSON.stringify(rawResp).blue);
+
+            portVirtual.writeAndDrain(rawResp);
+
+        };
+
         portVirtual.on("data", (buff: Buffer) => {
 
             if (modem.isTerminated) return;
 
             let command = buff.toString("utf8") + "\r";
 
-            let forwardResp = (rawResp: string) => {
-
-                if (modem.runCommand_isRunning) {
-                    debug([
-                        `Newer command from chanDongle`,
-                        `dropping ${JSON.stringify(rawResp)} response to ${JSON.stringify(command)} command`
-                    ].join("\n").red);
-                    return;
-                }
-
-                debug("response: " + JSON.stringify(rawResp).blue);
-
-                portVirtual.writeAndDrain(rawResp);
-
-            };
-
             debug("from chan_dongle: " + JSON.stringify(command));
 
             if (
                 command === "ATZ\r" ||
-                command === "AT\r" ||
                 command.match(/^AT\+CNMI=/)
             ) {
 
-                debug("Auto generated resp...");
-                forwardResp("\r\nOK\r\n");
+                forwardResp(ok);
+                return;
+
+            } else if (command === "AT\r") {
+
+                forwardResp(ok);
+                modem.ping();
                 return;
 
             } else if (command === "AT+COPS?\r") {
 
-                let sp = modem.serviceProviderName ?
-                    modem.serviceProviderName.substring(0, 15) :
-                    "Unknown";
-
-                debug("Auto respond to CORPS");
-                forwardResp(`\r\n+COPS: 0,0,"${sp}",0\r\n\r\nOK\r\n`);
+                forwardResp(`\r\n+COPS: 0,0,"${serviceProviderShort}",0\r\n${ok}`);
                 return;
 
             }
 
-            if (modem.runCommand_isRunning) {
+            if (modem.runCommand_queuedCallCount) {
 
                 debug([
-                    `a command is already running`,
+                    `a command is already running and`,
                     `${modem.runCommand_queuedCallCount} command in stack`,
                     `flushing the pending command in stack`
                 ].join("\n").yellow);
 
-                modem.runCommand_cancelAllQueuedCalls();
             }
+
+            modem.runCommand_cancelAllQueuedCalls();
 
             modem.runCommand(command, {
                 "recoverable": true,
@@ -142,7 +136,7 @@ activeModems.evtSet.attach(
 
         modem.evtUnsolicitedAtMessage.attach(urc => {
 
-            debug("forwarding urc: " + JSON.stringify(urc.raw));
+            debug(`forwarding urc: ${JSON.stringify(urc.raw).blue}`);
 
             portVirtual.writeAndDrain(urc.raw)
 
