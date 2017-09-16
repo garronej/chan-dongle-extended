@@ -12,8 +12,11 @@ import {
     Event,
     Response,
     Request,
-    amiUser as user
+    amiUser as user,
+    typesDef
 } from "../chan-dongle-extended-client";
+import errorMessages= typesDef.errorMessages;
+
 
 import * as dialplan from "./dialplan";
 
@@ -199,7 +202,7 @@ ami.evtUserEvent.attach(Request.match, async evtRequest => {
         let modem = activeModems.find(modem => modem.imei === imei);
 
         if (!modem)
-            return replyError(`Dongle imei: ${imei} not found`);
+            return replyError(errorMessages.dongleNotFound);
 
         let text = Request.SendMessage.reassembleText(evtRequest);
 
@@ -208,7 +211,7 @@ ami.evtUserEvent.attach(Request.match, async evtRequest => {
             text
         );
 
-        if (isNaN(messageId)) return replyError("Message not send");
+        if (isNaN(messageId)) return replyError(errorMessages.messageNotSent);
 
         ami.userEvent(
             Response.SendMessage.build(
@@ -224,7 +227,7 @@ ami.evtUserEvent.attach(Request.match, async evtRequest => {
         let modem = activeModems.find(modem => modem.imei === imei);
 
         if (!modem)
-            return replyError(`Dongle imei: ${imei} not found`);
+            return replyError(errorMessages.dongleNotFound);
 
         await modem.writeNumber(evtRequest.number);
 
@@ -272,7 +275,7 @@ ami.evtUserEvent.attach(Request.match, async evtRequest => {
         let modem = activeModems.find(modem => modem.imei === imei);
 
         if (!modem)
-            return replyError(`Dongle imei: ${imei} not found`);
+            return replyError(errorMessages.dongleNotFound);
 
         let { imsi } = modem;
 
@@ -310,7 +313,7 @@ ami.evtUserEvent.attach(Request.match, async evtRequest => {
         let modem = activeModems.find(modem => modem.imei === imei);
 
         if (!modem)
-            return replyError(`Dongle imei: ${imei} not found`);
+            return replyError(errorMessages.dongleNotFound);
 
         let {
             contactNameMaxLength,
@@ -346,13 +349,13 @@ ami.evtUserEvent.attach(Request.match, async evtRequest => {
         let modem = activeModems.find(modem => modem.imei === imei);
 
         if (!modem)
-            return replyError(`Dongle imei: ${imei} not found`);
+            return replyError(errorMessages.dongleNotFound);
 
         let { name, number } = evtRequest;
 
         //TODO: validate params.
         if (!modem.storageLeft)
-            return replyError(`No storage space left on SIM`);
+            return replyError(errorMessages.noStorageLeft);
 
         let contact = await modem.createContact(number, name);
 
@@ -372,7 +375,7 @@ ami.evtUserEvent.attach(Request.match, async evtRequest => {
         let modem = activeModems.find(modem => modem.imei === imei);
 
         if (!modem)
-            return replyError(`Dongle imei: ${imei} not found`);
+            return replyError(errorMessages.dongleNotFound);
 
         let index = parseInt(evtRequest.index);
 
@@ -423,7 +426,7 @@ ami.evtUserEvent.attach(Request.match, async evtRequest => {
         );
 
         if (!lockedModem)
-            return replyError(`Dongle imei: ${imei} not found`);
+            return replyError(errorMessages.dongleNotFound);
 
         let { pinState } = lockedModem;
         let unlockCallback = lockedModem.callback;
