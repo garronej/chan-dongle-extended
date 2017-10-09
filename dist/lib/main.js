@@ -34,175 +34,160 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __read = (this && this.__read) || function (o, n) {
-    var m = typeof Symbol === "function" && o[Symbol.iterator];
-    if (!m) return o;
-    var i = m.call(o), r, ar = [], e;
-    try {
-        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
-    }
-    catch (error) { e = { error: error }; }
-    finally {
-        try {
-            if (r && !r.done && (m = i["return"])) m.call(i);
-        }
-        finally { if (e) throw e.error; }
-    }
-    return ar;
-};
-var __values = (this && this.__values) || function (o) {
-    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
-    if (m) return m.call(o);
-    return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-};
-var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 require("rejection-tracker").main(__dirname, "..", "..");
 //"postinstall": "if [ $(id -u) -eq 0  ]; then (node ./dist/bin/scripts postinstall); else (sudo node ./dist/bin/scripts postinstall); fi",
 // lrwxrwxrwx 1 root pi 36 Apr 15 09:46 /usr/local/lib/node_modules/chan-dongle-extended -> /home/pi/github/chan-dongle-extended
-var md5 = require("md5");
 var ts_gsm_modem_1 = require("ts-gsm-modem");
-var gsm_modem_connection_1 = require("gsm-modem-connection");
-var ts_events_extended_1 = require("ts-events-extended");
 var trackable_map_1 = require("trackable-map");
-var runExclusive = require("run-exclusive");
 var appStorage = require("./appStorage");
+var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
+var amiUser = chan_dongle_extended_client_1._private.amiUser;
+var repl = require("./repl");
+var dialplan = require("./dialplan");
+var api = require("./api");
+var bridge = require("./bridge");
 var _debug = require("debug");
 var debug = _debug("_main");
-function getDongleName(accessPoint) {
-    var audioIfPath = accessPoint.audioIfPath;
-    var match = audioIfPath.match(/^\/dev\/ttyUSB([0-9]+)$/);
-    return "Dongle" + (match ? match[1] : md5(audioIfPath).substring(0, 6));
+var modems = new trackable_map_1.TrackableMap();
+var ami = chan_dongle_extended_client_1.Ami.getInstance(amiUser);
+bridge.start(modems);
+dialplan.start(modems, ami);
+api.start(modems, ami);
+if (process.env["NODE_ENV"] !== "production") {
+    repl.start(modems);
 }
-exports.getDongleName = getDongleName;
-function storeSimPin(modem) {
+debug("Started");
+var monitor = ts_gsm_modem_1.ConnectionMonitor.getInstance();
+monitor.evtModemConnect.attach(function (accessPoint) {
+    debug("CONNECT: " + accessPoint.toString());
+    createModem(accessPoint);
+});
+function scheduleRetry(accessPoint) {
+    if (!monitor.connectedModems.has(accessPoint))
+        return;
+    monitor.evtModemDisconnect.waitFor(function (ap) { return ap === accessPoint; }, 2000)
+        .catch(function () { return createModem(accessPoint); });
+}
+function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
     return __awaiter(this, void 0, void 0, function () {
-        var appData;
+        var _this = this;
+        var appData, pin, unlockResult, lockedModem;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, appStorage.read()];
+                case 1:
+                    appData = _a.sent();
+                    pin = appData.pins[iccid || imei];
+                    if (!pin) return [3 /*break*/, 4];
+                    if (!(pinState === "SIM PIN" && tryLeft === 3)) return [3 /*break*/, 3];
+                    appData.release();
+                    return [4 /*yield*/, performUnlock(pin)];
+                case 2:
+                    unlockResult = _a.sent();
+                    if (unlockResult.success)
+                        return [2 /*return*/];
+                    pinState = unlockResult.pinState;
+                    tryLeft = unlockResult.tryLeft;
+                    return [3 /*break*/, 4];
+                case 3:
+                    delete appData[iccid || imei];
+                    appData.release();
+                    _a.label = 4;
+                case 4:
+                    lockedModem = {
+                        imei: imei, iccid: iccid, pinState: pinState, tryLeft: tryLeft,
+                        "performUnlock": function () {
+                            var inputs = [];
+                            for (var _i = 0; _i < arguments.length; _i++) {
+                                inputs[_i] = arguments[_i];
+                            }
+                            return __awaiter(_this, void 0, void 0, function () {
+                                var pin, puk, unlockResult, appData;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            //NOTE: Perform result throw error if modem disconnect during unlock
+                                            modems.delete(accessPoint);
+                                            if (!!inputs[1]) return [3 /*break*/, 2];
+                                            pin = inputs[0];
+                                            puk = undefined;
+                                            return [4 /*yield*/, performUnlock(pin)];
+                                        case 1:
+                                            unlockResult = _a.sent();
+                                            return [3 /*break*/, 4];
+                                        case 2:
+                                            pin = inputs[1];
+                                            puk = inputs[0];
+                                            return [4 /*yield*/, performUnlock(puk, pin)];
+                                        case 3:
+                                            unlockResult = _a.sent();
+                                            _a.label = 4;
+                                        case 4: return [4 /*yield*/, appStorage.read()];
+                                        case 5:
+                                            appData = _a.sent();
+                                            if (unlockResult.success) {
+                                                debug("Persistent storing of pin: " + pin);
+                                                appData.pins[iccid || imei] = pin;
+                                            }
+                                            else {
+                                                delete appData[iccid || imei];
+                                                lockedModem.pinState = unlockResult.pinState;
+                                                lockedModem.tryLeft = unlockResult.tryLeft;
+                                                modems.set(accessPoint, lockedModem);
+                                            }
+                                            appData.release();
+                                            return [2 /*return*/, unlockResult];
+                                    }
+                                });
+                            });
+                        }
+                    };
+                    modems.set(accessPoint, lockedModem);
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+function createModem(accessPoint) {
+    return __awaiter(this, void 0, void 0, function () {
+        var modem, error_1, initializationError, modemInfos;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!modem.pin) return [3 /*break*/, 2];
-                    debug("Persistent storing of pin: " + modem.pin);
-                    if (modem.iccidAvailableBeforeUnlock)
-                        debug("for SIM ICCID: " + modem.iccid);
-                    else
-                        debug([
-                            "for dongle IMEI: " + modem.imei + ", because SIM ICCID ",
-                            "is not readable with this dongle when SIM is locked"
-                        ].join(""));
-                    return [4 /*yield*/, appStorage.read()];
+                    debug("Create Modem");
+                    _a.label = 1;
                 case 1:
-                    appData = _a.sent();
-                    appData.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
-                    appData.release();
-                    _a.label = 2;
-                case 2: return [2 /*return*/];
+                    _a.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, ts_gsm_modem_1.Modem.create({
+                            "enableTrace": true,
+                            "dataIfPath": accessPoint.dataIfPath,
+                            "unlock": function (imei, iccid, pinState, tryLeft, performUnlock) {
+                                return unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock);
+                            }
+                        })];
+                case 2:
+                    modem = _a.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    error_1 = _a.sent();
+                    modems.delete(accessPoint);
+                    initializationError = error_1;
+                    debug("Initialization error: " + initializationError.message);
+                    modemInfos = initializationError.modemInfos;
+                    if (modemInfos.hasSim) {
+                        scheduleRetry(accessPoint);
+                    }
+                    return [2 /*return*/];
+                case 4:
+                    modem.evtTerminate.attachOnce(function (error) {
+                        modems.delete(accessPoint);
+                        debug("Terminate... " + (error ? error.message : "No internal error"));
+                        scheduleRetry(accessPoint);
+                    });
+                    modems.set(accessPoint, modem);
+                    return [2 /*return*/];
             }
         });
     });
 }
-exports.storeSimPin = storeSimPin;
-exports.lockedModems = new trackable_map_1.TrackableMap();
-exports.activeModems = new trackable_map_1.TrackableMap();
-if (process.env["NODE_ENV"] !== "production")
-    require("./repl");
-require("./evtLogger");
-require("./main.ami");
-require("./main.bridge");
-debug("Daemon started!");
-var accessPointOfModemWithoutSim = new Set();
-var onModemConnect = runExclusive.build(function (accessPoint) { return __awaiter(_this, void 0, void 0, function () {
-    var _this = this;
-    var evtDisconnect, _a, error, modem, hasSim;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
-            case 0:
-                if (gsm_modem_connection_1.Monitor.connectedModems.indexOf(accessPoint) < 0 ||
-                    exports.activeModems.has(accessPoint) ||
-                    exports.lockedModems.has(accessPoint))
-                    return [2 /*return*/];
-                debug("CONNECT: " + accessPoint.toString());
-                evtDisconnect = new ts_events_extended_1.VoidSyncEvent();
-                return [4 /*yield*/, ts_gsm_modem_1.Modem.create({
-                        "path": accessPoint.dataIfPath,
-                        "unlockCodeProvider": function (imei, iccid, pinState, tryLeft, callback) {
-                            gsm_modem_connection_1.Monitor.evtModemDisconnect.attachOnce(function (_a) {
-                                var id = _a.id;
-                                return id === accessPoint.id;
-                            }, function () { return evtDisconnect.post(); });
-                            exports.lockedModems.set(accessPoint, {
-                                imei: imei,
-                                iccid: iccid,
-                                pinState: pinState,
-                                tryLeft: tryLeft,
-                                callback: callback,
-                                evtDisconnect: evtDisconnect
-                            });
-                        }
-                    })];
-            case 1:
-                _a = __read.apply(void 0, [_b.sent(), 3]), error = _a[0], modem = _a[1], hasSim = _a[2];
-                if (error) {
-                    debug("Initialization error, checking if unlock was successful...".red, error);
-                    storeSimPin(modem);
-                    evtDisconnect.post();
-                    return [2 /*return*/];
-                }
-                if (!hasSim) {
-                    debug("No sim!".red);
-                    accessPointOfModemWithoutSim.add(accessPoint);
-                    modem.terminate();
-                    return [2 /*return*/];
-                }
-                exports.activeModems.set(accessPoint, modem);
-                modem.evtTerminate.attachOnce(function (error) { return __awaiter(_this, void 0, void 0, function () {
-                    return __generator(this, function (_a) {
-                        debug("Modem evt terminate");
-                        if (error)
-                            debug("terminate reason: ", error);
-                        exports.activeModems.delete(accessPoint);
-                        return [2 /*return*/];
-                    });
-                }); });
-                return [2 /*return*/];
-        }
-    });
-}); });
-gsm_modem_connection_1.Monitor.evtModemConnect.attach(onModemConnect);
-gsm_modem_connection_1.Monitor.evtModemDisconnect.attach(function (accessPoint) { return debug("DISCONNECT: " + accessPoint.toString()); });
-(function periodicalChecks() {
-    return __awaiter(this, void 0, void 0, function () {
-        var _a, _b, accessPoint, e_1, _c;
-        return __generator(this, function (_d) {
-            switch (_d.label) {
-                case 0:
-                    if (!true) return [3 /*break*/, 2];
-                    return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 5000); })];
-                case 1:
-                    _d.sent();
-                    try {
-                        for (_a = __values(gsm_modem_connection_1.Monitor.connectedModems), _b = _a.next(); !_b.done; _b = _a.next()) {
-                            accessPoint = _b.value;
-                            if (accessPointOfModemWithoutSim.has(accessPoint))
-                                continue;
-                            onModemConnect(accessPoint);
-                        }
-                    }
-                    catch (e_1_1) { e_1 = { error: e_1_1 }; }
-                    finally {
-                        try {
-                            if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
-                        }
-                        finally { if (e_1) throw e_1.error; }
-                    }
-                    return [3 /*break*/, 0];
-                case 2: return [2 /*return*/];
-            }
-        });
-    });
-})();

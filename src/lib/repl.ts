@@ -1,46 +1,53 @@
 import * as repl from "repl";
-import { activeModems, lockedModems } from "./main";
+import { Modem, ConnectionMonitor } from "ts-gsm-modem";
+
+import { Modems } from "./defs";
 import "colors";
 
-import { Monitor } from "gsm-modem-connection";
-import { Modem } from "ts-gsm-modem";
+export function start(modems: Modems) {
 
-const { context } = repl.start({
-    "terminal": true,
-    "prompt": "> "
-}) as any;
+    const { context } = repl.start({
+        "terminal": true,
+        "prompt": "> "
+    }) as any;
 
-Object.defineProperty(context, "exit", {
-    "get": () => process.exit(0)
-});
+    Object.defineProperty(context, "exit", {
+        "get": () => process.exit(0)
+    });
 
-Object.defineProperty(context, "accessPoints", {
-    "get": () => Monitor.connectedModems
-});
+    Object.defineProperty(context, "accessPoints", {
+        "get": () => ConnectionMonitor.getInstance().connectedModems
+    });
 
-Object.defineProperty(context, "modem", {
-    "get": () => activeModems.valuesAsArray()[0]
-});
+    Object.defineProperty(context, "modem", {
+        "get": () => modems.valuesAsArray()[0]
+    });
 
-Object.assign(context, { activeModems, lockedModems });
+    Object.defineProperty(context, "modems", {
+        "get": () => modems.valuesAsArray()
+    });
 
-context.run = async function (command: string) {
+    context.run = async function (command: string) {
 
-    let modem = context.modem;
+        let modem = context.modem;
 
-    if (!modem) {
-        console.log("No active modem to run command on");
-        return;
-    }
+        if (!modem) {
+            console.log("No active modem to run command on");
+            return;
+        }
 
-    let [resp, final] = await (modem.atStack.runCommand as typeof Modem.prototype.runCommand)(
-        command + "\r",
-        { "recoverable": true, "retryOnErrors": false }
-    );
+        let [resp, final] = await (modem.atStack.runCommand as typeof Modem.prototype.runCommand)(
+            command + "\r",
+            { "recoverable": true, "retryOnErrors": false }
+        );
 
-    if (resp) console.log(JSON.stringify(resp, null, 2));
+        if (resp) console.log(JSON.stringify(resp, null, 2));
 
-    if (final.isError) console.log(JSON.stringify(final, null, 2).red);
-    else console.log(final.raw.green);
+        if (final.isError) console.log(JSON.stringify(final, null, 2).red);
+        else console.log(final.raw.green);
 
-};
+    };
+
+
+}
+

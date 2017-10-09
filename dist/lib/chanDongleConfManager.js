@@ -39,9 +39,8 @@ var fs_1 = require("fs");
 var ini_extended_1 = require("ini-extended");
 var runExclusive = require("run-exclusive");
 var path = require("path");
-var ts_ami_1 = require("ts-ami");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
-var defaultConfig = chan_dongle_extended_client_1.typesDef.defaultConfig;
+var defaultConfig = chan_dongle_extended_client_1._private.defaultConfig;
 var astConfPath = path.join("/etc", "asterisk");
 var dongleConfPath = path.join(astConfPath, "dongle.conf");
 var _debug = require("debug");
@@ -78,14 +77,6 @@ var chanDongleConfManager;
                     case 0:
                         if (!config)
                             config = loadConfig();
-                        /*
-                        config[dongleName] = {
-                            "audio": audio,
-                            "data": data,
-                            "rxgain": "20",
-                            "txgain": "-20"
-                        };
-                        */
                         config[dongleName] = { audio: audio, data: data };
                         return [4 /*yield*/, update()];
                     case 1:
@@ -131,7 +122,7 @@ function reloadChanDongle() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, ts_ami_1.Ami.localhost({ "user": chan_dongle_extended_client_1.amiUser }).postAction("DongleReload", { "when": "gracefully" })];
+                case 0: return [4 /*yield*/, chan_dongle_extended_client_1.Ami.getInstance().postAction("DongleReload", { "when": "gracefully" })];
                 case 1:
                     _a.sent();
                     debug("update chan_dongle config");

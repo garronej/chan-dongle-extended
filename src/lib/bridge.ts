@@ -1,33 +1,41 @@
 /*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
 /*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
 
-import {
-    SerialPortExt,
-    AtMessage
-} from "ts-gsm-modem";
+import { SerialPortExt, AtMessage } from "ts-gsm-modem";
 
 import { chanDongleConfManager } from "./chanDongleConfManager";
 import { Tty0tty } from "./Tty0tty";
-import {
-    lockedModems,
-    activeModems,
-    getDongleName
-} from "./main";
+import { AccessPoint } from "gsm-modem-connection";
+import { Modem } from "ts-gsm-modem";
 
 import * as _debug from "debug";
-let debug = _debug("_main.bridge");
+let debug = _debug("_bridge");
+
+debug.enabled= false;
+
+import { Modems, matchLockedModem } from "./defs";
+
+
+export function start(modems: Modems){
+
+    modems.evtCreate.attach(([modem, accessPoint])=> {
+
+        if( matchLockedModem(modem) ) return;
+
+        bridge(accessPoint, modem);
+
+    });
+
+} 
 
 const ok = "\r\nOK\r\n";
 
-activeModems.evtSet.attach(
-    async ([modem, accessPoint]) => {
-
-        let dongleName = getDongleName(accessPoint);
+export async function bridge( accessPoint: AccessPoint, modem: Modem ){
 
         let voidModem = Tty0tty.getPair();
 
         chanDongleConfManager.addDongle({
-            dongleName,
+            "dongleName": accessPoint.friendlyId,
             "data": voidModem.rightEnd,
             "audio": accessPoint.audioIfPath
         });
@@ -45,7 +53,7 @@ activeModems.evtSet.attach(
 
                 debug("Modem terminate => closing bridge");
 
-                await chanDongleConfManager.removeDongle(dongleName);
+                await chanDongleConfManager.removeDongle(accessPoint.friendlyId);
 
                 debug("Dongle removed from chan dongle config");
 
@@ -65,7 +73,7 @@ activeModems.evtSet.attach(
 
         portVirtual.evtError.attach(serialPortError => {
             debug("uncaught error serialPortVirtual", serialPortError);
-            modem.terminate(new Error("Bridge serialport error"));
+            modem.terminate();
         });
 
         const serviceProviderShort = (modem.serviceProviderName || "Unknown SP").substring(0, 15);
@@ -142,5 +150,4 @@ activeModems.evtSet.attach(
 
         });
 
-    }
-);
+};

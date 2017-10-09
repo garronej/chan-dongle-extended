@@ -66,6 +66,7 @@ var ini_extended_1 = require("ini-extended");
 var chanDongleConfManager_1 = require("../lib/chanDongleConfManager");
 require("colors");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
+var amiUser = chan_dongle_extended_client_1._private.amiUser;
 program
     .command("postinstall")
     .description([
@@ -256,7 +257,7 @@ function enableManager() {
                     }
                     return [4 /*yield*/, writeFileAssertSuccess(managerConfPath, ini_extended_1.ini.stringify((function () {
                             var out = { general: general };
-                            out[chan_dongle_extended_client_1.amiUser] = user;
+                            out[amiUser] = user;
                             return out;
                         })()))];
                 case 1:

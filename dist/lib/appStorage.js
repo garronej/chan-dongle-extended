@@ -54,13 +54,25 @@ var __values = (this && this.__values) || function (o) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
+var runExclusive = require("run-exclusive");
+var superJson = require("super-json");
 var storage = require("node-persist");
 var path = require("path");
-var runExclusive = require("run-exclusive");
-exports.JSON_parse_WithDate = function (str) { return JSON.parse(str, function (_, value) {
-    return (typeof value === "string" &&
-        value.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/)) ? new Date(value) : value;
-}); };
+var JSON;
+(function (JSON) {
+    var myJson = superJson.create({
+        "magic": '#!',
+        "serializers": [superJson.dateSerializer,]
+    });
+    function stringify(obj) {
+        return myJson.stringify(obj);
+    }
+    JSON.stringify = stringify;
+    function parse(str) {
+        return myJson.parse(str);
+    }
+    JSON.parse = parse;
+})(JSON || (JSON = {}));
 var defaultStorageData = {
     "pins": {},
     "messages": {}
@@ -75,7 +87,8 @@ var queue = runExclusive.buildCb(function (provider, callback) { return __awaite
                 if (!!init) return [3 /*break*/, 2];
                 return [4 /*yield*/, storage.init({
                         "dir": path.join(__dirname, "..", "..", ".node-persist", "storage"),
-                        "parse": exports.JSON_parse_WithDate
+                        "parse": JSON.parse,
+                        "stringify": JSON.stringify
                     })];
             case 1:
                 _a.sent();

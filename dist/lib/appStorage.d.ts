@@ -1,5 +1,4 @@
 import { Message } from "ts-gsm-modem";
-export declare const JSON_parse_WithDate: (str: string) => any;
 export declare type AppData = {
     pins: {
         [iccidOrImei: string]: string;

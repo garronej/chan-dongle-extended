@@ -2,38 +2,35 @@
 require("rejection-tracker").main(__dirname, "..", "..");
 
 import * as program from "commander";
-import { DongleExtendedClient } from "../chan-dongle-extended-client";
+import { DongleController as Dc, Ami } from "../chan-dongle-extended-client";
+
 import * as storage from "node-persist";
 import * as path from "path";
-import { Base64 } from "js-base64";
 import "colors";
 
 const persistDir = path.join(__dirname, "..", "..", ".node-persist", "storage");
 
+
 program
     .command("list")
-    .description("List active dongle")
+    .description("List dongles")
     .action(async options => {
 
-        let dongles = await DongleExtendedClient.localhost().getActiveDongles();
+        let dc= await getDcInstance();
 
-        console.log(JSON.stringify(dongles, null, 2));
+        try {
 
-        process.exit(0);
+            console.log(JSON.stringify(dc.dongles.valuesAsArray(), null, 2));
 
-    });
+            process.exit(0);
 
-program
-    .command("list-locked")
-    .description("List PIN/PUK locked dongles")
-    .action(async options => {
+        } catch (error) {
 
-        let dongles = await DongleExtendedClient.localhost().getLockedDongles();
+            console.log(error.message.red);
 
-        console.log(JSON.stringify(dongles, null, 2));
+            process.exit(1);
 
-        process.exit(0);
-
+        }
 
     });
 
@@ -50,17 +47,9 @@ program
             process.exit(-1);
         }
 
-        let client = DongleExtendedClient.localhost();
+        let dc= await getDcInstance();
 
-        let arrImei: string[] = [];
-
-        for (let { imei } of await client.getActiveDongles())
-            arrImei.push(imei);
-
-        for (let { imei } of await client.getLockedDongles())
-            arrImei.push(imei);
-
-        if (arrImei.indexOf(imei) < 0) {
+        if (!dc.dongles.has(imei)) {
             console.log("Error: no such dongle connected".red);
             process.exit(-1);
         }
@@ -92,29 +81,41 @@ program
             process.exit(-1);
         }
 
-        let client = DongleExtendedClient.localhost();
+        let dc= await getDcInstance();
 
-        if (options.pin)
-            await client.unlockDongle(imei, options.pin);
-        else {
+        let unlockResult;
 
-            let match = (options.puk as string).match(/^([0-9]{8})-([0-9]{4})$/);
+        try {
 
-            if (!match) {
-                console.log("Error: puk-newPin malformed".red);
-                console.log(options.optionHelp());
-                return process.exit(-1);
+            if (options.pin)
+                unlockResult = await dc.unlock(imei, options.pin);
+            else {
+
+                let match = (options.puk as string).match(/^([0-9]{8})-([0-9]{4})$/);
+
+                if (!match) {
+                    console.log("Error: puk-newPin malformed".red);
+                    console.log(options.optionHelp());
+                    process.exit(-1);
+                    return;
+                }
+
+                let puk = match[1];
+                let newPin = match[2];
+
+                unlockResult = await dc.unlock(imei, puk, newPin);
+
             }
 
-            let puk = match[1];
-            let newPin = match[2];
+        } catch (error) {
 
-            await client.unlockDongle(imei, puk, newPin);
+            console.log(error.message.red);
+            process.exit(1);
+            return;
 
         }
 
-
-        console.log("done");
+        console.log(JSON.stringify(unlockResult, null, 2));
 
         process.exit(0);
 
@@ -140,117 +141,29 @@ program
 
         let imei = await getImei(options);
 
-        text = textBase64 ? Base64.decode(textBase64) : JSON.parse(`"${text}"`);
+        let dc= await getDcInstance();
 
-        let messageId = await DongleExtendedClient
-            .localhost()
-            .sendMessage(imei, number, text);
+        text = textBase64 ? Ami.b64.dec(textBase64) : JSON.parse(`"${text}"`);
 
-        console.log(messageId);
+        try {
 
-        process.exit(0);
+            let sendMessageResult = await dc.sendMessage(imei, number, text);
 
-    });
+            console.log(JSON.stringify(sendMessageResult, null, 2));
 
+            if (sendMessageResult.success) {
+                process.exit(0);
+            } else {
+                process.exit(1);
+            }
 
-program
-    .command("phonebook")
-    .description("Get SIM card phonebook")
-    .option("-i, --imei [imei]", "IMEI of the dongle")
-    .action(async options => {
+        } catch (error) {
 
-        let imei = await getImei(options);
-
-        let phonebook = await DongleExtendedClient
-            .localhost()
-            .getSimPhonebook(imei);
-
-        console.log(JSON.stringify(phonebook, null, 2));
-
-        process.exit(0);
-
-    });
-
-program
-    .command("new-contact")
-    .description("Store new contact in phonebook memory")
-    .option("-i, --imei [imei]", "IMEI of the dongle")
-    .option("--name [name]", "Contact's name")
-    .option("--number [number]", "Contact's number")
-    .action(async options => {
-
-        let { name, number } = options;
-
-        if (!name || !number) {
-            console.log("Error: command malformed".red);
-            console.log(options.optionHelp());
-            process.exit(-1);
+            console.log(error.message.red);
+            process.exit(1);
+            return;
         }
 
-        let imei = await getImei(options);
-
-        let contact = await DongleExtendedClient
-            .localhost()
-            .createContact(imei, name, number);
-
-        console.log(JSON.stringify(contact, null, 2));
-
-        process.exit(0);
-
-    });
-
-program
-    .command("update-number")
-    .description("Re write subscriber phone number on SIM card")
-    .option("-i, --imei [imei]", "IMEI of the dongle")
-    .option("--number [number]", "SIM card phone number")
-    .action(async options => {
-
-        let { number } = options;
-
-        if (!number) {
-            console.log("Error: command malformed".red);
-            console.log(options.optionHelp());
-            process.exit(-1);
-        }
-
-        let imei = await getImei(options);
-
-        await DongleExtendedClient
-            .localhost()
-            .updateNumber(imei, number);
-
-        console.log("done");
-
-        process.exit(0);
-
-    });
-
-
-program
-    .command("delete-contact")
-    .description("Delete a contact from phonebook memory")
-    .option("-i, --imei [imei]", "IMEI of the dongle")
-    .option("--index [index]", "Contact's index")
-    .action(async options => {
-
-        let { index } = options;
-
-        if (!index) {
-            console.log("Error: command malformed".red);
-            console.log(options.optionHelp());
-            process.exit(-1);
-        }
-
-        let imei = await getImei(options);
-
-        await DongleExtendedClient
-            .localhost()
-            .deleteContact(imei, parseInt(index));
-
-        console.log(`Contact index: ${index} successfully deleted`);
-
-        process.exit(0);
 
     });
 
@@ -265,13 +178,41 @@ program
 
         let imei = await getImei(options);
 
-        let messages = await DongleExtendedClient
-            .localhost()
-            .getMessages(imei, flush);
+        let dc= await getDcInstance();
 
-        console.log(JSON.stringify(messages, null, 2));
+        let dongle = dc.activeDongles.get(imei);
 
-        process.exit(0);
+        if (!dongle) {
+            console.log("Dongle not currently available");
+            process.exit(1);
+            return;
+        }
+
+        let imsi = dongle.sim.imsi;
+
+        try {
+
+            let messages = (await dc.getMessages({ imsi, flush }))[imsi];
+
+            if (messages === undefined) {
+
+                console.log("No message");
+
+            } else {
+
+                console.log(JSON.stringify(messages, null, 2));
+
+            }
+
+            process.exit(0);
+
+        } catch (error) {
+
+            console.log(error.message.red);
+            process.exit(0);
+            return;
+
+        }
 
 
     });
@@ -294,3 +235,128 @@ async function getImei(options: { imei: string | undefined }): Promise<string> {
     return imei;
 
 }
+
+async function getDcInstance(): Promise<Dc>{
+
+        let dc = Dc.getInstance();
+
+        try{
+
+            await dc.initialization;
+
+        }catch {
+
+            console.log("dongle-extended not is running".red);
+            process.exit(1);
+
+        }
+
+        return dc;
+
+}
+
+
+/*
+program
+.command("phonebook")
+.description("Get SIM card phonebook")
+.option("-i, --imei [imei]", "IMEI of the dongle")
+.action(async options => {
+
+    let imei = await getImei(options);
+
+    let phonebook = await DongleExtendedClient
+        .localhost()
+        .getSimPhonebook(imei);
+
+    console.log(JSON.stringify(phonebook, null, 2));
+
+    process.exit(0);
+
+});
+
+program
+.command("new-contact")
+.description("Store new contact in phonebook memory")
+.option("-i, --imei [imei]", "IMEI of the dongle")
+.option("--name [name]", "Contact's name")
+.option("--number [number]", "Contact's number")
+.action(async options => {
+
+    let { name, number } = options;
+
+    if (!name || !number) {
+        console.log("Error: command malformed".red);
+        console.log(options.optionHelp());
+        process.exit(-1);
+    }
+
+    let imei = await getImei(options);
+
+    let contact = await DongleExtendedClient
+        .localhost()
+        .createContact(imei, name, number);
+
+    console.log(JSON.stringify(contact, null, 2));
+
+    process.exit(0);
+
+});
+
+program
+.command("update-number")
+.description("Re write subscriber phone number on SIM card")
+.option("-i, --imei [imei]", "IMEI of the dongle")
+.option("--number [number]", "SIM card phone number")
+.action(async options => {
+
+    let { number } = options;
+
+    if (!number) {
+        console.log("Error: command malformed".red);
+        console.log(options.optionHelp());
+        process.exit(-1);
+    }
+
+    let imei = await getImei(options);
+
+    await DongleExtendedClient
+        .localhost()
+        .updateNumber(imei, number);
+
+    console.log("done");
+
+    process.exit(0);
+
+});
+
+
+program
+.command("delete-contact")
+.description("Delete a contact from phonebook memory")
+.option("-i, --imei [imei]", "IMEI of the dongle")
+.option("--index [index]", "Contact's index")
+.action(async options => {
+
+    let { index } = options;
+
+    if (!index) {
+        console.log("Error: command malformed".red);
+        console.log(options.optionHelp());
+        process.exit(-1);
+    }
+
+    let imei = await getImei(options);
+
+    await DongleExtendedClient
+        .localhost()
+        .deleteContact(imei, parseInt(index));
+
+    console.log(`Contact index: ${index} successfully deleted`);
+
+    process.exit(0);
+
+});
+
+*/
+

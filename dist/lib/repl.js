@@ -52,45 +52,49 @@ var __read = (this && this.__read) || function (o, n) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var repl = require("repl");
-var main_1 = require("./main");
+var ts_gsm_modem_1 = require("ts-gsm-modem");
 require("colors");
-var gsm_modem_connection_1 = require("gsm-modem-connection");
-var context = repl.start({
-    "terminal": true,
-    "prompt": "> "
-}).context;
-Object.defineProperty(context, "exit", {
-    "get": function () { return process.exit(0); }
-});
-Object.defineProperty(context, "accessPoints", {
-    "get": function () { return gsm_modem_connection_1.Monitor.connectedModems; }
-});
-Object.defineProperty(context, "modem", {
-    "get": function () { return main_1.activeModems.valuesAsArray()[0]; }
-});
-Object.assign(context, { activeModems: main_1.activeModems, lockedModems: main_1.lockedModems });
-context.run = function (command) {
-    return __awaiter(this, void 0, void 0, function () {
-        var modem, _a, resp, final;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    modem = context.modem;
-                    if (!modem) {
-                        console.log("No active modem to run command on");
-                        return [2 /*return*/];
-                    }
-                    return [4 /*yield*/, modem.atStack.runCommand(command + "\r", { "recoverable": true, "retryOnErrors": false })];
-                case 1:
-                    _a = __read.apply(void 0, [_b.sent(), 2]), resp = _a[0], final = _a[1];
-                    if (resp)
-                        console.log(JSON.stringify(resp, null, 2));
-                    if (final.isError)
-                        console.log(JSON.stringify(final, null, 2).red);
-                    else
-                        console.log(final.raw.green);
-                    return [2 /*return*/];
-            }
-        });
+function start(modems) {
+    var context = repl.start({
+        "terminal": true,
+        "prompt": "> "
+    }).context;
+    Object.defineProperty(context, "exit", {
+        "get": function () { return process.exit(0); }
     });
-};
+    Object.defineProperty(context, "accessPoints", {
+        "get": function () { return ts_gsm_modem_1.ConnectionMonitor.getInstance().connectedModems; }
+    });
+    Object.defineProperty(context, "modem", {
+        "get": function () { return modems.valuesAsArray()[0]; }
+    });
+    Object.defineProperty(context, "modems", {
+        "get": function () { return modems.valuesAsArray(); }
+    });
+    context.run = function (command) {
+        return __awaiter(this, void 0, void 0, function () {
+            var modem, _a, resp, final;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        modem = context.modem;
+                        if (!modem) {
+                            console.log("No active modem to run command on");
+                            return [2 /*return*/];
+                        }
+                        return [4 /*yield*/, modem.atStack.runCommand(command + "\r", { "recoverable": true, "retryOnErrors": false })];
+                    case 1:
+                        _a = __read.apply(void 0, [_b.sent(), 2]), resp = _a[0], final = _a[1];
+                        if (resp)
+                            console.log(JSON.stringify(resp, null, 2));
+                        if (final.isError)
+                            console.log(JSON.stringify(final, null, 2).red);
+                        else
+                            console.log(final.raw.green);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    };
+}
+exports.start = start;

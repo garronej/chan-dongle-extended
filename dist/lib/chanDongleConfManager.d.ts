@@ -1,12 +1,18 @@
-import { typesDef } from "../chan-dongle-extended-client";
-import ModuleConfiguration = typesDef.ModuleConfiguration;
+import { DongleController as Dc } from "../chan-dongle-extended-client";
+import ModuleConfiguration = Dc.ModuleConfiguration;
+export interface DynamicModuleConfiguration extends ModuleConfiguration {
+    [dongleName: string]: {
+        audio: string;
+        data: string;
+    } | any;
+}
 export interface DongleConf {
     dongleName: string;
     data: string;
     audio: string;
 }
 export declare namespace chanDongleConfManager {
-    function getConfig(): ModuleConfiguration;
+    function getConfig(): DynamicModuleConfiguration;
     const reset: () => Promise<void>;
     const addDongle: ({dongleName, data, audio}: DongleConf) => Promise<void>;
     const removeDongle: (dongleName: string) => Promise<void>;

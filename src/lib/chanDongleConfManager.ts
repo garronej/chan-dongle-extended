@@ -3,13 +3,16 @@ import { ini } from "ini-extended";
 import * as runExclusive from "run-exclusive";
 import * as path from "path";
 
-import { Ami } from "ts-ami";
+import { _private, DongleController as Dc, Ami } from "../chan-dongle-extended-client";
+import defaultConfig= _private.defaultConfig;
+import ModuleConfiguration= Dc.ModuleConfiguration;
 
-import { amiUser, typesDef } from "../chan-dongle-extended-client";
-
-import defaultConfig= typesDef.defaultConfig;
-import ModuleConfiguration= typesDef.ModuleConfiguration;
-
+export interface DynamicModuleConfiguration extends ModuleConfiguration {
+    [dongleName: string]: {
+        audio: string;
+        data: string;
+    } | any;
+}
 
 const astConfPath = path.join("/etc", "asterisk");
 const dongleConfPath = path.join(astConfPath, "dongle.conf");
@@ -25,13 +28,13 @@ export interface DongleConf {
 }
 
 
-let config: ModuleConfiguration | undefined = undefined;
+let config: DynamicModuleConfiguration | undefined = undefined;
 
 export namespace chanDongleConfManager {
 
     const groupRef = runExclusive.createGroupRef();
 
-    export function getConfig(): ModuleConfiguration {
+    export function getConfig(): DynamicModuleConfiguration {
 
         if (!config) config = loadConfig();
 
@@ -54,15 +57,6 @@ export namespace chanDongleConfManager {
         async ({ dongleName, data, audio }: DongleConf) => {
 
             if (!config) config = loadConfig();
-
-            /*
-            config[dongleName] = {
-                "audio": audio,
-                "data": data,
-                "rxgain": "20",
-                "txgain": "-20"
-            };
-            */
 
             config[dongleName] = { audio, data };
 
@@ -111,7 +105,7 @@ function update(): Promise<void> {
 
 export async function reloadChanDongle() {
 
-    await Ami.localhost({ "user": amiUser }).postAction(
+    await Ami.getInstance().postAction(
         "DongleReload",
         { "when": "gracefully" }
     );
@@ -122,7 +116,7 @@ export async function reloadChanDongle() {
 
 
 
-function loadConfig(): ModuleConfiguration {
+function loadConfig(): DynamicModuleConfiguration {
 
     try {
 

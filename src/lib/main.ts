@@ -1,171 +1,204 @@
 require("rejection-tracker").main(__dirname, "..", "..");
 
- //"postinstall": "if [ $(id -u) -eq 0  ]; then (node ./dist/bin/scripts postinstall); else (sudo node ./dist/bin/scripts postinstall); fi",
- // lrwxrwxrwx 1 root pi 36 Apr 15 09:46 /usr/local/lib/node_modules/chan-dongle-extended -> /home/pi/github/chan-dongle-extended
+//"postinstall": "if [ $(id -u) -eq 0  ]; then (node ./dist/bin/scripts postinstall); else (sudo node ./dist/bin/scripts postinstall); fi",
+// lrwxrwxrwx 1 root pi 36 Apr 15 09:46 /usr/local/lib/node_modules/chan-dongle-extended -> /home/pi/github/chan-dongle-extended
 
-import * as md5 from "md5";
 import {
     Modem,
-    UnlockCodeProviderCallback,
-    AtMessage
+    InitializationError,
+    UnlockResult,
+    AccessPoint,
+    ConnectionMonitor,
+    AtMessage,
+    PerformUnlock
 } from "ts-gsm-modem";
-import { Monitor, AccessPoint } from "gsm-modem-connection";
-import { VoidSyncEvent } from "ts-events-extended";
 import { TrackableMap } from "trackable-map";
-import * as runExclusive from "run-exclusive";
 import * as appStorage from "./appStorage";
+import { LockedModem, Modems } from "./defs";
+import { Ami, _private} from "../chan-dongle-extended-client";
+import amiUser = _private.amiUser;
+
+import * as repl from "./repl";
+import * as dialplan from "./dialplan";
+import * as api from "./api";
+import * as bridge from "./bridge";
 
 import * as _debug from "debug";
 let debug = _debug("_main");
 
+const modems: Modems = new TrackableMap();
 
-export function getDongleName(accessPoint: AccessPoint) {
+const ami = Ami.getInstance(amiUser);
 
-    let { audioIfPath }= accessPoint;
+bridge.start(modems);
+dialplan.start(modems, ami);
+api.start(modems, ami);
 
-    let match = audioIfPath.match(/^\/dev\/ttyUSB([0-9]+)$/);
+if (process.env["NODE_ENV"] !== "production") {
 
-    return `Dongle${match ? match[1] : md5(audioIfPath).substring(0, 6)}`;
+    repl.start(modems);
 
 }
 
-export async function storeSimPin(modem: Modem){
+debug("Started");
 
-        if (modem.pin) {
+const monitor = ConnectionMonitor.getInstance();
 
-            debug(`Persistent storing of pin: ${modem.pin}`);
+monitor.evtModemConnect.attach(accessPoint => {
 
-            if (modem.iccidAvailableBeforeUnlock)
-                debug(`for SIM ICCID: ${modem.iccid}`);
-            else
-                debug([
-                    `for dongle IMEI: ${modem.imei}, because SIM ICCID `,
-                    `is not readable with this dongle when SIM is locked`
-                ].join(""));
+    debug(`CONNECT: ${accessPoint.toString()}`);
 
-            let appData = await appStorage.read();
+    createModem(accessPoint);
 
-            appData.pins[modem.iccidAvailableBeforeUnlock ? modem.iccid : modem.imei] = modem.pin;
+});
+
+function scheduleRetry(accessPoint: AccessPoint) {
+
+    if (!monitor.connectedModems.has(accessPoint)) return;
+
+    monitor.evtModemDisconnect.waitFor(ap => ap === accessPoint, 2000)
+        .catch(() => createModem(accessPoint));
+
+}
+
+async function unlock(
+    accessPoint: AccessPoint,
+    imei: string,
+    iccid: string | undefined,
+    pinState: AtMessage.LockedPinState,
+    tryLeft: number,
+    performUnlock: PerformUnlock
+) {
+
+    let appData = await appStorage.read()
+
+    let pin = appData.pins[iccid || imei];
+
+    if (pin) {
+
+        if (pinState === "SIM PIN" && tryLeft === 3) {
+
+            appData.release();
+
+            let unlockResult = await performUnlock(pin);
+
+            if (unlockResult.success) return;
+
+            pinState = unlockResult.pinState;
+            tryLeft = unlockResult.tryLeft;
+
+        } else {
+
+            delete appData[iccid || imei];
 
             appData.release();
 
         }
 
-}
+    }
 
+    let lockedModem: LockedModem = {
+        imei, iccid, pinState, tryLeft,
+        "performUnlock": async (...inputs) => {
+            //NOTE: Perform result throw error if modem disconnect during unlock
 
-export interface LockedModem {
-    imei: string;
-    iccid: string;
-    pinState: AtMessage.LockedPinState;
-    tryLeft: number;
-    callback: UnlockCodeProviderCallback;
-    evtDisconnect: VoidSyncEvent;
-}
+            modems.delete(accessPoint);
 
-export const lockedModems = new TrackableMap<AccessPoint, LockedModem>();
+            let pin: string;
+            let puk: string | undefined;
+            let unlockResult: UnlockResult;
 
-export const activeModems = new TrackableMap<AccessPoint, Modem>();
+            if (!inputs[1]) {
 
-if (process.env["NODE_ENV"] !== "production") require("./repl");
-import "./evtLogger";
+                pin = inputs[0];
+                puk = undefined;
 
-import "./main.ami";
-import "./main.bridge";
+                unlockResult = await performUnlock(pin);
 
-debug("Daemon started!");
+            } else {
 
-const accessPointOfModemWithoutSim= new Set<AccessPoint>();
+                pin = inputs[1];
+                puk = inputs[0];
 
-const onModemConnect = runExclusive.build(
-    async (accessPoint: AccessPoint) => {
-
-        if (
-            Monitor.connectedModems.indexOf(accessPoint) < 0 ||
-            activeModems.has(accessPoint) ||
-            lockedModems.has(accessPoint)
-        ) return;
-
-        debug(`CONNECT: ${accessPoint.toString()}`);
-
-        let evtDisconnect = new VoidSyncEvent();
-
-        let [error, modem, hasSim] = await Modem.create({
-            "path": accessPoint.dataIfPath,
-            "unlockCodeProvider": (imei, iccid, pinState, tryLeft, callback) => {
-
-                Monitor.evtModemDisconnect.attachOnce(
-                    ({ id }) => id === accessPoint.id,
-                    () => evtDisconnect.post()
-                );
-
-                lockedModems.set(accessPoint, {
-                    imei,
-                    iccid,
-                    pinState,
-                    tryLeft,
-                    callback,
-                    evtDisconnect
-                });
+                unlockResult = await performUnlock(puk!, pin);
 
             }
+
+            let appData = await appStorage.read();
+
+            if (unlockResult.success) {
+
+                debug(`Persistent storing of pin: ${pin}`);
+
+                appData.pins[iccid || imei] = pin;
+
+            } else {
+
+                delete appData[iccid || imei];
+
+                lockedModem.pinState = unlockResult.pinState;
+                lockedModem.tryLeft = unlockResult.tryLeft;
+
+                modems.set(accessPoint, lockedModem);
+
+            }
+
+            appData.release();
+
+            return unlockResult;
+
+        }
+    };
+
+    modems.set(accessPoint, lockedModem);
+
+}
+
+async function createModem(accessPoint: AccessPoint) {
+
+    debug("Create Modem");
+
+    let modem: Modem;
+
+    try {
+
+        modem = await Modem.create({
+            "enableTrace": true,
+            "dataIfPath": accessPoint.dataIfPath,
+            "unlock": (imei, iccid, pinState, tryLeft, performUnlock) =>
+                unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock)
         });
 
-        if (error) {
+    } catch (error) {
 
-            debug("Initialization error, checking if unlock was successful...".red, error);
+        modems.delete(accessPoint);
 
-            storeSimPin(modem);
+        let initializationError: InitializationError = error;
 
-            evtDisconnect.post();
-            return;
+        debug(`Initialization error: ${initializationError.message}`);
+
+        let { modemInfos } = initializationError;
+
+        if (modemInfos.hasSim) {
+            scheduleRetry(accessPoint);
         }
 
-        if (!hasSim){
-
-            debug("No sim!".red);
-
-            accessPointOfModemWithoutSim.add(accessPoint);
-
-            modem.terminate();
-
-            return;
-
-        }
-
-        activeModems.set(accessPoint, modem);
-
-        modem.evtTerminate.attachOnce(async error => {
-
-            debug("Modem evt terminate");
-
-            if (error) debug("terminate reason: ", error);
-
-            activeModems.delete(accessPoint);
-
-        });
-    }
-);
-
-
-Monitor.evtModemConnect.attach(onModemConnect);
-
-Monitor.evtModemDisconnect.attach(accessPoint => debug(`DISCONNECT: ${accessPoint.toString()}`));
-
-(async function periodicalChecks() {
-
-    while (true) {
-
-        await new Promise(resolve => setTimeout(resolve, 5000));
-
-        for (let accessPoint of Monitor.connectedModems){
-
-            if( accessPointOfModemWithoutSim.has(accessPoint) ) continue;
-
-            onModemConnect(accessPoint);
-
-        }
+        return;
 
     }
 
-})();
+    modem.evtTerminate.attachOnce(
+        error => {
+
+            modems.delete(accessPoint);
+
+            debug(`Terminate... ${error?error.message:"No internal error"}`);
+
+            scheduleRetry(accessPoint);
+
+        }
+    );
+
+    modems.set(accessPoint, modem);
+
+}

@@ -35,16 +35,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __values = (this && this.__values) || function (o) {
-    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
-    if (m) return m.call(o);
-    return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-};
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 require("rejection-tracker").main(__dirname, "..", "..");
@@ -52,37 +42,26 @@ var program = require("commander");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
 var storage = require("node-persist");
 var path = require("path");
-var js_base64_1 = require("js-base64");
 require("colors");
 var persistDir = path.join(__dirname, "..", "..", ".node-persist", "storage");
 program
     .command("list")
-    .description("List active dongle")
+    .description("List dongles")
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var dongles;
+    var dc;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient.localhost().getActiveDongles()];
+            case 0: return [4 /*yield*/, getDcInstance()];
             case 1:
-                dongles = _a.sent();
-                console.log(JSON.stringify(dongles, null, 2));
-                process.exit(0);
-                return [2 /*return*/];
-        }
-    });
-}); });
-program
-    .command("list-locked")
-    .description("List PIN/PUK locked dongles")
-    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var dongles;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient.localhost().getLockedDongles()];
-            case 1:
-                dongles = _a.sent();
-                console.log(JSON.stringify(dongles, null, 2));
-                process.exit(0);
+                dc = _a.sent();
+                try {
+                    console.log(JSON.stringify(dc.dongles.valuesAsArray(), null, 2));
+                    process.exit(0);
+                }
+                catch (error) {
+                    console.log(error.message.red);
+                    process.exit(1);
+                }
                 return [2 /*return*/];
         }
     });
@@ -94,78 +73,27 @@ program
     " ( to avoid having to set --imei on each command)"
 ].join(""))
     .action(function (imei) { return __awaiter(_this, void 0, void 0, function () {
-    var client, arrImei, _a, _b, imei_1, e_1_1, _c, _d, imei_2, e_2_1, e_1, _e, e_2, _f;
-    return __generator(this, function (_g) {
-        switch (_g.label) {
+    var dc;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
             case 0:
                 if (!imei) {
                     console.log("Error: command malformed".red);
                     process.exit(-1);
                 }
-                client = chan_dongle_extended_client_1.DongleExtendedClient.localhost();
-                arrImei = [];
-                _g.label = 1;
+                return [4 /*yield*/, getDcInstance()];
             case 1:
-                _g.trys.push([1, 6, 7, 8]);
-                return [4 /*yield*/, client.getActiveDongles()];
-            case 2:
-                _a = __values.apply(void 0, [_g.sent()]), _b = _a.next();
-                _g.label = 3;
-            case 3:
-                if (!!_b.done) return [3 /*break*/, 5];
-                imei_1 = _b.value.imei;
-                arrImei.push(imei_1);
-                _g.label = 4;
-            case 4:
-                _b = _a.next();
-                return [3 /*break*/, 3];
-            case 5: return [3 /*break*/, 8];
-            case 6:
-                e_1_1 = _g.sent();
-                e_1 = { error: e_1_1 };
-                return [3 /*break*/, 8];
-            case 7:
-                try {
-                    if (_b && !_b.done && (_e = _a.return)) _e.call(_a);
-                }
-                finally { if (e_1) throw e_1.error; }
-                return [7 /*endfinally*/];
-            case 8:
-                _g.trys.push([8, 13, 14, 15]);
-                return [4 /*yield*/, client.getLockedDongles()];
-            case 9:
-                _c = __values.apply(void 0, [_g.sent()]), _d = _c.next();
-                _g.label = 10;
-            case 10:
-                if (!!_d.done) return [3 /*break*/, 12];
-                imei_2 = _d.value.imei;
-                arrImei.push(imei_2);
-                _g.label = 11;
-            case 11:
-                _d = _c.next();
-                return [3 /*break*/, 10];
-            case 12: return [3 /*break*/, 15];
-            case 13:
-                e_2_1 = _g.sent();
-                e_2 = { error: e_2_1 };
-                return [3 /*break*/, 15];
-            case 14:
-                try {
-                    if (_d && !_d.done && (_f = _c.return)) _f.call(_c);
-                }
-                finally { if (e_2) throw e_2.error; }
-                return [7 /*endfinally*/];
-            case 15:
-                if (arrImei.indexOf(imei) < 0) {
+                dc = _a.sent();
+                if (!dc.dongles.has(imei)) {
                     console.log("Error: no such dongle connected".red);
                     process.exit(-1);
                 }
                 return [4 /*yield*/, storage.init({ "dir": persistDir })];
-            case 16:
-                _g.sent();
+            case 2:
+                _a.sent();
                 return [4 /*yield*/, storage.setItem("cli_imei", imei)];
-            case 17:
-                _g.sent();
+            case 3:
+                _a.sent();
                 console.log("Dongle " + imei + " selected");
                 process.exit(0);
                 return [2 /*return*/];
@@ -179,7 +107,7 @@ program
     .option("-p, --pin [pin]", "SIM PIN ( 4 digits )")
     .option("--puk [puk-newPin]", "PUK ( 8 digits ) and new PIN eg. --puk 12345678-0000")
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var imei, client, match, puk, newPin;
+    var imei, dc, unlockResult, match, puk, newPin, error_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0: return [4 /*yield*/, getImei(options)];
@@ -190,27 +118,39 @@ program
                     console.log(options.optionHelp());
                     process.exit(-1);
                 }
-                client = chan_dongle_extended_client_1.DongleExtendedClient.localhost();
-                if (!options.pin) return [3 /*break*/, 3];
-                return [4 /*yield*/, client.unlockDongle(imei, options.pin)];
+                return [4 /*yield*/, getDcInstance()];
             case 2:
-                _a.sent();
-                return [3 /*break*/, 5];
+                dc = _a.sent();
+                _a.label = 3;
             case 3:
+                _a.trys.push([3, 8, , 9]);
+                if (!options.pin) return [3 /*break*/, 5];
+                return [4 /*yield*/, dc.unlock(imei, options.pin)];
+            case 4:
+                unlockResult = _a.sent();
+                return [3 /*break*/, 7];
+            case 5:
                 match = options.puk.match(/^([0-9]{8})-([0-9]{4})$/);
                 if (!match) {
                     console.log("Error: puk-newPin malformed".red);
                     console.log(options.optionHelp());
-                    return [2 /*return*/, process.exit(-1)];
+                    process.exit(-1);
+                    return [2 /*return*/];
                 }
                 puk = match[1];
                 newPin = match[2];
-                return [4 /*yield*/, client.unlockDongle(imei, puk, newPin)];
-            case 4:
-                _a.sent();
-                _a.label = 5;
-            case 5:
-                console.log("done");
+                return [4 /*yield*/, dc.unlock(imei, puk, newPin)];
+            case 6:
+                unlockResult = _a.sent();
+                _a.label = 7;
+            case 7: return [3 /*break*/, 9];
+            case 8:
+                error_1 = _a.sent();
+                console.log(error_1.message.red);
+                process.exit(1);
+                return [2 /*return*/];
+            case 9:
+                console.log(JSON.stringify(unlockResult, null, 2));
                 process.exit(0);
                 return [2 /*return*/];
         }
@@ -224,7 +164,7 @@ program
     .option("-t, --text [text]", "Text of the message")
     .option("-t64, --text-base64 [textBase64]", "Text Base64 encoded")
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var number, text, textBase64, imei, messageId;
+    var number, text, textBase64, imei, dc, sendMessageResult, error_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -237,128 +177,30 @@ program
                 return [4 /*yield*/, getImei(options)];
             case 1:
                 imei = _a.sent();
-                text = textBase64 ? js_base64_1.Base64.decode(textBase64) : JSON.parse("\"" + text + "\"");
-                return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient
-                        .localhost()
-                        .sendMessage(imei, number, text)];
+                return [4 /*yield*/, getDcInstance()];
             case 2:
-                messageId = _a.sent();
-                console.log(messageId);
-                process.exit(0);
-                return [2 /*return*/];
-        }
-    });
-}); });
-program
-    .command("phonebook")
-    .description("Get SIM card phonebook")
-    .option("-i, --imei [imei]", "IMEI of the dongle")
-    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var imei, phonebook;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0: return [4 /*yield*/, getImei(options)];
-            case 1:
-                imei = _a.sent();
-                return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient
-                        .localhost()
-                        .getSimPhonebook(imei)];
-            case 2:
-                phonebook = _a.sent();
-                console.log(JSON.stringify(phonebook, null, 2));
-                process.exit(0);
-                return [2 /*return*/];
-        }
-    });
-}); });
-program
-    .command("new-contact")
-    .description("Store new contact in phonebook memory")
-    .option("-i, --imei [imei]", "IMEI of the dongle")
-    .option("--name [name]", "Contact's name")
-    .option("--number [number]", "Contact's number")
-    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var name, number, imei, contact;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                name = options.name, number = options.number;
-                if (!name || !number) {
-                    console.log("Error: command malformed".red);
-                    console.log(options.optionHelp());
-                    process.exit(-1);
+                dc = _a.sent();
+                text = textBase64 ? chan_dongle_extended_client_1.Ami.b64.dec(textBase64) : JSON.parse("\"" + text + "\"");
+                _a.label = 3;
+            case 3:
+                _a.trys.push([3, 5, , 6]);
+                return [4 /*yield*/, dc.sendMessage(imei, number, text)];
+            case 4:
+                sendMessageResult = _a.sent();
+                console.log(JSON.stringify(sendMessageResult, null, 2));
+                if (sendMessageResult.success) {
+                    process.exit(0);
                 }
-                return [4 /*yield*/, getImei(options)];
-            case 1:
-                imei = _a.sent();
-                return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient
-                        .localhost()
-                        .createContact(imei, name, number)];
-            case 2:
-                contact = _a.sent();
-                console.log(JSON.stringify(contact, null, 2));
-                process.exit(0);
-                return [2 /*return*/];
-        }
-    });
-}); });
-program
-    .command("update-number")
-    .description("Re write subscriber phone number on SIM card")
-    .option("-i, --imei [imei]", "IMEI of the dongle")
-    .option("--number [number]", "SIM card phone number")
-    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var number, imei;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                number = options.number;
-                if (!number) {
-                    console.log("Error: command malformed".red);
-                    console.log(options.optionHelp());
-                    process.exit(-1);
+                else {
+                    process.exit(1);
                 }
-                return [4 /*yield*/, getImei(options)];
-            case 1:
-                imei = _a.sent();
-                return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient
-                        .localhost()
-                        .updateNumber(imei, number)];
-            case 2:
-                _a.sent();
-                console.log("done");
-                process.exit(0);
+                return [3 /*break*/, 6];
+            case 5:
+                error_2 = _a.sent();
+                console.log(error_2.message.red);
+                process.exit(1);
                 return [2 /*return*/];
-        }
-    });
-}); });
-program
-    .command("delete-contact")
-    .description("Delete a contact from phonebook memory")
-    .option("-i, --imei [imei]", "IMEI of the dongle")
-    .option("--index [index]", "Contact's index")
-    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var index, imei;
-    return __generator(this, function (_a) {
-        switch (_a.label) {
-            case 0:
-                index = options.index;
-                if (!index) {
-                    console.log("Error: command malformed".red);
-                    console.log(options.optionHelp());
-                    process.exit(-1);
-                }
-                return [4 /*yield*/, getImei(options)];
-            case 1:
-                imei = _a.sent();
-                return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient
-                        .localhost()
-                        .deleteContact(imei, parseInt(index))];
-            case 2:
-                _a.sent();
-                console.log("Contact index: " + index + " successfully deleted");
-                process.exit(0);
-                return [2 /*return*/];
+            case 6: return [2 /*return*/];
         }
     });
 }); });
@@ -368,7 +210,7 @@ program
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("-f, --flush", "Whether or not erasing retrieved messages")
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var flush, imei, messages;
+    var flush, imei, dc, dongle, imsi, messages, error_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -376,14 +218,36 @@ program
                 return [4 /*yield*/, getImei(options)];
             case 1:
                 imei = _a.sent();
-                return [4 /*yield*/, chan_dongle_extended_client_1.DongleExtendedClient
-                        .localhost()
-                        .getMessages(imei, flush)];
+                return [4 /*yield*/, getDcInstance()];
             case 2:
-                messages = _a.sent();
-                console.log(JSON.stringify(messages, null, 2));
+                dc = _a.sent();
+                dongle = dc.activeDongles.get(imei);
+                if (!dongle) {
+                    console.log("Dongle not currently available");
+                    process.exit(1);
+                    return [2 /*return*/];
+                }
+                imsi = dongle.sim.imsi;
+                _a.label = 3;
+            case 3:
+                _a.trys.push([3, 5, , 6]);
+                return [4 /*yield*/, dc.getMessages({ imsi: imsi, flush: flush })];
+            case 4:
+                messages = (_a.sent())[imsi];
+                if (messages === undefined) {
+                    console.log("No message");
+                }
+                else {
+                    console.log(JSON.stringify(messages, null, 2));
+                }
+                process.exit(0);
+                return [3 /*break*/, 6];
+            case 5:
+                error_3 = _a.sent();
+                console.log(error_3.message.red);
                 process.exit(0);
                 return [2 /*return*/];
+            case 6: return [2 /*return*/];
         }
     });
 }); });
@@ -411,3 +275,130 @@ function getImei(options) {
         });
     });
 }
+function getDcInstance() {
+    return __awaiter(this, void 0, void 0, function () {
+        var dc, _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    dc = chan_dongle_extended_client_1.DongleController.getInstance();
+                    _b.label = 1;
+                case 1:
+                    _b.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, dc.initialization];
+                case 2:
+                    _b.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    _a = _b.sent();
+                    console.log("dongle-extended not is running".red);
+                    process.exit(1);
+                    return [3 /*break*/, 4];
+                case 4: return [2 /*return*/, dc];
+            }
+        });
+    });
+}
+/*
+program
+.command("phonebook")
+.description("Get SIM card phonebook")
+.option("-i, --imei [imei]", "IMEI of the dongle")
+.action(async options => {
+
+    let imei = await getImei(options);
+
+    let phonebook = await DongleExtendedClient
+        .localhost()
+        .getSimPhonebook(imei);
+
+    console.log(JSON.stringify(phonebook, null, 2));
+
+    process.exit(0);
+
+});
+
+program
+.command("new-contact")
+.description("Store new contact in phonebook memory")
+.option("-i, --imei [imei]", "IMEI of the dongle")
+.option("--name [name]", "Contact's name")
+.option("--number [number]", "Contact's number")
+.action(async options => {
+
+    let { name, number } = options;
+
+    if (!name || !number) {
+        console.log("Error: command malformed".red);
+        console.log(options.optionHelp());
+        process.exit(-1);
+    }
+
+    let imei = await getImei(options);
+
+    let contact = await DongleExtendedClient
+        .localhost()
+        .createContact(imei, name, number);
+
+    console.log(JSON.stringify(contact, null, 2));
+
+    process.exit(0);
+
+});
+
+program
+.command("update-number")
+.description("Re write subscriber phone number on SIM card")
+.option("-i, --imei [imei]", "IMEI of the dongle")
+.option("--number [number]", "SIM card phone number")
+.action(async options => {
+
+    let { number } = options;
+
+    if (!number) {
+        console.log("Error: command malformed".red);
+        console.log(options.optionHelp());
+        process.exit(-1);
+    }
+
+    let imei = await getImei(options);
+
+    await DongleExtendedClient
+        .localhost()
+        .updateNumber(imei, number);
+
+    console.log("done");
+
+    process.exit(0);
+
+});
+
+
+program
+.command("delete-contact")
+.description("Delete a contact from phonebook memory")
+.option("-i, --imei [imei]", "IMEI of the dongle")
+.option("--index [index]", "Contact's index")
+.action(async options => {
+
+    let { index } = options;
+
+    if (!index) {
+        console.log("Error: command malformed".red);
+        console.log(options.optionHelp());
+        process.exit(-1);
+    }
+
+    let imei = await getImei(options);
+
+    await DongleExtendedClient
+        .localhost()
+        .deleteContact(imei, parseInt(index));
+
+    console.log(`Contact index: ${index} successfully deleted`);
+
+    process.exit(0);
+
+});
+
+*/

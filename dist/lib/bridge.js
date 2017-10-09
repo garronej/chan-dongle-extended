@@ -52,27 +52,34 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
-var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var chanDongleConfManager_1 = require("./chanDongleConfManager");
 var Tty0tty_1 = require("./Tty0tty");
-var main_1 = require("./main");
 var _debug = require("debug");
-var debug = _debug("_main.bridge");
+var debug = _debug("_bridge");
+debug.enabled = false;
+var defs_1 = require("./defs");
+function start(modems) {
+    modems.evtCreate.attach(function (_a) {
+        var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];
+        if (defs_1.matchLockedModem(modem))
+            return;
+        bridge(accessPoint, modem);
+    });
+}
+exports.start = start;
 var ok = "\r\nOK\r\n";
-main_1.activeModems.evtSet.attach(function (_a) {
-    var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];
-    return __awaiter(_this, void 0, void 0, function () {
+function bridge(accessPoint, modem) {
+    return __awaiter(this, void 0, void 0, function () {
         var _this = this;
-        var dongleName, voidModem, portVirtual, serviceProviderShort, forwardResp;
+        var voidModem, portVirtual, serviceProviderShort, forwardResp;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    dongleName = main_1.getDongleName(accessPoint);
                     voidModem = Tty0tty_1.Tty0tty.getPair();
                     chanDongleConfManager_1.chanDongleConfManager.addDongle({
-                        dongleName: dongleName,
+                        "dongleName": accessPoint.friendlyId,
                         "data": voidModem.rightEnd,
                         "audio": accessPoint.audioIfPath
                     });
@@ -85,7 +92,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                             switch (_a.label) {
                                 case 0:
                                     debug("Modem terminate => closing bridge");
-                                    return [4 /*yield*/, chanDongleConfManager_1.chanDongleConfManager.removeDongle(dongleName)];
+                                    return [4 /*yield*/, chanDongleConfManager_1.chanDongleConfManager.removeDongle(accessPoint.friendlyId)];
                                 case 1:
                                     _a.sent();
                                     debug("Dongle removed from chan dongle config");
@@ -103,7 +110,7 @@ main_1.activeModems.evtSet.attach(function (_a) {
                     }); });
                     portVirtual.evtError.attach(function (serialPortError) {
                         debug("uncaught error serialPortVirtual", serialPortError);
-                        modem.terminate(new Error("Bridge serialport error"));
+                        modem.terminate();
                     });
                     serviceProviderShort = (modem.serviceProviderName || "Unknown SP").substring(0, 15);
                     forwardResp = function (rawResp) {
@@ -158,4 +165,6 @@ main_1.activeModems.evtSet.attach(function (_a) {
             }
         });
     });
-});
+}
+exports.bridge = bridge;
+;

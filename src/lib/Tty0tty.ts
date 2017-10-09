@@ -1,11 +1,18 @@
+const numberOfPairs= 24;
+
 export class Tty0tty {
 
-    private static store= (()=>{
+    private static store = (() => {
 
-        let out: Tty0tty[]= [];
+        let out: Tty0tty[] = [];
 
-        for (let i = 0; i <= 6; i += 2)
-            out.push(new Tty0tty(`/dev/tnt${i}`, `/dev/tnt${i + 1}`));
+        let index = 0;
+
+        for (let _ of new Array(numberOfPairs)) {
+
+            out.push(new Tty0tty(`/dev/tnt${index++}`, `/dev/tnt${index++}`));
+
+        }
 
         return out;
 
@@ -18,7 +25,7 @@ export class Tty0tty {
                 pair.available = false;
                 return pair;
             }
-            
+
         throw new Error("No more void modem available");
 
     }
@@ -32,5 +39,5 @@ export class Tty0tty {
     private constructor(
         public readonly leftEnd: string,
         public readonly rightEnd: string
-    ) {}
+    ) { }
 }

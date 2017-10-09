@@ -1,16 +1,24 @@
+import * as runExclusive from "run-exclusive";
+import * as superJson from "super-json";
 import * as storage from "node-persist";
 import * as path from "path";
 import { Message } from "ts-gsm-modem";
-import * as runExclusive from "run-exclusive";
 
-export const JSON_parse_WithDate= (str: string) => JSON.parse(
-        str,
-        (_, value) =>
-            (
-                typeof value === "string" &&
-                value.match(/\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z/)
-            ) ? new Date(value) : value
-);
+namespace JSON {
+    const myJson = superJson.create({
+        "magic": '#!',
+        "serializers": [superJson.dateSerializer,]
+    });
+
+    export function stringify(obj: any): string {
+        return myJson.stringify(obj);
+    }
+
+    export function parse(str: string): any {
+        return myJson.parse(str);
+    }
+
+}
 
 export type AppData = {
     pins: {
@@ -37,7 +45,8 @@ const queue = runExclusive.buildCb(
 
             await storage.init({
                 "dir": path.join(__dirname, "..", "..", ".node-persist", "storage"),
-                "parse": JSON_parse_WithDate
+                "parse": JSON.parse,
+                "stringify": JSON.stringify
             });
 
             init = true;
@@ -58,27 +67,27 @@ const queue = runExclusive.buildCb(
     }
 );
 
-function limitSize(appData: AppData){
+function limitSize(appData: AppData) {
 
-    const maxNumberOfMessages= 1300;
-    const reduceTo= 1000;
+    const maxNumberOfMessages = 1300;
+    const reduceTo = 1000;
 
-    for( let imsi of Object.keys(appData.messages) ){
+    for (let imsi of Object.keys(appData.messages)) {
 
-        let messages= appData.messages[imsi];
+        let messages = appData.messages[imsi];
 
-        if( messages.length <= maxNumberOfMessages ) continue;
+        if (messages.length <= maxNumberOfMessages) continue;
 
-        let sortedMessages= messages.sort(
-            (i, j)=> i.date.getTime() - j.date.getTime()
+        let sortedMessages = messages.sort(
+            (i, j) => i.date.getTime() - j.date.getTime()
         );
 
-        messages= [];
+        messages = [];
 
-        for( let i= sortedMessages.length - reduceTo; i<sortedMessages.length; i++ )
+        for (let i = sortedMessages.length - reduceTo; i < sortedMessages.length; i++)
             messages.push(sortedMessages[i]);
 
-        appData.messages[imsi]= messages;
+        appData.messages[imsi] = messages;
 
     }
 
