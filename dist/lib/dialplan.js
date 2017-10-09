@@ -55,8 +55,8 @@ function start(modems, ami) {
         });
         modem.evtMessageStatusReport.attach(function (statusReport) {
             debug("Notify status report");
-            var dischargeTime = statusReport.dischargeTime, isDelivered = statusReport.isDelivered, messageId = statusReport.messageId, status = statusReport.status, recipient = statusReport.recipient;
-            var variable = __assign({}, dongleVariables, { "STATUS_REPORT_DISCHARGE_TIME": isNaN(dischargeTime.getTime()) ? "" + dischargeTime : dischargeTime.toISOString(), "STATUS_REPORT_IS_DELIVERED": "" + isDelivered, "STATUS_REPORT_ID": "" + messageId, "STATUS_REPORT_STATUS": status, "STATUS_REPORT_RECIPIENT": recipient });
+            var dischargeDate = statusReport.dischargeDate, isDelivered = statusReport.isDelivered, sendDate = statusReport.sendDate, status = statusReport.status, recipient = statusReport.recipient;
+            var variable = __assign({}, dongleVariables, { "STATUS_REPORT_DISCHARGE_TIME": isNaN(dischargeDate.getTime()) ? "" + dischargeDate : dischargeDate.toISOString(), "STATUS_REPORT_IS_DELIVERED": "" + isDelivered, "STATUS_REPORT_SEND_TIME": "" + sendDate.getTime(), "STATUS_REPORT_STATUS": status, "STATUS_REPORT_RECIPIENT": recipient });
             ami.originateLocalChannel(dialplanContext, "sms-status-report", variable);
         });
     });

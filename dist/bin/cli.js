@@ -187,11 +187,12 @@ program
                 return [4 /*yield*/, dc.sendMessage(imei, number, text)];
             case 4:
                 sendMessageResult = _a.sent();
-                console.log(JSON.stringify(sendMessageResult, null, 2));
                 if (sendMessageResult.success) {
+                    console.log(sendMessageResult.sendDate.getTime());
                     process.exit(0);
                 }
                 else {
+                    console.log(0);
                     process.exit(1);
                 }
                 return [3 /*break*/, 6];
@@ -235,7 +236,7 @@ program
             case 4:
                 messages = (_a.sent())[imsi];
                 if (messages === undefined) {
-                    console.log("No message");
+                    console.log("No messages");
                 }
                 else {
                     console.log(JSON.stringify(messages, null, 2));

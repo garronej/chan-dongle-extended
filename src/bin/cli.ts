@@ -149,11 +149,11 @@ program
 
             let sendMessageResult = await dc.sendMessage(imei, number, text);
 
-            console.log(JSON.stringify(sendMessageResult, null, 2));
-
             if (sendMessageResult.success) {
+                console.log(sendMessageResult.sendDate.getTime());
                 process.exit(0);
             } else {
+                console.log(0);
                 process.exit(1);
             }
 
@@ -196,7 +196,7 @@ program
 
             if (messages === undefined) {
 
-                console.log("No message");
+                console.log("No messages");
 
             } else {
 

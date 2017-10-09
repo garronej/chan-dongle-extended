@@ -114,11 +114,11 @@ export function start(modems: Modems, ami: Ami) {
                 throw new Error("Dongle not available");
             }
 
-            let sentMessageId: number | undefined;
+            let sendDate: Date | undefined;
 
             try {
 
-                sentMessageId = await Promise.race([
+                sendDate = await Promise.race([
                     modem.sendMessage(toNumber, text),
                     new Promise<never>((_, reject) => (modem as Modem).evtTerminate.attachOnce(params, reject))
                 ]);
@@ -131,13 +131,13 @@ export function start(modems: Modems, ami: Ami) {
 
             }
 
-            if (sentMessageId === undefined) {
+            if (sendDate === undefined) {
 
                 return { "success": false, "reason": "CANNOT SEND" };
 
             }
 
-            return { "success": true, sentMessageId };
+            return { "success": true, sendDate };
 
         }
 

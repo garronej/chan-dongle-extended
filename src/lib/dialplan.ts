@@ -54,13 +54,13 @@ export function start(modems: Modems, ami: Ami) {
 
             debug("Notify status report");
 
-            let { dischargeTime, isDelivered, messageId, status, recipient } = statusReport;
+            let { dischargeDate, isDelivered, sendDate, status, recipient } = statusReport;
 
             let variable = {
                 ...dongleVariables,
-                "STATUS_REPORT_DISCHARGE_TIME": isNaN(dischargeTime.getTime()) ? `${dischargeTime}` : dischargeTime.toISOString(),
+                "STATUS_REPORT_DISCHARGE_TIME": isNaN(dischargeDate.getTime()) ? `${dischargeDate}` : dischargeDate.toISOString(),
                 "STATUS_REPORT_IS_DELIVERED": `${isDelivered}`,
-                "STATUS_REPORT_ID": `${messageId}`,
+                "STATUS_REPORT_SEND_TIME": `${sendDate.getTime()}`,
                 "STATUS_REPORT_STATUS": status,
                 "STATUS_REPORT_RECIPIENT": recipient
             };

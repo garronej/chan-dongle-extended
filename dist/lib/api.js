@@ -153,7 +153,7 @@ function start(modems, ami) {
     var handlers = {};
     handlers[api.sendMessage.method] =
         function (params) { return __awaiter(_this, void 0, void 0, function () {
-            var viaDongleImei, toNumber, text, modem, sentMessageId, error_2;
+            var viaDongleImei, toNumber, text, modem, sendDate, error_2;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -170,17 +170,17 @@ function start(modems, ami) {
                                 new Promise(function (_, reject) { return modem.evtTerminate.attachOnce(params, reject); })
                             ])];
                     case 2:
-                        sentMessageId = _a.sent();
+                        sendDate = _a.sent();
                         modem.evtTerminate.detach(params);
                         return [3 /*break*/, 4];
                     case 3:
                         error_2 = _a.sent();
                         return [2 /*return*/, { "success": false, "reason": "DISCONNECT" }];
                     case 4:
-                        if (sentMessageId === undefined) {
+                        if (sendDate === undefined) {
                             return [2 /*return*/, { "success": false, "reason": "CANNOT SEND" }];
                         }
-                        return [2 /*return*/, { "success": true, sentMessageId: sentMessageId }];
+                        return [2 /*return*/, { "success": true, sendDate: sendDate }];
                 }
             });
         }); };
