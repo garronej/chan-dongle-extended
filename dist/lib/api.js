@@ -217,16 +217,18 @@ function start(modems, ami) {
         };
     handlers[api.getMessages.method] =
         function (params) { return __awaiter(_this, void 0, void 0, function () {
-            var matchImei, matchImsi, from, to, flush, response, appData, _a, _b, imei, _c, _d, imsi, messages, _e, _f, message, time, e_1, _g, e_2, _h, e_3, _j;
+            var response, matchImei, matchImsi, from, to, flush, appData, _a, _b, imei, _c, _d, imsi, messages, _e, _f, message, time, e_1, _g, e_2, _h, e_3, _j;
             return __generator(this, function (_k) {
                 switch (_k.label) {
                     case 0:
+                        response = {};
                         matchImei = function (imei) { return true; };
                         matchImsi = function (imsi) { return true; };
                         from = 0;
                         to = Infinity;
                         flush = false;
                         if (params.imei !== undefined) {
+                            response[params.imei] = {};
                             matchImei = function (imei) { return imei === params.imei; };
                         }
                         if (params.imsi !== undefined) {
@@ -241,7 +243,6 @@ function start(modems, ami) {
                         if (params.flush !== undefined) {
                             flush = params.flush;
                         }
-                        response = {};
                         return [4 /*yield*/, storage.read()];
                     case 1:
                         appData = _k.sent();
@@ -251,6 +252,9 @@ function start(modems, ami) {
                                 if (!matchImei(imei))
                                     continue;
                                 response[imei] = {};
+                                if (params.imsi !== undefined) {
+                                    response[imei][params.imsi] = [];
+                                }
                                 try {
                                     for (_c = __values(Object.keys(appData.messages[imei])), _d = _c.next(); !_d.done; _d = _c.next()) {
                                         imsi = _d.value;

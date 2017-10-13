@@ -186,6 +186,8 @@ export function start(modems: Modems, ami: Ami) {
     handlers[api.getMessages.method] =
         async (params: api.getMessages.Params): Promise<api.getMessages.Response> => {
 
+            let response: api.getMessages.Response = {};
+
             let matchImei = (imei: string) => true;
             let matchImsi = (imsi: string) => true;
             let from = 0;
@@ -193,6 +195,7 @@ export function start(modems: Modems, ami: Ami) {
             let flush = false;
 
             if (params.imei !== undefined) {
+                response[params.imei]= {};
                 matchImei = imei => imei === params.imei;
             }
 
@@ -212,8 +215,6 @@ export function start(modems: Modems, ami: Ami) {
                 flush = params.flush;
             }
 
-            let response: api.getMessages.Response = {};
-
             let appData = await storage.read();
 
             for( let imei of Object.keys(appData.messages)){
@@ -221,6 +222,10 @@ export function start(modems: Modems, ami: Ami) {
                 if( !matchImei(imei) ) continue;
 
                 response[imei] = {};
+
+                if( params.imsi !== undefined ){
+                    response[imei][params.imsi]= [];
+                }
 
                 for (let imsi of Object.keys(appData.messages[imei])) {
 
