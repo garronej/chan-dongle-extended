@@ -2,12 +2,13 @@ import * as runExclusive from "run-exclusive";
 import * as superJson from "super-json";
 import * as storage from "node-persist";
 import * as path from "path";
+import { DongleController as Dc } from "chan-dongle-extended-client";
 import { Message } from "ts-gsm-modem";
 
 namespace JSON {
     const myJson = superJson.create({
         "magic": '#!',
-        "serializers": [superJson.dateSerializer,]
+        "serializers": [superJson.dateSerializer]
     });
 
     export function stringify(obj: any): string {
@@ -24,11 +25,7 @@ export type AppData = {
     pins: {
         [iccidOrImei: string]: string;
     };
-    messages: {
-        [dongleImei: string]: {
-            [simImsi: string]: Message[];
-        }
-    };
+    messages: Dc.Messages;
 }
 
 const defaultStorageData: AppData = {
@@ -36,12 +33,10 @@ const defaultStorageData: AppData = {
     "messages": {}
 };
 
-export type ReadOutput = AppData & { readonly release: () => Promise<void> };
-
 let init = false;
 
-const queue = runExclusive.buildCb(
-    async (provider: (storageData: ReadOutput) => void, callback: () => void) => {
+const read_ = runExclusive.build(
+    async (callback: (appData: AppData) => void) => {
 
         if (!init) {
 
@@ -57,14 +52,13 @@ const queue = runExclusive.buildCb(
 
         let appData: AppData = (await storage.getItem("appData")) || defaultStorageData;
 
-        provider({
-            ...appData,
-            "release": async (): Promise<void> => {
-                limitSize(appData);
-                await storage.setItem("appData", appData);
-                callback();
-            }
-        });
+        callback(appData);
+
+        await Promise.resolve();
+
+        limitSize(appData);
+
+        await storage.setItem("appData", appData);
 
     }
 );
@@ -76,9 +70,9 @@ function limitSize(appData: AppData) {
 
     for (let imei of Object.keys(appData.messages)) {
 
-        for (let imsi of Object.keys(appData.messages[imei])) {
+        for (let iccid of Object.keys(appData.messages[imei])) {
 
-            let messages = appData.messages[imei][imsi];
+            let messages = appData.messages[imei][iccid];
 
             if (messages.length <= maxNumberOfMessages) continue;
 
@@ -91,7 +85,7 @@ function limitSize(appData: AppData) {
             for (let i = sortedMessages.length - reduceTo; i < sortedMessages.length; i++)
                 messages.push(sortedMessages[i]);
 
-            appData.messages[imei][imsi] = messages;
+            appData.messages[imei][iccid] = messages;
 
         }
 
@@ -99,8 +93,6 @@ function limitSize(appData: AppData) {
 
 }
 
-export function read(): Promise<ReadOutput> {
-
-    return new Promise<any>(resolve => queue(resolve, () => { }));
-
+export function read(): Promise<AppData> {
+    return new Promise<any>(resolve => read_(resolve));
 }

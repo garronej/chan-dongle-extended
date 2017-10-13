@@ -100,7 +100,7 @@ function start(modems, ami) {
         if (!matchModem(newModem))
             return;
         var imei = newModem.imei;
-        var imsi = newModem.imsi;
+        var iccid = newModem.iccid;
         newModem.evtMessage.attach(function (message) { return __awaiter(_this, void 0, void 0, function () {
             var appData, eventData;
             return __generator(this, function (_a) {
@@ -111,13 +111,12 @@ function start(modems, ami) {
                         if (!appData.messages[imei]) {
                             appData.messages[imei] = {};
                         }
-                        if (!appData.messages[imei][imsi]) {
-                            appData.messages[imei][imsi] = [message];
+                        if (!appData.messages[imei][iccid]) {
+                            appData.messages[imei][iccid] = [message];
                         }
                         else {
-                            appData.messages[imei][imsi].push(message);
+                            appData.messages[imei][iccid].push(message);
                         }
-                        appData.release();
                         eventData = { dongleImei: dongleImei, message: message };
                         server.postEvent(api.Events.message.name, eventData);
                         return [2 /*return*/];
@@ -217,13 +216,13 @@ function start(modems, ami) {
         };
     handlers[api.getMessages.method] =
         function (params) { return __awaiter(_this, void 0, void 0, function () {
-            var response, matchImei, matchImsi, from, to, flush, appData, _a, _b, imei, _c, _d, imsi, messages, _e, _f, message, time, e_1, _g, e_2, _h, e_3, _j;
+            var response, matchImei, matchIccid, from, to, flush, appData, _a, _b, imei, _c, _d, iccid, messages, _e, _f, message, time, e_1, _g, e_2, _h, e_3, _j;
             return __generator(this, function (_k) {
                 switch (_k.label) {
                     case 0:
                         response = {};
                         matchImei = function (imei) { return true; };
-                        matchImsi = function (imsi) { return true; };
+                        matchIccid = function (iccid) { return true; };
                         from = 0;
                         to = Infinity;
                         flush = false;
@@ -231,8 +230,8 @@ function start(modems, ami) {
                             response[params.imei] = {};
                             matchImei = function (imei) { return imei === params.imei; };
                         }
-                        if (params.imsi !== undefined) {
-                            matchImsi = function (imsi) { return imsi === params.imsi; };
+                        if (params.iccid !== undefined) {
+                            matchIccid = function (iccid) { return iccid === params.iccid; };
                         }
                         if (params.fromDate !== undefined) {
                             from = params.fromDate.getTime();
@@ -252,16 +251,16 @@ function start(modems, ami) {
                                 if (!matchImei(imei))
                                     continue;
                                 response[imei] = {};
-                                if (params.imsi !== undefined) {
-                                    response[imei][params.imsi] = [];
+                                if (params.iccid !== undefined) {
+                                    response[imei][params.iccid] = [];
                                 }
                                 try {
                                     for (_c = __values(Object.keys(appData.messages[imei])), _d = _c.next(); !_d.done; _d = _c.next()) {
-                                        imsi = _d.value;
-                                        if (!matchImsi(imsi))
+                                        iccid = _d.value;
+                                        if (!matchIccid(iccid))
                                             continue;
-                                        response[imei][imsi] = [];
-                                        messages = appData.messages[imei][imsi];
+                                        response[imei][iccid] = [];
+                                        messages = appData.messages[imei][iccid];
                                         try {
                                             for (_e = __values(__spread(messages)), _f = _e.next(); !_f.done; _f = _e.next()) {
                                                 message = _f.value;
@@ -270,7 +269,7 @@ function start(modems, ami) {
                                                     continue;
                                                 if (time >= to)
                                                     continue;
-                                                response[imei][imsi].push(message);
+                                                response[imei][iccid].push(message);
                                                 if (flush) {
                                                     messages.splice(messages.indexOf(message), 1);
                                                 }
@@ -301,7 +300,6 @@ function start(modems, ami) {
                             }
                             finally { if (e_1) throw e_1.error; }
                         }
-                        appData.release();
                         return [2 /*return*/, response];
                 }
             });

@@ -13,7 +13,7 @@ import {
     PerformUnlock
 } from "ts-gsm-modem";
 import { TrackableMap } from "trackable-map";
-import * as appStorage from "./appStorage";
+import * as storage from "./appStorage";
 import { LockedModem, Modems } from "./defs";
 import { Ami, _private} from "../chan-dongle-extended-client";
 import amiUser = _private.amiUser;
@@ -70,15 +70,13 @@ async function unlock(
     performUnlock: PerformUnlock
 ) {
 
-    let appData = await appStorage.read()
+    let appData = await storage.read();
 
     let pin = appData.pins[iccid || imei];
 
     if (pin) {
 
         if (pinState === "SIM PIN" && tryLeft === 3) {
-
-            appData.release();
 
             let unlockResult = await performUnlock(pin);
 
@@ -91,8 +89,6 @@ async function unlock(
 
             delete appData.pins[iccid || imei];
 
-            appData.release();
-
         }
 
     }
@@ -101,6 +97,8 @@ async function unlock(
         imei, iccid, pinState, tryLeft,
         "performUnlock": async (...inputs) => {
             //NOTE: Perform result throw error if modem disconnect during unlock
+
+            console.log("perform unlock");
 
             modems.delete(accessPoint);
 
@@ -124,7 +122,7 @@ async function unlock(
 
             }
 
-            let appData = await appStorage.read();
+            let appData = await storage.read();
 
             if (unlockResult.success) {
 
@@ -142,8 +140,6 @@ async function unlock(
                 modems.set(accessPoint, lockedModem);
 
             }
-
-            appData.release();
 
             return unlockResult;
 

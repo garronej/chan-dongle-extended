@@ -1,12 +1,4 @@
 "use strict";
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -62,7 +54,7 @@ var JSON;
 (function (JSON) {
     var myJson = superJson.create({
         "magic": '#!',
-        "serializers": [superJson.dateSerializer,]
+        "serializers": [superJson.dateSerializer]
     });
     function stringify(obj) {
         return myJson.stringify(obj);
@@ -78,8 +70,7 @@ var defaultStorageData = {
     "messages": {}
 };
 var init = false;
-var queue = runExclusive.buildCb(function (provider, callback) { return __awaiter(_this, void 0, void 0, function () {
-    var _this = this;
+var read_ = runExclusive.build(function (callback) { return __awaiter(_this, void 0, void 0, function () {
     var appData;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -97,19 +88,14 @@ var queue = runExclusive.buildCb(function (provider, callback) { return __awaite
             case 2: return [4 /*yield*/, storage.getItem("appData")];
             case 3:
                 appData = (_a.sent()) || defaultStorageData;
-                provider(__assign({}, appData, { "release": function () { return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    limitSize(appData);
-                                    return [4 /*yield*/, storage.setItem("appData", appData)];
-                                case 1:
-                                    _a.sent();
-                                    callback();
-                                    return [2 /*return*/];
-                            }
-                        });
-                    }); } }));
+                callback(appData);
+                return [4 /*yield*/, Promise.resolve()];
+            case 4:
+                _a.sent();
+                limitSize(appData);
+                return [4 /*yield*/, storage.setItem("appData", appData)];
+            case 5:
+                _a.sent();
                 return [2 /*return*/];
         }
     });
@@ -122,15 +108,15 @@ function limitSize(appData) {
             var imei = _b.value;
             try {
                 for (var _c = __values(Object.keys(appData.messages[imei])), _d = _c.next(); !_d.done; _d = _c.next()) {
-                    var imsi = _d.value;
-                    var messages = appData.messages[imei][imsi];
+                    var iccid = _d.value;
+                    var messages = appData.messages[imei][iccid];
                     if (messages.length <= maxNumberOfMessages)
                         continue;
                     var sortedMessages = messages.sort(function (i, j) { return i.date.getTime() - j.date.getTime(); });
                     messages = [];
                     for (var i = sortedMessages.length - reduceTo; i < sortedMessages.length; i++)
                         messages.push(sortedMessages[i]);
-                    appData.messages[imei][imsi] = messages;
+                    appData.messages[imei][iccid] = messages;
                 }
             }
             catch (e_1_1) { e_1 = { error: e_1_1 }; }
@@ -152,6 +138,6 @@ function limitSize(appData) {
     var e_2, _f, e_1, _e;
 }
 function read() {
-    return new Promise(function (resolve) { return queue(resolve, function () { }); });
+    return new Promise(function (resolve) { return read_(resolve); });
 }
 exports.read = read;

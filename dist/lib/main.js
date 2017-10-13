@@ -40,7 +40,7 @@ require("rejection-tracker").main(__dirname, "..", "..");
 // lrwxrwxrwx 1 root pi 36 Apr 15 09:46 /usr/local/lib/node_modules/chan-dongle-extended -> /home/pi/github/chan-dongle-extended
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var trackable_map_1 = require("trackable-map");
-var appStorage = require("./appStorage");
+var storage = require("./appStorage");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
 var amiUser = chan_dongle_extended_client_1._private.amiUser;
 var repl = require("./repl");
@@ -75,13 +75,12 @@ function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
         var appData, pin, unlockResult, lockedModem;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, appStorage.read()];
+                case 0: return [4 /*yield*/, storage.read()];
                 case 1:
                     appData = _a.sent();
                     pin = appData.pins[iccid || imei];
                     if (!pin) return [3 /*break*/, 4];
                     if (!(pinState === "SIM PIN" && tryLeft === 3)) return [3 /*break*/, 3];
-                    appData.release();
                     return [4 /*yield*/, performUnlock(pin)];
                 case 2:
                     unlockResult = _a.sent();
@@ -92,7 +91,6 @@ function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
                     return [3 /*break*/, 4];
                 case 3:
                     delete appData.pins[iccid || imei];
-                    appData.release();
                     _a.label = 4;
                 case 4:
                     lockedModem = {
@@ -108,6 +106,7 @@ function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
                                     switch (_a.label) {
                                         case 0:
                                             //NOTE: Perform result throw error if modem disconnect during unlock
+                                            console.log("perform unlock");
                                             modems.delete(accessPoint);
                                             if (!!inputs[1]) return [3 /*break*/, 2];
                                             pin = inputs[0];
@@ -123,7 +122,7 @@ function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
                                         case 3:
                                             unlockResult = _a.sent();
                                             _a.label = 4;
-                                        case 4: return [4 /*yield*/, appStorage.read()];
+                                        case 4: return [4 /*yield*/, storage.read()];
                                         case 5:
                                             appData = _a.sent();
                                             if (unlockResult.success) {
@@ -136,7 +135,6 @@ function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
                                                 lockedModem.tryLeft = unlockResult.tryLeft;
                                                 modems.set(accessPoint, lockedModem);
                                             }
-                                            appData.release();
                                             return [2 /*return*/, unlockResult];
                                     }
                                 });

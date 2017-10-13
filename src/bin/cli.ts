@@ -87,9 +87,9 @@ program
 
         try {
 
-            if (options.pin)
+            if (options.pin){
                 unlockResult = await dc.unlock(imei, options.pin);
-            else {
+            } else {
 
                 let match = (options.puk as string).match(/^([0-9]{8})-([0-9]{4})$/);
 
