@@ -91,7 +91,7 @@ function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
                     tryLeft = unlockResult.tryLeft;
                     return [3 /*break*/, 4];
                 case 3:
-                    delete appData[iccid || imei];
+                    delete appData.pins[iccid || imei];
                     appData.release();
                     _a.label = 4;
                 case 4:
@@ -131,7 +131,7 @@ function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
                                                 appData.pins[iccid || imei] = pin;
                                             }
                                             else {
-                                                delete appData[iccid || imei];
+                                                delete appData.pins[iccid || imei];
                                                 lockedModem.pinState = unlockResult.pinState;
                                                 lockedModem.tryLeft = unlockResult.tryLeft;
                                                 modems.set(accessPoint, lockedModem);

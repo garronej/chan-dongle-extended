@@ -25,7 +25,9 @@ export type AppData = {
         [iccidOrImei: string]: string;
     };
     messages: {
-        [imsi: string]: Message[];
+        [dongleImei: string]: {
+            [simImsi: string]: Message[];
+        }
     };
 }
 
@@ -72,22 +74,26 @@ function limitSize(appData: AppData) {
     const maxNumberOfMessages = 1300;
     const reduceTo = 1000;
 
-    for (let imsi of Object.keys(appData.messages)) {
+    for (let imei of Object.keys(appData.messages)) {
 
-        let messages = appData.messages[imsi];
+        for (let imsi of Object.keys(appData.messages[imei])) {
 
-        if (messages.length <= maxNumberOfMessages) continue;
+            let messages = appData.messages[imei][imsi];
 
-        let sortedMessages = messages.sort(
-            (i, j) => i.date.getTime() - j.date.getTime()
-        );
+            if (messages.length <= maxNumberOfMessages) continue;
 
-        messages = [];
+            let sortedMessages = messages.sort(
+                (i, j) => i.date.getTime() - j.date.getTime()
+            );
 
-        for (let i = sortedMessages.length - reduceTo; i < sortedMessages.length; i++)
-            messages.push(sortedMessages[i]);
+            messages = [];
 
-        appData.messages[imsi] = messages;
+            for (let i = sortedMessages.length - reduceTo; i < sortedMessages.length; i++)
+                messages.push(sortedMessages[i]);
+
+            appData.messages[imei][imsi] = messages;
+
+        }
 
     }
 

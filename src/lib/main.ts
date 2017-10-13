@@ -89,7 +89,7 @@ async function unlock(
 
         } else {
 
-            delete appData[iccid || imei];
+            delete appData.pins[iccid || imei];
 
             appData.release();
 
@@ -134,7 +134,7 @@ async function unlock(
 
             } else {
 
-                delete appData[iccid || imei];
+                delete appData.pins[iccid || imei];
 
                 lockedModem.pinState = unlockResult.pinState;
                 lockedModem.tryLeft = unlockResult.tryLeft;

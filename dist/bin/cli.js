@@ -211,7 +211,7 @@ program
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("-f, --flush", "Whether or not erasing retrieved messages")
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var flush, imei, dc, dongle, imsi, messages, error_3;
+    var flush, imei, dc, record, error_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -222,25 +222,13 @@ program
                 return [4 /*yield*/, getDcInstance()];
             case 2:
                 dc = _a.sent();
-                dongle = dc.activeDongles.get(imei);
-                if (!dongle) {
-                    console.log("Dongle not currently available");
-                    process.exit(1);
-                    return [2 /*return*/];
-                }
-                imsi = dongle.sim.imsi;
                 _a.label = 3;
             case 3:
                 _a.trys.push([3, 5, , 6]);
-                return [4 /*yield*/, dc.getMessages({ imsi: imsi, flush: flush })];
+                return [4 /*yield*/, dc.getMessages({ imei: imei, flush: flush })];
             case 4:
-                messages = (_a.sent())[imsi];
-                if (messages === undefined) {
-                    console.log("No messages");
-                }
-                else {
-                    console.log(JSON.stringify(messages, null, 2));
-                }
+                record = (_a.sent())[imei];
+                console.log(JSON.stringify(record, null, 2));
                 process.exit(0);
                 return [3 /*break*/, 6];
             case 5:

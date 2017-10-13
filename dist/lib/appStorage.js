@@ -119,25 +119,37 @@ function limitSize(appData) {
     var reduceTo = 1000;
     try {
         for (var _a = __values(Object.keys(appData.messages)), _b = _a.next(); !_b.done; _b = _a.next()) {
-            var imsi = _b.value;
-            var messages = appData.messages[imsi];
-            if (messages.length <= maxNumberOfMessages)
-                continue;
-            var sortedMessages = messages.sort(function (i, j) { return i.date.getTime() - j.date.getTime(); });
-            messages = [];
-            for (var i = sortedMessages.length - reduceTo; i < sortedMessages.length; i++)
-                messages.push(sortedMessages[i]);
-            appData.messages[imsi] = messages;
+            var imei = _b.value;
+            try {
+                for (var _c = __values(Object.keys(appData.messages[imei])), _d = _c.next(); !_d.done; _d = _c.next()) {
+                    var imsi = _d.value;
+                    var messages = appData.messages[imei][imsi];
+                    if (messages.length <= maxNumberOfMessages)
+                        continue;
+                    var sortedMessages = messages.sort(function (i, j) { return i.date.getTime() - j.date.getTime(); });
+                    messages = [];
+                    for (var i = sortedMessages.length - reduceTo; i < sortedMessages.length; i++)
+                        messages.push(sortedMessages[i]);
+                    appData.messages[imei][imsi] = messages;
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (_d && !_d.done && (_e = _c.return)) _e.call(_c);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
         }
     }
-    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+    catch (e_2_1) { e_2 = { error: e_2_1 }; }
     finally {
         try {
-            if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
+            if (_b && !_b.done && (_f = _a.return)) _f.call(_a);
         }
-        finally { if (e_1) throw e_1.error; }
+        finally { if (e_2) throw e_2.error; }
     }
-    var e_1, _c;
+    var e_2, _f, e_1, _e;
 }
 function read() {
     return new Promise(function (resolve) { return queue(resolve, function () { }); });

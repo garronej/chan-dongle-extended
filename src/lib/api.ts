@@ -48,15 +48,22 @@ export function start(modems: Modems, ami: Ami) {
 
         if (!matchModem(newModem)) return;
 
+        let imei = newModem.imei;
+        let imsi = newModem.imsi;
+
         newModem.evtMessage.attach(
             async message => {
 
                 let appData = await storage.read();
 
-                if (!appData.messages[newModem.imsi]) {
-                    appData.messages[newModem.imsi] = [message];
+                if (!appData.messages[imei]) {
+                    appData.messages[imei] = {};
+                }
+
+                if (!appData.messages[imei][imsi]) {
+                    appData.messages[imei][imsi] = [message];
                 } else {
-                    appData.messages[newModem.imsi].push(message);
+                    appData.messages[imei][imsi].push(message);
                 }
 
                 appData.release();
@@ -179,10 +186,15 @@ export function start(modems: Modems, ami: Ami) {
     handlers[api.getMessages.method] =
         async (params: api.getMessages.Params): Promise<api.getMessages.Response> => {
 
+            let matchImei = (imei: string) => true;
             let matchImsi = (imsi: string) => true;
             let from = 0;
             let to = Infinity;
             let flush = false;
+
+            if (params.imei !== undefined) {
+                matchImei = imei => imei === params.imei;
+            }
 
             if (params.imsi !== undefined) {
                 matchImsi = imsi => imsi === params.imsi;
@@ -204,25 +216,33 @@ export function start(modems: Modems, ami: Ami) {
 
             let appData = await storage.read();
 
-            for (let imsi of Object.keys(appData.messages)) {
+            for( let imei of Object.keys(appData.messages)){
 
-                if (!matchImsi(imsi)) continue;
+                if( !matchImei(imei) ) continue;
 
-                response[imsi] = [];
+                response[imei] = {};
 
-                let messages = appData.messages[imsi];
+                for (let imsi of Object.keys(appData.messages[imei])) {
 
-                for (let message of [...messages]) {
+                    if (!matchImsi(imsi)) continue;
 
-                    let time = message.date.getTime();
+                    response[imei][imsi] = [];
 
-                    if (time < from) continue;
-                    if (time > to) continue;
+                    let messages = appData.messages[imei][imsi];
 
-                    response[imsi].push(message);
+                    for (let message of [...messages]) {
 
-                    if (flush) {
-                        messages.splice(messages.indexOf(message), 1);
+                        let time = message.date.getTime();
+
+                        if (time <= from) continue;
+                        if (time >= to) continue;
+
+                        response[imei][imsi].push(message);
+
+                        if (flush) {
+                            messages.splice(messages.indexOf(message), 1);
+                        }
+
                     }
 
                 }

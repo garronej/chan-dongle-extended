@@ -180,29 +180,11 @@ program
 
         let dc= await getDcInstance();
 
-        let dongle = dc.activeDongles.get(imei);
-
-        if (!dongle) {
-            console.log("Dongle not currently available");
-            process.exit(1);
-            return;
-        }
-
-        let imsi = dongle.sim.imsi;
-
         try {
 
-            let messages = (await dc.getMessages({ imsi, flush }))[imsi];
+            let record = (await dc.getMessages({ imei, flush }))[imei];
 
-            if (messages === undefined) {
-
-                console.log("No messages");
-
-            } else {
-
-                console.log(JSON.stringify(messages, null, 2));
-
-            }
+            console.log(JSON.stringify(record, null, 2));
 
             process.exit(0);
 

@@ -4,7 +4,9 @@ export declare type AppData = {
         [iccidOrImei: string]: string;
     };
     messages: {
-        [imsi: string]: Message[];
+        [dongleImei: string]: {
+            [simImsi: string]: Message[];
+        };
     };
 };
 export declare type ReadOutput = AppData & {
