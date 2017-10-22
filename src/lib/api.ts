@@ -198,6 +198,9 @@ export function start(modems: Modems, ami: Ami) {
             }
 
             if (params.iccid !== undefined) {
+                if (params.imei !== undefined) {
+                    response[params.imei][params.iccid] = [];
+                }
                 matchIccid = iccid => iccid === params.iccid;
             }
 

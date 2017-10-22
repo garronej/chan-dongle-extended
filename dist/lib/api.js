@@ -231,6 +231,9 @@ function start(modems, ami) {
                             matchImei = function (imei) { return imei === params.imei; };
                         }
                         if (params.iccid !== undefined) {
+                            if (params.imei !== undefined) {
+                                response[params.imei][params.iccid] = [];
+                            }
                             matchIccid = function (iccid) { return iccid === params.iccid; };
                         }
                         if (params.fromDate !== undefined) {
