@@ -23,7 +23,7 @@ let debug = _debug("_api");
 
 export function start(modems: Modems, ami: Ami) {
 
-    const server = Ami.getInstance().apiServer;
+    const server = Ami.getInstance().createApiServer(Dc.apiId);
 
     modems.evt.attach(([newModem, _, oldModem]) => {
 

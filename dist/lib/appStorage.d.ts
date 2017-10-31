@@ -1,4 +1,4 @@
-import { DongleController as Dc } from "chan-dongle-extended-client";
+import { DongleController as Dc } from "../chan-dongle-extended-client";
 export declare type AppData = {
     pins: {
         [iccidOrImei: string]: string;

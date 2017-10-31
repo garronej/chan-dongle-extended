@@ -77,7 +77,7 @@ var _debug = require("debug");
 var debug = _debug("_api");
 function start(modems, ami) {
     var _this = this;
-    var server = chan_dongle_extended_client_1.Ami.getInstance().apiServer;
+    var server = chan_dongle_extended_client_1.Ami.getInstance().createApiServer(chan_dongle_extended_client_1.DongleController.apiId);
     modems.evt.attach(function (_a) {
         var _b = __read(_a, 3), newModem = _b[0], _ = _b[1], oldModem = _b[2];
         debug("Dongle", JSON.stringify(buildDongle(newModem), null, 2));
