@@ -25,7 +25,7 @@ export type AppData = {
     pins: {
         [iccidOrImei: string]: string;
     };
-    messages: Dc.Messages;
+    messages: { [imsi: string]: Message[] };
 }
 
 const defaultStorageData: AppData = {
@@ -65,29 +65,9 @@ const read_ = runExclusive.build(
 
 function limitSize(appData: AppData) {
 
-    const maxNumberOfMessages = 1300;
-    const reduceTo = 1000;
+    for( let imsi in appData.messages ){
 
-    for (let imei of Object.keys(appData.messages)) {
-
-        for (let iccid of Object.keys(appData.messages[imei])) {
-
-            let messages = appData.messages[imei][iccid];
-
-            if (messages.length <= maxNumberOfMessages) continue;
-
-            let sortedMessages = messages.sort(
-                (i, j) => i.date.getTime() - j.date.getTime()
-            );
-
-            messages = [];
-
-            for (let i = sortedMessages.length - reduceTo; i < sortedMessages.length; i++)
-                messages.push(sortedMessages[i]);
-
-            appData.messages[imei][iccid] = messages;
-
-        }
+            appData.messages[imsi]= appData.messages[imsi].splice(-1000);
 
     }
 

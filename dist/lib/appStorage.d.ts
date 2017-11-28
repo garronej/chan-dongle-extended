@@ -1,8 +1,10 @@
-import { DongleController as Dc } from "../chan-dongle-extended-client";
+import { Message } from "ts-gsm-modem";
 export declare type AppData = {
     pins: {
         [iccidOrImei: string]: string;
     };
-    messages: Dc.Messages;
+    messages: {
+        [imsi: string]: Message[];
+    };
 };
 export declare function read(): Promise<AppData>;

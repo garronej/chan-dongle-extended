@@ -99,8 +99,21 @@ function start(modems, ami) {
         server.postEvent(api.Events.updateMap.name, eventData);
         if (!matchModem(newModem))
             return;
-        var imei = newModem.imei;
-        var iccid = newModem.iccid;
+        var imsi = newModem.imsi;
+        (function () { return __awaiter(_this, void 0, void 0, function () {
+            var appData;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, storage.read()];
+                    case 1:
+                        appData = _a.sent();
+                        if (!appData.messages[imsi]) {
+                            appData.messages[imsi] = [];
+                        }
+                        return [2 /*return*/];
+                }
+            });
+        }); })();
         newModem.evtMessage.attach(function (message) { return __awaiter(_this, void 0, void 0, function () {
             var appData, eventData;
             return __generator(this, function (_a) {
@@ -108,15 +121,7 @@ function start(modems, ami) {
                     case 0: return [4 /*yield*/, storage.read()];
                     case 1:
                         appData = _a.sent();
-                        if (!appData.messages[imei]) {
-                            appData.messages[imei] = {};
-                        }
-                        if (!appData.messages[imei][iccid]) {
-                            appData.messages[imei][iccid] = [message];
-                        }
-                        else {
-                            appData.messages[imei][iccid].push(message);
-                        }
+                        appData.messages[imsi].push(message);
                         eventData = { dongleImei: dongleImei, message: message };
                         server.postEvent(api.Events.message.name, eventData);
                         return [2 /*return*/];
@@ -216,26 +221,15 @@ function start(modems, ami) {
         };
     handlers[api.getMessages.method] =
         function (params) { return __awaiter(_this, void 0, void 0, function () {
-            var response, matchImei, matchIccid, from, to, flush, appData, _a, _b, imei, _c, _d, iccid, messages, _e, _f, message, time, e_1, _g, e_2, _h, e_3, _j;
-            return __generator(this, function (_k) {
-                switch (_k.label) {
+            var response, matchImsi, from, to, flush, appData, _a, _b, imsi, messagesOfSim, _c, _d, message, time, e_1, _e, e_2, _f;
+            return __generator(this, function (_g) {
+                switch (_g.label) {
                     case 0:
                         response = {};
-                        matchImei = function (imei) { return true; };
-                        matchIccid = function (iccid) { return true; };
+                        matchImsi = function (imsi) { return true; };
                         from = 0;
                         to = Infinity;
                         flush = false;
-                        if (params.imei !== undefined) {
-                            response[params.imei] = {};
-                            matchImei = function (imei) { return imei === params.imei; };
-                        }
-                        if (params.iccid !== undefined) {
-                            if (params.imei !== undefined) {
-                                response[params.imei][params.iccid] = [];
-                            }
-                            matchIccid = function (iccid) { return iccid === params.iccid; };
-                        }
                         if (params.fromDate !== undefined) {
                             from = params.fromDate.getTime();
                         }
@@ -247,50 +241,31 @@ function start(modems, ami) {
                         }
                         return [4 /*yield*/, storage.read()];
                     case 1:
-                        appData = _k.sent();
+                        appData = _g.sent();
                         try {
-                            for (_a = __values(Object.keys(appData.messages)), _b = _a.next(); !_b.done; _b = _a.next()) {
-                                imei = _b.value;
-                                if (!matchImei(imei))
-                                    continue;
-                                response[imei] = {};
-                                if (params.iccid !== undefined) {
-                                    response[imei][params.iccid] = [];
+                            for (_a = __values(params.imsi ? [params.imsi] : Object.keys(appData.messages)), _b = _a.next(); !_b.done; _b = _a.next()) {
+                                imsi = _b.value;
+                                messagesOfSim = appData.messages[imsi];
+                                if (!messagesOfSim) {
+                                    throw new Error("Sim imsi: " + imsi + " was never connected");
                                 }
+                                response[imsi] = [];
                                 try {
-                                    for (_c = __values(Object.keys(appData.messages[imei])), _d = _c.next(); !_d.done; _d = _c.next()) {
-                                        iccid = _d.value;
-                                        if (!matchIccid(iccid))
+                                    for (_c = __values(__spread(messagesOfSim)), _d = _c.next(); !_d.done; _d = _c.next()) {
+                                        message = _d.value;
+                                        time = message.date.getTime();
+                                        if ((time <= from) || (time >= to))
                                             continue;
-                                        response[imei][iccid] = [];
-                                        messages = appData.messages[imei][iccid];
-                                        try {
-                                            for (_e = __values(__spread(messages)), _f = _e.next(); !_f.done; _f = _e.next()) {
-                                                message = _f.value;
-                                                time = message.date.getTime();
-                                                if (time <= from)
-                                                    continue;
-                                                if (time >= to)
-                                                    continue;
-                                                response[imei][iccid].push(message);
-                                                if (flush) {
-                                                    messages.splice(messages.indexOf(message), 1);
-                                                }
-                                            }
-                                        }
-                                        catch (e_3_1) { e_3 = { error: e_3_1 }; }
-                                        finally {
-                                            try {
-                                                if (_f && !_f.done && (_j = _e.return)) _j.call(_e);
-                                            }
-                                            finally { if (e_3) throw e_3.error; }
+                                        response[imsi].push(message);
+                                        if (flush) {
+                                            messagesOfSim.splice(messagesOfSim.indexOf(message), 1);
                                         }
                                     }
                                 }
                                 catch (e_2_1) { e_2 = { error: e_2_1 }; }
                                 finally {
                                     try {
-                                        if (_d && !_d.done && (_h = _c.return)) _h.call(_c);
+                                        if (_d && !_d.done && (_f = _c.return)) _f.call(_c);
                                     }
                                     finally { if (e_2) throw e_2.error; }
                                 }
@@ -299,7 +274,7 @@ function start(modems, ami) {
                         catch (e_1_1) { e_1 = { error: e_1_1 }; }
                         finally {
                             try {
-                                if (_b && !_b.done && (_g = _a.return)) _g.call(_a);
+                                if (_b && !_b.done && (_e = _a.return)) _e.call(_a);
                             }
                             finally { if (e_1) throw e_1.error; }
                         }

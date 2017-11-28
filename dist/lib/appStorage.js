@@ -34,16 +34,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var __values = (this && this.__values) || function (o) {
-    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
-    if (m) return m.call(o);
-    return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-};
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var runExclusive = require("run-exclusive");
@@ -101,41 +91,9 @@ var read_ = runExclusive.build(function (callback) { return __awaiter(_this, voi
     });
 }); });
 function limitSize(appData) {
-    var maxNumberOfMessages = 1300;
-    var reduceTo = 1000;
-    try {
-        for (var _a = __values(Object.keys(appData.messages)), _b = _a.next(); !_b.done; _b = _a.next()) {
-            var imei = _b.value;
-            try {
-                for (var _c = __values(Object.keys(appData.messages[imei])), _d = _c.next(); !_d.done; _d = _c.next()) {
-                    var iccid = _d.value;
-                    var messages = appData.messages[imei][iccid];
-                    if (messages.length <= maxNumberOfMessages)
-                        continue;
-                    var sortedMessages = messages.sort(function (i, j) { return i.date.getTime() - j.date.getTime(); });
-                    messages = [];
-                    for (var i = sortedMessages.length - reduceTo; i < sortedMessages.length; i++)
-                        messages.push(sortedMessages[i]);
-                    appData.messages[imei][iccid] = messages;
-                }
-            }
-            catch (e_1_1) { e_1 = { error: e_1_1 }; }
-            finally {
-                try {
-                    if (_d && !_d.done && (_e = _c.return)) _e.call(_c);
-                }
-                finally { if (e_1) throw e_1.error; }
-            }
-        }
+    for (var imsi in appData.messages) {
+        appData.messages[imsi] = appData.messages[imsi].splice(-1000);
     }
-    catch (e_2_1) { e_2 = { error: e_2_1 }; }
-    finally {
-        try {
-            if (_b && !_b.done && (_f = _a.return)) _f.call(_a);
-        }
-        finally { if (e_2) throw e_2.error; }
-    }
-    var e_2, _f, e_1, _e;
 }
 function read() {
     return new Promise(function (resolve) { return read_(resolve); });

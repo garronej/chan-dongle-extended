@@ -48,23 +48,24 @@ export function start(modems: Modems, ami: Ami) {
 
         if (!matchModem(newModem)) return;
 
-        let imei = newModem.imei;
-        let iccid = newModem.iccid;
+        let imsi = newModem.imsi;
+
+        (async ()=>{
+
+                let appData = await storage.read();
+
+                if (!appData.messages[imsi]) {
+                    appData.messages[imsi] = [];
+                }
+
+        })();
 
         newModem.evtMessage.attach(
             async message => {
 
                 let appData = await storage.read();
 
-                if (!appData.messages[imei]) {
-                    appData.messages[imei] = {};
-                }
-
-                if (!appData.messages[imei][iccid]) {
-                    appData.messages[imei][iccid] = [message];
-                } else {
-                    appData.messages[imei][iccid].push(message);
-                }
+                appData.messages[imsi].push(message);
 
                 let eventData: api.Events.message.Data = { dongleImei, message };
 
@@ -186,23 +187,10 @@ export function start(modems: Modems, ami: Ami) {
 
             let response: api.getMessages.Response = {};
 
-            let matchImei = (imei: string) => true;
-            let matchIccid = (iccid: string) => true;
+            let matchImsi = (imsi: string) => true;
             let from = 0;
             let to = Infinity;
             let flush = false;
-
-            if (params.imei !== undefined) {
-                response[params.imei] = {};
-                matchImei = imei => imei === params.imei;
-            }
-
-            if (params.iccid !== undefined) {
-                if (params.imei !== undefined) {
-                    response[params.imei][params.iccid] = [];
-                }
-                matchIccid = iccid => iccid === params.iccid;
-            }
 
             if (params.fromDate !== undefined) {
                 from = params.fromDate.getTime();
@@ -218,38 +206,28 @@ export function start(modems: Modems, ami: Ami) {
 
             let appData = await storage.read();
 
-            for (let imei of Object.keys(appData.messages)) {
+            for( let imsi of params.imsi?[params.imsi]:Object.keys(appData.messages) ){
 
-                if (!matchImei(imei)) continue;
+                let messagesOfSim= appData.messages[imsi];
 
-                response[imei] = {};
-
-                if (params.iccid !== undefined) {
-                    response[imei][params.iccid] = [];
+                if(!messagesOfSim){
+                    throw new Error(`Sim imsi: ${imsi} was never connected`);
                 }
 
-                for (let iccid of Object.keys(appData.messages[imei])) {
+                response[imsi]= [];
 
-                    if (!matchIccid(iccid)) continue;
+                for( let message of [...messagesOfSim] ){
 
-                    response[imei][iccid] = [];
+                    let time= message.date.getTime();
 
-                    let messages = appData.messages[imei][iccid];
+                    if ((time <= from) || ( time >= to )) continue;
 
-                    for (let message of [...messages]) {
+                    response[imsi].push(message);
 
-                        let time = message.date.getTime();
-
-                        if (time <= from) continue;
-                        if (time >= to) continue;
-
-                        response[imei][iccid].push(message);
-
-                        if (flush) {
-                            messages.splice(messages.indexOf(message), 1);
-                        }
-
+                    if( flush ){
+                        messagesOfSim.splice(messagesOfSim.indexOf(message), 1);
                     }
+
 
                 }
 

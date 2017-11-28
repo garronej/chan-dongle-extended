@@ -170,21 +170,18 @@ program
 program
     .command("messages")
     .description("Get received SMS")
-    .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("-f, --flush", "Whether or not erasing retrieved messages")
     .action(async options => {
 
-        let flush: boolean = (options.flush === true);
-
-        let imei = await getImei(options);
+        let flush = (options.flush === true);
 
         let dc= await getDcInstance();
 
         try {
 
-            let record = (await dc.getMessages({ imei, flush }))[imei];
+            let messages = (await dc.getMessages({ flush }));
 
-            console.log(JSON.stringify(record, null, 2));
+            console.log(JSON.stringify(messages, null, 2));
 
             process.exit(0);
 
