@@ -299,24 +299,60 @@ function buildDongle(modem) {
     }
     else if (matchModem(modem)) {
         return (function buildActiveDongle(modem) {
+            var number = modem.number;
+            var storageLeft = modem.storageLeft;
+            var contacts = [];
+            var imsi = modem.imsi;
+            try {
+                for (var _a = __values(modem.contacts), _b = _a.next(); !_b.done; _b = _a.next()) {
+                    var contact = _b.value;
+                    contacts.push({
+                        "index": contact.index,
+                        "name": {
+                            "asStored": contact.name,
+                            "full": contact.name
+                        },
+                        "number": {
+                            "asStored": contact.number,
+                            "localFormat": chan_dongle_extended_client_1.phoneNumberLibrary.toNationalNumber(contact.number, imsi)
+                        }
+                    });
+                }
+            }
+            catch (e_3_1) { e_3 = { error: e_3_1 }; }
+            finally {
+                try {
+                    if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
+                }
+                finally { if (e_3) throw e_3.error; }
+            }
+            var digest = chan_dongle_extended_client_1.DongleController.SimStorage.computeDigest(number, storageLeft, contacts);
             return {
                 "imei": modem.imei,
                 "isVoiceEnabled": modem.isVoiceEnabled,
                 "sim": {
                     "iccid": modem.iccid,
-                    "imsi": modem.imsi,
-                    "number": modem.number,
-                    "serviceProvider": modem.serviceProviderName,
-                    "phonebook": {
+                    imsi: imsi,
+                    "serviceProvider": {
+                        "fromImsi": (function () {
+                            var imsiInfos = chan_dongle_extended_client_1.phoneNumberLibrary.getImsiInfos(imsi);
+                            return imsiInfos ? imsiInfos.network_name : undefined;
+                        })(),
+                        "fromNetwork": modem.serviceProviderName
+                    },
+                    "storage": {
+                        number: number,
                         "infos": {
                             "contactNameMaxLength": modem.contactNameMaxLength,
                             "numberMaxLength": modem.numberMaxLength,
-                            "storageLeft": modem.storageLeft,
+                            storageLeft: storageLeft
                         },
-                        "contacts": modem.contacts
+                        contacts: contacts,
+                        digest: digest
                     }
                 }
             };
+            var e_3, _c;
         })(modem);
     }
     else {

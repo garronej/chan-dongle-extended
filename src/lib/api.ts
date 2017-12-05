@@ -2,11 +2,13 @@
 import { Modem, UnlockResult } from "ts-gsm-modem";
 import { Modems } from "./defs";
 
-import { _private, Ami, DongleController as Dc } from "../chan-dongle-extended-client";
+import { 
+    _private, 
+    Ami, 
+    DongleController as Dc, 
+    phoneNumberLibrary as phone
+ } from "../chan-dongle-extended-client";
 import api = _private.api
-import Dongle = Dc.Dongle;
-import LockedDongle = Dc.LockedDongle;
-import ActiveDongle = Dc.ActiveDongle;
 
 import * as lt from "./defs";
 import LockedModem = lt.LockedModem;
@@ -239,11 +241,11 @@ export function start(modems: Modems, ami: Ami) {
 
 }
 
-function buildDongle(modem: Modem | LockedModem | Void): Dongle | undefined {
+function buildDongle(modem: Modem | LockedModem | Void): Dc.Dongle | undefined {
 
     if (matchLockedModem(modem)) {
 
-        return (function buildLockedDongle(lockedModem: LockedModem): LockedDongle {
+        return (function buildLockedDongle(lockedModem: LockedModem): Dc.LockedDongle {
 
             return {
                 "imei": lockedModem.imei,
@@ -258,23 +260,58 @@ function buildDongle(modem: Modem | LockedModem | Void): Dongle | undefined {
 
     } else if (matchModem(modem)) {
 
-        return (function buildActiveDongle(modem: Modem): ActiveDongle {
+        return (function buildActiveDongle(modem: Modem): Dc.ActiveDongle {
+
+            let number= modem.number;
+            let storageLeft= modem.storageLeft;
+
+            let contacts: Dc.Contact[]= [];
+
+            let imsi= modem.imsi;
+
+            for( let contact of modem.contacts ){
+
+                contacts.push({
+                    "index": contact.index,
+                    "name": {
+                        "asStored": contact.name,
+                        "full": contact.name
+                    },
+                    "number": {
+                        "asStored": contact.number,
+                        "localFormat": phone.toNationalNumber(contact.number, imsi)
+                    }
+                });
+
+            }
+
+            let digest= Dc.SimStorage.computeDigest(number, storageLeft, contacts);
 
             return {
                 "imei": modem.imei,
                 "isVoiceEnabled": modem.isVoiceEnabled,
                 "sim": {
                     "iccid": modem.iccid,
-                    "imsi": modem.imsi,
-                    "number": modem.number,
-                    "serviceProvider": modem.serviceProviderName,
-                    "phonebook": {
+                    imsi,
+                    "serviceProvider": {
+                        "fromImsi": (()=>{
+
+                            let imsiInfos = phone.getImsiInfos(imsi);
+
+                            return imsiInfos?imsiInfos.network_name:undefined;
+
+                        })(),
+                        "fromNetwork": modem.serviceProviderName
+                    },
+                    "storage": {
+                        number,
                         "infos": {
                             "contactNameMaxLength": modem.contactNameMaxLength,
                             "numberMaxLength": modem.numberMaxLength,
-                            "storageLeft": modem.storageLeft,
+                            storageLeft
                         },
-                        "contacts": modem.contacts
+                        contacts,
+                        digest
                     }
                 }
             };
