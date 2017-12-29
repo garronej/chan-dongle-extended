@@ -254,7 +254,7 @@ function start(modems, ami) {
                                     for (_c = __values(__spread(messagesOfSim)), _d = _c.next(); !_d.done; _d = _c.next()) {
                                         message = _d.value;
                                         time = message.date.getTime();
-                                        if ((time <= from) || (time >= to))
+                                        if ((time < from) || (time > to))
                                             continue;
                                         response[imsi].push(message);
                                         if (flush) {

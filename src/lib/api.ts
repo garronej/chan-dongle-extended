@@ -222,7 +222,7 @@ export function start(modems: Modems, ami: Ami) {
 
                     let time= message.date.getTime();
 
-                    if ((time <= from) || ( time >= to )) continue;
+                    if ((time < from) || ( time > to )) continue;
 
                     response[imsi].push(message);
 
