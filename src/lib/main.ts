@@ -98,8 +98,6 @@ async function unlock(
         "performUnlock": async (...inputs) => {
             //NOTE: Perform result throw error if modem disconnect during unlock
 
-            console.log("perform unlock");
-
             modems.delete(accessPoint);
 
             let pin: string;
@@ -175,7 +173,7 @@ async function createModem(accessPoint: AccessPoint) {
 
         let { modemInfos } = initializationError;
 
-        if (modemInfos.hasSim) {
+        if (modemInfos.hasSim !== false ) {
             scheduleRetry(accessPoint);
         }
 

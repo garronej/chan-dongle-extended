@@ -105,8 +105,11 @@ program
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, resetChanDongle()];
+            case 0: 
+            //TODO: make sure mysql and Asterisk started
+            return [4 /*yield*/, resetChanDongle()];
             case 1:
+                //TODO: make sure mysql and Asterisk started
                 _a.sent();
                 return [4 /*yield*/, grantAccessTntDevices()];
             case 2:

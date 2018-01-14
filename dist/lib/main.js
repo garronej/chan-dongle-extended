@@ -106,7 +106,6 @@ function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
                                     switch (_a.label) {
                                         case 0:
                                             //NOTE: Perform result throw error if modem disconnect during unlock
-                                            console.log("perform unlock");
                                             modems.delete(accessPoint);
                                             if (!!inputs[1]) return [3 /*break*/, 2];
                                             pin = inputs[0];
@@ -173,7 +172,9 @@ function createModem(accessPoint) {
                     initializationError = error_1;
                     debug("Initialization error: " + initializationError.message);
                     modemInfos = initializationError.modemInfos;
-                    if (modemInfos.hasSim) {
+                    console.log({ modemInfos: modemInfos });
+                    if (modemInfos.hasSim !== false) {
+                        console.log("====> we shedule retry");
                         scheduleRetry(accessPoint);
                     }
                     return [2 /*return*/];

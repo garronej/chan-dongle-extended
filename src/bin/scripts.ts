@@ -50,6 +50,8 @@ program
     .description("Reset chan_dongle, give perms to dev/tnt* devices (tty0tty)")
     .action(async () => {
 
+        //TODO: make sure mysql and Asterisk started
+
         await resetChanDongle();
         await grantAccessTntDevices();
 
