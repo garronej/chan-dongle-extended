@@ -336,7 +336,7 @@ function buildDongle(modem) {
                         },
                         "number": {
                             "asStored": contact.number,
-                            "localFormat": chan_dongle_extended_client_1.phoneNumberLibrary.toNationalNumber(contact.number, imsi)
+                            "localFormat": chan_dongle_extended_client_1.utils.toNationalNumber(contact.number, imsi)
                         }
                     });
                 }
@@ -358,15 +358,18 @@ function buildDongle(modem) {
                 "sim": {
                     "iccid": modem.iccid,
                     imsi: imsi,
+                    "country": chan_dongle_extended_client_1.utils.SimCountry.getFromImsi(imsi),
                     "serviceProvider": {
                         "fromImsi": (function () {
-                            var imsiInfos = chan_dongle_extended_client_1.phoneNumberLibrary.getImsiInfos(imsi);
+                            var imsiInfos = chan_dongle_extended_client_1.utils.getImsiInfos(imsi);
                             return imsiInfos ? imsiInfos.network_name : undefined;
                         })(),
                         "fromNetwork": modem.serviceProviderName
                     },
                     "storage": {
-                        number: number,
+                        "number": number ?
+                            ({ "asStored": number, "localFormat": chan_dongle_extended_client_1.utils.toNationalNumber(number, imsi) })
+                            : undefined,
                         "infos": {
                             "contactNameMaxLength": modem.contactNameMaxLength,
                             "numberMaxLength": modem.numberMaxLength,

@@ -6,7 +6,7 @@ import {
     _private, 
     Ami, 
     DongleController as Dc, 
-    phoneNumberLibrary as phone
+    utils as dcUtils,
  } from "../chan-dongle-extended-client";
 import api = _private.api
 
@@ -304,7 +304,7 @@ function buildDongle(modem: Modem | LockedModem | Void): Dc.Dongle | undefined {
                     },
                     "number": {
                         "asStored": contact.number,
-                        "localFormat": phone.toNationalNumber(contact.number, imsi)
+                        "localFormat": dcUtils.toNationalNumber(contact.number, imsi)
                     }
                 });
 
@@ -321,10 +321,11 @@ function buildDongle(modem: Modem | LockedModem | Void): Dc.Dongle | undefined {
                 "sim": {
                     "iccid": modem.iccid,
                     imsi,
+                    "country": dcUtils.SimCountry.getFromImsi(imsi),
                     "serviceProvider": {
                         "fromImsi": (()=>{
 
-                            let imsiInfos = phone.getImsiInfos(imsi);
+                            let imsiInfos = dcUtils.getImsiInfos(imsi);
 
                             return imsiInfos?imsiInfos.network_name:undefined;
 
@@ -332,7 +333,9 @@ function buildDongle(modem: Modem | LockedModem | Void): Dc.Dongle | undefined {
                         "fromNetwork": modem.serviceProviderName
                     },
                     "storage": {
-                        number,
+                        "number": number ?
+                            ({ "asStored": number, "localFormat": dcUtils.toNationalNumber(number, imsi) })
+                            : undefined,
                         "infos": {
                             "contactNameMaxLength": modem.contactNameMaxLength,
                             "numberMaxLength": modem.numberMaxLength,
