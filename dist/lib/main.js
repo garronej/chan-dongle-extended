@@ -69,7 +69,7 @@ function scheduleRetry(accessPoint) {
     monitor.evtModemDisconnect.waitFor(function (ap) { return ap === accessPoint; }, 2000)
         .catch(function () { return createModem(accessPoint); });
 }
-function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
+function unlock(accessPoint, modemInfos, iccid, pinState, tryLeft, performUnlock) {
     return __awaiter(this, void 0, void 0, function () {
         var _this = this;
         var appData, pin, unlockResult, lockedModem;
@@ -78,7 +78,7 @@ function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
                 case 0: return [4 /*yield*/, storage.read()];
                 case 1:
                     appData = _a.sent();
-                    pin = appData.pins[iccid || imei];
+                    pin = appData.pins[iccid || modemInfos.imei];
                     if (!pin) return [3 /*break*/, 4];
                     if (!(pinState === "SIM PIN" && tryLeft === 3)) return [3 /*break*/, 3];
                     return [4 /*yield*/, performUnlock(pin)];
@@ -90,11 +90,15 @@ function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
                     tryLeft = unlockResult.tryLeft;
                     return [3 /*break*/, 4];
                 case 3:
-                    delete appData.pins[iccid || imei];
+                    delete appData.pins[iccid || modemInfos.imei];
                     _a.label = 4;
                 case 4:
                     lockedModem = {
-                        imei: imei, iccid: iccid, pinState: pinState, tryLeft: tryLeft,
+                        "imei": modemInfos.imei,
+                        "manufacturer": modemInfos.manufacturer,
+                        "model": modemInfos.model,
+                        "firmwareVersion": modemInfos.firmwareVersion,
+                        iccid: iccid, pinState: pinState, tryLeft: tryLeft,
                         "performUnlock": function () {
                             var inputs = [];
                             for (var _i = 0; _i < arguments.length; _i++) {
@@ -126,10 +130,10 @@ function unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock) {
                                             appData = _a.sent();
                                             if (unlockResult.success) {
                                                 debug("Persistent storing of pin: " + pin);
-                                                appData.pins[iccid || imei] = pin;
+                                                appData.pins[iccid || modemInfos.imei] = pin;
                                             }
                                             else {
-                                                delete appData.pins[iccid || imei];
+                                                delete appData.pins[iccid || modemInfos.imei];
                                                 lockedModem.pinState = unlockResult.pinState;
                                                 lockedModem.tryLeft = unlockResult.tryLeft;
                                                 modems.set(accessPoint, lockedModem);
@@ -159,8 +163,8 @@ function createModem(accessPoint) {
                     return [4 /*yield*/, ts_gsm_modem_1.Modem.create({
                             "enableTrace": true,
                             "dataIfPath": accessPoint.dataIfPath,
-                            "unlock": function (imei, iccid, pinState, tryLeft, performUnlock) {
-                                return unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock);
+                            "unlock": function (modemInfo, iccid, pinState, tryLeft, performUnlock) {
+                                return unlock(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock);
                             }
                         })];
                 case 2:
@@ -172,9 +176,7 @@ function createModem(accessPoint) {
                     initializationError = error_1;
                     debug("Initialization error: " + initializationError.message);
                     modemInfos = initializationError.modemInfos;
-                    console.log({ modemInfos: modemInfos });
                     if (modemInfos.hasSim !== false) {
-                        console.log("====> we shedule retry");
                         scheduleRetry(accessPoint);
                     }
                     return [2 /*return*/];

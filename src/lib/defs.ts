@@ -12,6 +12,9 @@ import { TrackableMap } from "trackable-map";
 
 export interface LockedModem {
     imei: string;
+    manufacturer: string;
+    model: string;
+    firmwareVersion: string;
     iccid: string | undefined;
     pinState: AtMessage.LockedPinState;
     tryLeft: number;

@@ -75,9 +75,28 @@ var trackable_map_1 = require("trackable-map");
 var storage = require("./appStorage");
 var _debug = require("debug");
 var debug = _debug("_api");
+var upSince = Date.now();
 function start(modems, ami) {
     var _this = this;
     var server = chan_dongle_extended_client_1.Ami.getInstance().createApiServer(chan_dongle_extended_client_1.DongleController.apiId);
+    (function () { return __awaiter(_this, void 0, void 0, function () {
+        var eventData;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    eventData = { upSince: upSince };
+                    _a.label = 1;
+                case 1:
+                    if (!true) return [3 /*break*/, 3];
+                    server.postEvent(api.Events.periodicalSignal.name, eventData);
+                    return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(function () { return resolve(); }, api.Events.periodicalSignal.interval); })];
+                case 2:
+                    _a.sent();
+                    return [3 /*break*/, 1];
+                case 3: return [2 /*return*/];
+            }
+        });
+    }); })();
     modems.evt.attach(function (_a) {
         var _b = __read(_a, 3), newModem = _b[0], _ = _b[1], oldModem = _b[2];
         debug("Dongle", JSON.stringify(buildDongle(newModem), null, 2));
@@ -289,6 +308,9 @@ function buildDongle(modem) {
         return (function buildLockedDongle(lockedModem) {
             return {
                 "imei": lockedModem.imei,
+                "manufacturer": lockedModem.manufacturer,
+                "model": lockedModem.model,
+                "firmwareVersion": lockedModem.firmwareVersion,
                 "sim": {
                     "iccid": lockedModem.iccid,
                     "pinState": lockedModem.pinState,
@@ -329,6 +351,9 @@ function buildDongle(modem) {
             var digest = chan_dongle_extended_client_1.DongleController.SimStorage.computeDigest(number, storageLeft, contacts);
             return {
                 "imei": modem.imei,
+                "manufacturer": modem.manufacturer,
+                "model": modem.model,
+                "firmwareVersion": modem.firmwareVersion,
                 "isVoiceEnabled": modem.isVoiceEnabled,
                 "sim": {
                     "iccid": modem.iccid,

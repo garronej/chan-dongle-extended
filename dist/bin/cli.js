@@ -276,7 +276,7 @@ function getDcInstance() {
                     return [3 /*break*/, 4];
                 case 3:
                     _a = _b.sent();
-                    console.log("dongle-extended not is running".red);
+                    console.log("dongle-extended is not running".red);
                     process.exit(1);
                     return [3 /*break*/, 4];
                 case 4: return [2 /*return*/, dc];

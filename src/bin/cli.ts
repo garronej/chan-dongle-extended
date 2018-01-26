@@ -225,7 +225,7 @@ async function getDcInstance(): Promise<Dc>{
 
         }catch {
 
-            console.log("dongle-extended not is running".red);
+            console.log("dongle-extended is not running".red);
             process.exit(1);
 
         }

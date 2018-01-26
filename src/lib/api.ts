@@ -23,9 +23,31 @@ import * as storage from "./appStorage";
 import * as _debug from "debug";
 let debug = _debug("_api");
 
+const upSince= Date.now();
+
 export function start(modems: Modems, ami: Ami) {
 
     const server = Ami.getInstance().createApiServer(Dc.apiId);
+
+    (async ()=>{
+
+        let eventData: api.Events.periodicalSignal.Data={ upSince };
+
+        while(true){
+
+            server.postEvent(api.Events.periodicalSignal.name, eventData);
+
+            await new Promise<void>(
+                resolve=> setTimeout(
+                    ()=> resolve(), 
+                    api.Events.periodicalSignal.interval
+                )
+            );
+
+        }
+
+    })();
+
 
     modems.evt.attach(([newModem, _, oldModem]) => {
 
@@ -249,6 +271,9 @@ function buildDongle(modem: Modem | LockedModem | Void): Dc.Dongle | undefined {
 
             return {
                 "imei": lockedModem.imei,
+                "manufacturer": lockedModem.manufacturer,
+                "model": lockedModem.model,
+                "firmwareVersion": lockedModem.firmwareVersion,
                 "sim": {
                     "iccid": lockedModem.iccid,
                     "pinState": lockedModem.pinState,
@@ -289,6 +314,9 @@ function buildDongle(modem: Modem | LockedModem | Void): Dc.Dongle | undefined {
 
             return {
                 "imei": modem.imei,
+                "manufacturer": modem.manufacturer,
+                "model": modem.model,
+                "firmwareVersion": modem.firmwareVersion,
                 "isVoiceEnabled": modem.isVoiceEnabled,
                 "sim": {
                     "iccid": modem.iccid,

@@ -63,7 +63,12 @@ function scheduleRetry(accessPoint: AccessPoint) {
 
 async function unlock(
     accessPoint: AccessPoint,
-    imei: string,
+    modemInfos: {
+        imei: string;
+        manufacturer: string;
+        model: string;
+        firmwareVersion: string;
+    },
     iccid: string | undefined,
     pinState: AtMessage.LockedPinState,
     tryLeft: number,
@@ -72,7 +77,7 @@ async function unlock(
 
     let appData = await storage.read();
 
-    let pin = appData.pins[iccid || imei];
+    let pin = appData.pins[iccid || modemInfos.imei];
 
     if (pin) {
 
@@ -87,14 +92,18 @@ async function unlock(
 
         } else {
 
-            delete appData.pins[iccid || imei];
+            delete appData.pins[iccid || modemInfos.imei];
 
         }
 
     }
 
     let lockedModem: LockedModem = {
-        imei, iccid, pinState, tryLeft,
+        "imei": modemInfos.imei,
+        "manufacturer": modemInfos.manufacturer, 
+        "model": modemInfos.model,
+        "firmwareVersion": modemInfos.firmwareVersion,
+        iccid, pinState, tryLeft,
         "performUnlock": async (...inputs) => {
             //NOTE: Perform result throw error if modem disconnect during unlock
 
@@ -126,11 +135,11 @@ async function unlock(
 
                 debug(`Persistent storing of pin: ${pin}`);
 
-                appData.pins[iccid || imei] = pin;
+                appData.pins[iccid || modemInfos.imei] = pin;
 
             } else {
 
-                delete appData.pins[iccid || imei];
+                delete appData.pins[iccid || modemInfos.imei];
 
                 lockedModem.pinState = unlockResult.pinState;
                 lockedModem.tryLeft = unlockResult.tryLeft;
@@ -159,8 +168,8 @@ async function createModem(accessPoint: AccessPoint) {
         modem = await Modem.create({
             "enableTrace": true,
             "dataIfPath": accessPoint.dataIfPath,
-            "unlock": (imei, iccid, pinState, tryLeft, performUnlock) =>
-                unlock(accessPoint, imei, iccid, pinState, tryLeft, performUnlock)
+            "unlock": (modemInfo, iccid, pinState, tryLeft, performUnlock) =>
+                unlock(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock)
         });
 
     } catch (error) {
