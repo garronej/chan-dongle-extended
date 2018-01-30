@@ -75,7 +75,7 @@ var trackable_map_1 = require("trackable-map");
 var storage = require("./appStorage");
 var _debug = require("debug");
 var debug = _debug("_api");
-var upSince = Date.now();
+var serviceUpSince = Date.now();
 function start(modems, ami) {
     var _this = this;
     var server = chan_dongle_extended_client_1.Ami.getInstance().createApiServer(chan_dongle_extended_client_1.DongleController.apiId);
@@ -84,7 +84,7 @@ function start(modems, ami) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    eventData = { upSince: upSince };
+                    eventData = { serviceUpSince: serviceUpSince };
                     _a.label = 1;
                 case 1:
                     if (!true) return [3 /*break*/, 3];
@@ -217,7 +217,8 @@ function start(modems, ami) {
             return __generator(this, function (_a) {
                 return [2 /*return*/, {
                         "dongles": modems.valuesAsArray().map(function (modem) { return buildDongle(modem); }),
-                        moduleConfiguration: moduleConfiguration
+                        moduleConfiguration: moduleConfiguration,
+                        serviceUpSince: serviceUpSince
                     }];
             });
         }); };

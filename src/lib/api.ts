@@ -23,7 +23,7 @@ import * as storage from "./appStorage";
 import * as _debug from "debug";
 let debug = _debug("_api");
 
-const upSince= Date.now();
+const serviceUpSince= Date.now();
 
 export function start(modems: Modems, ami: Ami) {
 
@@ -31,7 +31,7 @@ export function start(modems: Modems, ami: Ami) {
 
     (async ()=>{
 
-        let eventData: api.Events.periodicalSignal.Data={ upSince };
+        let eventData: api.Events.periodicalSignal.Data={ serviceUpSince };
 
         while(true){
 
@@ -176,7 +176,8 @@ export function start(modems: Modems, ami: Ami) {
 
             return {
                 "dongles": modems.valuesAsArray().map(modem => buildDongle(modem)!),
-                moduleConfiguration
+                moduleConfiguration,
+                serviceUpSince
             };
 
         }
