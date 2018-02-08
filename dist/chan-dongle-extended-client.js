@@ -1,7 +1,13 @@
 "use strict";
-function __export(m) {
-    for (var p in m) if (!exports.hasOwnProperty(p)) exports[p] = m[p];
-}
+//import * as apiDeclaration from "../../chan-dongle-extended-client/dist/lib/apiDeclaration";
+//import * as misc from "../../chan-dongle-extended-client/dist/lib/misc";
+//import { Ami, types, DongleController } from  "../../chan-dongle-extended-client";
 Object.defineProperty(exports, "__esModule", { value: true });
-__export(require("../../chan-dongle-extended-client"));
-//export * from "chan-dongle-extended-client"; 
+var apiDeclaration = require("../node_modules/chan-dongle-extended-client/dist/lib/apiDeclaration");
+exports.apiDeclaration = apiDeclaration;
+var misc = require("../node_modules/chan-dongle-extended-client/dist/lib/misc");
+exports.misc = misc;
+var chan_dongle_extended_client_1 = require("../node_modules/chan-dongle-extended-client");
+exports.Ami = chan_dongle_extended_client_1.Ami;
+exports.types = chan_dongle_extended_client_1.types;
+exports.DongleController = chan_dongle_extended_client_1.DongleController;

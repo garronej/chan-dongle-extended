@@ -1,8 +1,6 @@
 
 import {
     Modem,
-    InitializationError,
-    UnlockResult,
     PerformUnlock,
     AtMessage,
     AccessPoint
@@ -34,6 +32,4 @@ export function matchLockedModem(modem: any ): modem is LockedModem {
 export function matchModem(modem: any): modem is Modem {
     return modem instanceof Modem;
 }
-
-
 

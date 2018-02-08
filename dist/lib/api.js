@@ -66,7 +66,6 @@ var __spread = (this && this.__spread) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
-var api = chan_dongle_extended_client_1._private.api;
 var lt = require("./defs");
 var matchModem = lt.matchModem;
 var matchLockedModem = lt.matchLockedModem;
@@ -78,7 +77,7 @@ var debug = _debug("_api");
 var serviceUpSince = Date.now();
 function start(modems, ami) {
     var _this = this;
-    var server = chan_dongle_extended_client_1.Ami.getInstance().createApiServer(chan_dongle_extended_client_1.DongleController.apiId);
+    var server = chan_dongle_extended_client_1.Ami.getInstance().createApiServer(chan_dongle_extended_client_1.apiDeclaration.id);
     (function () { return __awaiter(_this, void 0, void 0, function () {
         var eventData;
         return __generator(this, function (_a) {
@@ -88,8 +87,8 @@ function start(modems, ami) {
                     _a.label = 1;
                 case 1:
                     if (!true) return [3 /*break*/, 3];
-                    server.postEvent(api.Events.periodicalSignal.name, eventData);
-                    return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(function () { return resolve(); }, api.Events.periodicalSignal.interval); })];
+                    server.postEvent(chan_dongle_extended_client_1.apiDeclaration.Events.periodicalSignal.name, eventData);
+                    return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(function () { return resolve(); }, chan_dongle_extended_client_1.apiDeclaration.Events.periodicalSignal.interval); })];
                 case 2:
                     _a.sent();
                     return [3 /*break*/, 1];
@@ -115,7 +114,7 @@ function start(modems, ami) {
             dongleImei: dongleImei,
             "dongle": buildDongle(newModem)
         };
-        server.postEvent(api.Events.updateMap.name, eventData);
+        server.postEvent(chan_dongle_extended_client_1.apiDeclaration.Events.updateMap.name, eventData);
         if (!matchModem(newModem))
             return;
         var imsi = newModem.imsi;
@@ -142,31 +141,31 @@ function start(modems, ami) {
                         appData = _a.sent();
                         appData.messages[imsi].push(message);
                         eventData = { dongleImei: dongleImei, message: message };
-                        server.postEvent(api.Events.message.name, eventData);
+                        server.postEvent(chan_dongle_extended_client_1.apiDeclaration.Events.message.name, eventData);
                         return [2 /*return*/];
                 }
             });
         }); });
         newModem.evtMessageStatusReport.attach(function (statusReport) {
             var eventData = { dongleImei: dongleImei, statusReport: statusReport };
-            server.postEvent(api.Events.statusReport.name, eventData);
+            server.postEvent(chan_dongle_extended_client_1.apiDeclaration.Events.statusReport.name, eventData);
         });
     });
     server.evtRequest.attach(function (_a) {
         var method = _a.method, params = _a.params, resolve = _a.resolve, reject = _a.reject;
         return __awaiter(_this, void 0, void 0, function () {
-            var _a, error_1;
-            return __generator(this, function (_b) {
-                switch (_b.label) {
+            var _b, error_1;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
-                        _b.trys.push([0, 2, , 3]);
-                        _a = resolve;
+                        _c.trys.push([0, 2, , 3]);
+                        _b = resolve;
                         return [4 /*yield*/, handlers[method](params)];
                     case 1:
-                        _a.apply(void 0, [_b.sent()]);
+                        _b.apply(void 0, [_c.sent()]);
                         return [3 /*break*/, 3];
                     case 2:
-                        error_1 = _b.sent();
+                        error_1 = _c.sent();
                         reject(error_1);
                         return [3 /*break*/, 3];
                     case 3: return [2 /*return*/];
@@ -179,7 +178,7 @@ function start(modems, ami) {
         return { general: general, defaults: defaults };
     })();
     var handlers = {};
-    handlers[api.sendMessage.method] =
+    handlers[chan_dongle_extended_client_1.apiDeclaration.sendMessage.method] =
         function (params) { return __awaiter(_this, void 0, void 0, function () {
             var viaDongleImei, toNumber, text, modem, sendDate, error_2;
             return __generator(this, function (_a) {
@@ -212,7 +211,7 @@ function start(modems, ami) {
                 }
             });
         }); };
-    handlers[api.initialize.method] =
+    handlers[chan_dongle_extended_client_1.apiDeclaration.initialize.method] =
         function () { return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_a) {
                 return [2 /*return*/, {
@@ -222,7 +221,7 @@ function start(modems, ami) {
                     }];
             });
         }); };
-    handlers[api.unlock.method] =
+    handlers[chan_dongle_extended_client_1.apiDeclaration.unlock.method] =
         function (params) {
             var dongleImei = params.dongleImei;
             var lockedModem = modems.find(function (_a) {
@@ -232,21 +231,20 @@ function start(modems, ami) {
             if (!matchLockedModem(lockedModem)) {
                 throw new Error("No such dongle to unlock");
             }
-            if (api.unlock.matchPin(params)) {
+            if (chan_dongle_extended_client_1.apiDeclaration.unlock.matchPin(params)) {
                 return lockedModem.performUnlock(params.pin);
             }
             else {
                 return lockedModem.performUnlock(params.puk, params.newPin);
             }
         };
-    handlers[api.getMessages.method] =
+    handlers[chan_dongle_extended_client_1.apiDeclaration.getMessages.method] =
         function (params) { return __awaiter(_this, void 0, void 0, function () {
-            var response, matchImsi, from, to, flush, appData, _a, _b, imsi, messagesOfSim, _c, _d, message, time, e_1, _e, e_2, _f;
+            var response, from, to, flush, appData, _a, _b, imsi, messagesOfSim, _c, _d, message, time, e_1, _e, e_2, _f;
             return __generator(this, function (_g) {
                 switch (_g.label) {
                     case 0:
                         response = {};
-                        matchImsi = function (imsi) { return true; };
                         from = 0;
                         to = Infinity;
                         flush = false;
@@ -321,7 +319,7 @@ function buildDongle(modem) {
         })(modem);
     }
     else if (matchModem(modem)) {
-        return (function buildActiveDongle(modem) {
+        return (function buildUsableDongle(modem) {
             var number = modem.number;
             var storageLeft = modem.storageLeft;
             var contacts = [];
@@ -337,7 +335,7 @@ function buildDongle(modem) {
                         },
                         "number": {
                             "asStored": contact.number,
-                            "localFormat": chan_dongle_extended_client_1.utils.toNationalNumber(contact.number, imsi)
+                            "localFormat": chan_dongle_extended_client_1.misc.toNationalNumber(contact.number, imsi)
                         }
                     });
                 }
@@ -349,7 +347,8 @@ function buildDongle(modem) {
                 }
                 finally { if (e_3) throw e_3.error; }
             }
-            var digest = chan_dongle_extended_client_1.DongleController.SimStorage.computeDigest(number, storageLeft, contacts);
+            var digest = chan_dongle_extended_client_1.misc.computeSimStorageDigest(number, storageLeft, contacts);
+            var simCountryAndSp = chan_dongle_extended_client_1.misc.getSimCountryAndSp(imsi);
             return {
                 "imei": modem.imei,
                 "manufacturer": modem.manufacturer,
@@ -359,17 +358,18 @@ function buildDongle(modem) {
                 "sim": {
                     "iccid": modem.iccid,
                     imsi: imsi,
-                    "country": chan_dongle_extended_client_1.utils.SimCountry.getFromImsi(imsi),
+                    "country": simCountryAndSp ? ({
+                        "iso": simCountryAndSp.iso,
+                        "code": simCountryAndSp.code,
+                        "name": simCountryAndSp.name
+                    }) : undefined,
                     "serviceProvider": {
-                        "fromImsi": (function () {
-                            var imsiInfos = chan_dongle_extended_client_1.utils.getImsiInfos(imsi);
-                            return imsiInfos ? imsiInfos.network_name : undefined;
-                        })(),
+                        "fromImsi": simCountryAndSp ? simCountryAndSp.serviceProvider : undefined,
                         "fromNetwork": modem.serviceProviderName
                     },
                     "storage": {
                         "number": number ?
-                            ({ "asStored": number, "localFormat": chan_dongle_extended_client_1.utils.toNationalNumber(number, imsi) })
+                            ({ "asStored": number, "localFormat": chan_dongle_extended_client_1.misc.toNationalNumber(number, imsi) })
                             : undefined,
                         "infos": {
                             "contactNameMaxLength": modem.contactNameMaxLength,

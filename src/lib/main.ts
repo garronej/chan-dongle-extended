@@ -15,8 +15,8 @@ import {
 import { TrackableMap } from "trackable-map";
 import * as storage from "./appStorage";
 import { LockedModem, Modems } from "./defs";
-import { Ami, _private} from "../chan-dongle-extended-client";
-import amiUser = _private.amiUser;
+import { Ami, misc } from "../chan-dongle-extended-client";
+import amiUser = misc.amiUser;
 
 import * as repl from "./repl";
 import * as dialplan from "./dialplan";

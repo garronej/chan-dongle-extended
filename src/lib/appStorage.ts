@@ -2,7 +2,6 @@ import * as runExclusive from "run-exclusive";
 import * as superJson from "super-json";
 import * as storage from "node-persist";
 import * as path from "path";
-import { DongleController as Dc } from "../chan-dongle-extended-client";
 import { Message } from "ts-gsm-modem";
 
 namespace JSON {

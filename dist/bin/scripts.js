@@ -66,7 +66,7 @@ var ini_extended_1 = require("ini-extended");
 var chanDongleConfManager_1 = require("../lib/chanDongleConfManager");
 require("colors");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
-var amiUser = chan_dongle_extended_client_1._private.amiUser;
+var amiUser = chan_dongle_extended_client_1.misc.amiUser;
 program
     .command("postinstall")
     .description([
@@ -231,9 +231,9 @@ function mkPersistDir() {
 }
 function enableManager() {
     return __awaiter(this, void 0, void 0, function () {
-        var general, user, error_1;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var general, user, error_1, _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
                     general = {
                         "enabled": "yes",
@@ -258,25 +258,21 @@ function enableManager() {
                         }
                         catch (error) { }
                     }
-                    return [4 /*yield*/, writeFileAssertSuccess(managerConfPath, ini_extended_1.ini.stringify((function () {
-                            var out = { general: general };
-                            out[amiUser] = user;
-                            return out;
-                        })()))];
+                    return [4 /*yield*/, writeFileAssertSuccess(managerConfPath, ini_extended_1.ini.stringify((_a = { general: general }, _a[amiUser] = user, _a)))];
                 case 1:
-                    _a.sent();
+                    _b.sent();
                     return [4 /*yield*/, run("chmod u+r,g+r,o+r " + managerConfPath)];
                 case 2:
-                    _a.sent();
-                    _a.label = 3;
+                    _b.sent();
+                    _b.label = 3;
                 case 3:
-                    _a.trys.push([3, 5, , 6]);
+                    _b.trys.push([3, 5, , 6]);
                     return [4 /*yield*/, run('asterisk -rx "core reload"')];
                 case 4:
-                    _a.sent();
+                    _b.sent();
                     return [3 /*break*/, 6];
                 case 5:
-                    error_1 = _a.sent();
+                    error_1 = _b.sent();
                     return [3 /*break*/, 6];
                 case 6:
                     console.log("Asterisk Manager successfully enabled");

@@ -21,8 +21,8 @@ const vendorIds = Object.keys(recordIfNum);
 import { ini } from "ini-extended";
 import { chanDongleConfManager } from "../lib/chanDongleConfManager";
 import "colors";
-import { _private } from "../chan-dongle-extended-client";
-import amiUser= _private.amiUser;
+import { misc } from "../chan-dongle-extended-client";
+import amiUser= misc.amiUser;
 
 program
     .command("postinstall")
@@ -181,17 +181,7 @@ async function enableManager() {
 
     await writeFileAssertSuccess(
         managerConfPath,
-        ini.stringify(
-            (() => {
-
-                let out: any = { general };
-
-                out[amiUser] = user;
-
-                return out;
-
-            })()
-        )
+        ini.stringify({ general, [amiUser]: user })
     );
 
     await run(`chmod u+r,g+r,o+r ${managerConfPath}`);

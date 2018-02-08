@@ -3,11 +3,9 @@ import { ini } from "ini-extended";
 import * as runExclusive from "run-exclusive";
 import * as path from "path";
 
-import { _private, DongleController as Dc, Ami } from "../chan-dongle-extended-client";
-import defaultConfig= _private.defaultConfig;
-import ModuleConfiguration= Dc.ModuleConfiguration;
+import { Ami, types } from "../chan-dongle-extended-client";
 
-export interface DynamicModuleConfiguration extends ModuleConfiguration {
+export interface DynamicModuleConfiguration extends types.ModuleConfiguration {
     [dongleName: string]: {
         audio: string;
         data: string;
@@ -132,7 +130,36 @@ function loadConfig(): DynamicModuleConfiguration {
 
     } catch (error) {
 
-        return defaultConfig;
+        return {
+            "general": {
+                "interval": "10000000",
+                "jbenable": "no",
+                "jbmaxsize": "100",
+                "jbimpl": "fixed"
+            } as any,
+            "defaults": {
+                "context": "from-dongle",
+                "group": "0",
+                "rxgain": "0",
+                "txgain": "0",
+                "autodeletesms": "no",
+                "resetdongle": "yes",
+                "u2diag": "-1",
+                "usecallingpres": "yes",
+                "callingpres": "allowed_passed_screen",
+                "disablesms": "no",
+                "language": "en",
+                "smsaspdu": "yes",
+                "mindtmfgap": "45",
+                "mindtmfduration": "80",
+                "mindtmfinterval": "200",
+                "callwaiting": "auto",
+                "disable": "no",
+                "initstate": "start",
+                "exten": "+12345678987",
+                "dtmf": "relax"
+            }
+        } as any;
 
     }
 }

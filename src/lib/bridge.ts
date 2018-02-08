@@ -1,12 +1,10 @@
 /*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
 /*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
 
-import { SerialPortExt, AtMessage } from "ts-gsm-modem";
-
+import { SerialPortExt, AtMessage, Modem } from "ts-gsm-modem";
 import { chanDongleConfManager } from "./chanDongleConfManager";
 import { Tty0tty } from "./Tty0tty";
 import { AccessPoint } from "gsm-modem-connection";
-import { Modem } from "ts-gsm-modem";
 
 import * as _debug from "debug";
 let debug = _debug("_bridge");

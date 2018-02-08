@@ -40,7 +40,6 @@ var ini_extended_1 = require("ini-extended");
 var runExclusive = require("run-exclusive");
 var path = require("path");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
-var defaultConfig = chan_dongle_extended_client_1._private.defaultConfig;
 var astConfPath = path.join("/etc", "asterisk");
 var dongleConfPath = path.join(astConfPath, "dongle.conf");
 var _debug = require("debug");
@@ -72,15 +71,15 @@ var chanDongleConfManager;
     chanDongleConfManager.addDongle = runExclusive.build(groupRef, function (_a) {
         var dongleName = _a.dongleName, data = _a.data, audio = _a.audio;
         return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_a) {
-                switch (_a.label) {
+            return __generator(this, function (_b) {
+                switch (_b.label) {
                     case 0:
                         if (!config)
                             config = loadConfig();
                         config[dongleName] = { audio: audio, data: data };
                         return [4 /*yield*/, update()];
                     case 1:
-                        _a.sent();
+                        _b.sent();
                         return [2 /*return*/];
                 }
             });
@@ -141,6 +140,35 @@ function loadConfig() {
         return { general: general, defaults: defaults };
     }
     catch (error) {
-        return defaultConfig;
+        return {
+            "general": {
+                "interval": "10000000",
+                "jbenable": "no",
+                "jbmaxsize": "100",
+                "jbimpl": "fixed"
+            },
+            "defaults": {
+                "context": "from-dongle",
+                "group": "0",
+                "rxgain": "0",
+                "txgain": "0",
+                "autodeletesms": "no",
+                "resetdongle": "yes",
+                "u2diag": "-1",
+                "usecallingpres": "yes",
+                "callingpres": "allowed_passed_screen",
+                "disablesms": "no",
+                "language": "en",
+                "smsaspdu": "yes",
+                "mindtmfgap": "45",
+                "mindtmfduration": "80",
+                "mindtmfinterval": "200",
+                "callwaiting": "auto",
+                "disable": "no",
+                "initstate": "start",
+                "exten": "+12345678987",
+                "dtmf": "relax"
+            }
+        };
     }
 }

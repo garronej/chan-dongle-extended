@@ -1,14 +1,10 @@
 
-import { Modem, UnlockResult } from "ts-gsm-modem";
+import { Modem } from "ts-gsm-modem";
 import { Modems } from "./defs";
 
 import { 
-    _private, 
-    Ami, 
-    DongleController as Dc, 
-    utils as dcUtils,
+    Ami, apiDeclaration as api, types, misc
  } from "../chan-dongle-extended-client";
-import api = _private.api
 
 import * as lt from "./defs";
 import LockedModem = lt.LockedModem;
@@ -27,7 +23,7 @@ const serviceUpSince= Date.now();
 
 export function start(modems: Modems, ami: Ami) {
 
-    const server = Ami.getInstance().createApiServer(Dc.apiId);
+    const server = Ami.getInstance().createApiServer(api.id);
 
     (async ()=>{
 
@@ -212,7 +208,6 @@ export function start(modems: Modems, ami: Ami) {
 
             let response: api.getMessages.Response = {};
 
-            let matchImsi = (imsi: string) => true;
             let from = 0;
             let to = Infinity;
             let flush = false;
@@ -264,11 +259,11 @@ export function start(modems: Modems, ami: Ami) {
 
 }
 
-function buildDongle(modem: Modem | LockedModem | Void): Dc.Dongle | undefined {
+function buildDongle(modem: Modem | LockedModem | Void): types.Dongle | undefined {
 
     if (matchLockedModem(modem)) {
 
-        return (function buildLockedDongle(lockedModem: LockedModem): Dc.LockedDongle {
+        return (function buildLockedDongle(lockedModem: LockedModem): types.Dongle.Locked {
 
             return {
                 "imei": lockedModem.imei,
@@ -286,12 +281,12 @@ function buildDongle(modem: Modem | LockedModem | Void): Dc.Dongle | undefined {
 
     } else if (matchModem(modem)) {
 
-        return (function buildActiveDongle(modem: Modem): Dc.ActiveDongle {
+        return (function buildUsableDongle(modem: Modem): types.Dongle.Usable {
 
             let number= modem.number;
             let storageLeft= modem.storageLeft;
 
-            let contacts: Dc.Contact[]= [];
+            let contacts: types.Sim.Contact[]= [];
 
             let imsi= modem.imsi;
 
@@ -305,13 +300,15 @@ function buildDongle(modem: Modem | LockedModem | Void): Dc.Dongle | undefined {
                     },
                     "number": {
                         "asStored": contact.number,
-                        "localFormat": dcUtils.toNationalNumber(contact.number, imsi)
+                        "localFormat": misc.toNationalNumber(contact.number, imsi)
                     }
                 });
 
             }
 
-            let digest= Dc.SimStorage.computeDigest(number, storageLeft, contacts);
+            let digest= misc.computeSimStorageDigest(number, storageLeft, contacts);
+
+            let simCountryAndSp= misc.getSimCountryAndSp(imsi);
 
             return {
                 "imei": modem.imei,
@@ -322,20 +319,18 @@ function buildDongle(modem: Modem | LockedModem | Void): Dc.Dongle | undefined {
                 "sim": {
                     "iccid": modem.iccid,
                     imsi,
-                    "country": dcUtils.SimCountry.getFromImsi(imsi),
+                    "country": simCountryAndSp?({
+                        "iso": simCountryAndSp.iso,
+                        "code": simCountryAndSp.code,
+                        "name": simCountryAndSp.name
+                    }):undefined,
                     "serviceProvider": {
-                        "fromImsi": (()=>{
-
-                            let imsiInfos = dcUtils.getImsiInfos(imsi);
-
-                            return imsiInfos?imsiInfos.network_name:undefined;
-
-                        })(),
+                        "fromImsi": simCountryAndSp?simCountryAndSp.serviceProvider:undefined,
                         "fromNetwork": modem.serviceProviderName
                     },
                     "storage": {
                         "number": number ?
-                            ({ "asStored": number, "localFormat": dcUtils.toNationalNumber(number, imsi) })
+                            ({ "asStored": number, "localFormat": misc.toNationalNumber(number, imsi) })
                             : undefined,
                         "infos": {
                             "contactNameMaxLength": modem.contactNameMaxLength,
