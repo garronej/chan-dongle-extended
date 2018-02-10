@@ -25,6 +25,7 @@ var __read = (this && this.__read) || function (o, n) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
+var tt = require("transfer-tools");
 var lt = require("./defs");
 var matchModem = lt.matchModem;
 var chanDongleConfManager_1 = require("./chanDongleConfManager");
@@ -47,8 +48,8 @@ function start(modems, ami) {
         };
         modem.evtMessage.attach(function (message) {
             debug("Notify Message");
-            var textSplit = chan_dongle_extended_client_1.Ami.b64.split(message.text);
-            var variables = __assign({}, dongleVariables, { "SMS_NUMBER": message.number, "SMS_DATE": message.date.toISOString(), "SMS_TEXT_SPLIT_COUNT": "" + textSplit.length, "SMS_BASE64": chan_dongle_extended_client_1.Ami.b64.crop(message.text) });
+            var textSplit = tt.stringTransform.textSplit(chan_dongle_extended_client_1.Ami.headerValueMaxLength, tt.stringTransform.safeBufferFromTo(message.text, "utf8", "base64"));
+            var variables = __assign({}, dongleVariables, { "SMS_NUMBER": message.number, "SMS_DATE": message.date.toISOString(), "SMS_TEXT_SPLIT_COUNT": "" + textSplit.length, "SMS_BASE64": tt.stringTransformExt.b64crop(chan_dongle_extended_client_1.Ami.headerValueMaxLength, message.text) });
             for (var i = 0; i < textSplit.length; i++)
                 variables["SMS_BASE64_PART_" + i] = textSplit[i];
             ami.originateLocalChannel(dialplanContext, "reassembled-sms", variables);

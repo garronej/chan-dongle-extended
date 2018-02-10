@@ -30,19 +30,19 @@
   "author": "Joseph Garrone",
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
-    "chan-dongle-extended-client": "git+https://a30f7432b117d8320cc21cc03513817c3f08d4b6:x-oauth-basic@github.com/garronej/chan-dongle-extended-client.git",
+    "chan-dongle-extended-client": "git+https://206e4c24cb9a1e4a8d42b7ac86e4a026b02cee42:x-oauth-basic@github.com/garronej/chan-dongle-extended-client.git",
     "colors": "^1.1.2",
     "commander": "2.11.0",
     "debug": "^2.6.1",
     "ini-extended": "github:garronej/ini-extended",
-    "node-persist": "^2.0.10",
     "rejection-tracker": "github:garronej/rejection-tracker",
     "run-exclusive": "github:garronej/run-exclusive",
-    "super-json": "^2.2.0",
     "timer-extended": "garronej/timer-extended",
     "trackable-map": "garronej/trackable-map",
+    "transfer-tools": "garronej/transfer-tools",
     "ts-events-extended": "garronej/ts-events-extended",
-    "ts-gsm-modem": "git+https://a30f7432b117d8320cc21cc03513817c3f08d4b6:x-oauth-basic@github.com/garronej/ts-gsm-modem"
+    "ts-gsm-modem": "git+https://206e4c24cb9a1e4a8d42b7ac86e4a026b02cee42:x-oauth-basic@github.com/garronej/ts-gsm-modem.git",
+    "node-persist": "^2.1.0"
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",

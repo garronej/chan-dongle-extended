@@ -37,24 +37,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var runExclusive = require("run-exclusive");
-var superJson = require("super-json");
-var storage = require("node-persist");
+var tt = require("transfer-tools");
+var c = require("./_constants");
 var path = require("path");
-var JSON;
-(function (JSON) {
-    var myJson = superJson.create({
-        "magic": '#!',
-        "serializers": [superJson.dateSerializer]
-    });
-    function stringify(obj) {
-        return myJson.stringify(obj);
-    }
-    JSON.stringify = stringify;
-    function parse(str) {
-        return myJson.parse(str);
-    }
-    JSON.parse = parse;
-})(JSON || (JSON = {}));
+var storage = require("node-persist");
+var JSON_CUSTOM = tt.JSON_CUSTOM.get();
 var defaultStorageData = {
     "pins": {},
     "messages": {}
@@ -67,9 +54,9 @@ var read_ = runExclusive.build(function (callback) { return __awaiter(_this, voi
             case 0:
                 if (!!init) return [3 /*break*/, 2];
                 return [4 /*yield*/, storage.init({
-                        "dir": path.join(__dirname, "..", "..", ".node-persist", "storage"),
-                        "parse": JSON.parse,
-                        "stringify": JSON.stringify
+                        "dir": path.join(c.paths.dirs.persist, "app"),
+                        "parse": JSON_CUSTOM.parse,
+                        "stringify": JSON_CUSTOM.stringify
                     })];
             case 1:
                 _a.sent();
@@ -79,7 +66,7 @@ var read_ = runExclusive.build(function (callback) { return __awaiter(_this, voi
             case 3:
                 appData = (_a.sent()) || defaultStorageData;
                 callback(appData);
-                return [4 /*yield*/, Promise.resolve()];
+                return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(function () { return resolve(); }, 0); })];
             case 4:
                 _a.sent();
                 limitSize(appData);

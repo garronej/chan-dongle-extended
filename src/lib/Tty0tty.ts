@@ -1,4 +1,4 @@
-const numberOfPairs= 24;
+import * as c from "./_constants";
 
 export class Tty0tty {
 
@@ -8,7 +8,7 @@ export class Tty0tty {
 
         let index = 0;
 
-        for (let _ of new Array(numberOfPairs)) {
+        for (let _ of new Array(c.tty0ttyPairCount)) {
 
             out.push(new Tty0tty(`/dev/tnt${index++}`, `/dev/tnt${index++}`));
 

@@ -10,7 +10,7 @@ var __values = (this && this.__values) || function (o) {
     };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var numberOfPairs = 24;
+var c = require("./_constants");
 var Tty0tty = /** @class */ (function () {
     function Tty0tty(leftEnd, rightEnd) {
         this.leftEnd = leftEnd;
@@ -44,7 +44,7 @@ var Tty0tty = /** @class */ (function () {
         var out = [];
         var index = 0;
         try {
-            for (var _a = __values(new Array(numberOfPairs)), _b = _a.next(); !_b.done; _b = _a.next()) {
+            for (var _a = __values(new Array(c.tty0ttyPairCount)), _b = _a.next(); !_b.done; _b = _a.next()) {
                 var _ = _b.value;
                 out.push(new Tty0tty("/dev/tnt" + index++, "/dev/tnt" + index++));
             }

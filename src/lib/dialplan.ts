@@ -1,6 +1,7 @@
 import { Modems } from "./defs";
 
 import { Ami } from "../chan-dongle-extended-client";
+import * as tt from "transfer-tools";
 
 import * as lt from "./defs";
 import matchModem = lt.matchModem;
@@ -33,14 +34,17 @@ export function start(modems: Modems, ami: Ami) {
 
             debug("Notify Message");
 
-            let textSplit = Ami.b64.split(message.text);
+            let textSplit= tt.stringTransform.textSplit(
+                Ami.headerValueMaxLength,
+                tt.stringTransform.safeBufferFromTo(message.text, "utf8", "base64")
+            );
 
             let variables = {
                 ...dongleVariables,
                 "SMS_NUMBER": message.number,
                 "SMS_DATE": message.date.toISOString(),
                 "SMS_TEXT_SPLIT_COUNT": `${textSplit.length}`,
-                "SMS_BASE64": Ami.b64.crop(message.text)
+                "SMS_BASE64": tt.stringTransformExt.b64crop( Ami.headerValueMaxLength, message.text)
             };
 
             for (let i = 0; i < textSplit.length; i++)

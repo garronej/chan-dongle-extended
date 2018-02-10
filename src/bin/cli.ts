@@ -1,15 +1,16 @@
 #!/usr/bin/env node
-require("rejection-tracker").main(__dirname, "..", "..");
+import * as c from "../lib/_constants";
+require("rejection-tracker").main(c.paths.dirs.project);
 
 import * as program from "commander";
-import { DongleController as Dc, Ami } from "../chan-dongle-extended-client";
-
+import { DongleController as Dc } from "../chan-dongle-extended-client";
 import * as storage from "node-persist";
 import * as path from "path";
 import "colors";
 
-const persistDir = path.join(__dirname, "..", "..", ".node-persist", "storage");
+import * as st from "../../node_modules/transfer-tools/dist/lib/stringTransform";
 
+const storagePath= path.join(c.paths.dirs.persist, "cli");
 
 program
     .command("list")
@@ -54,7 +55,7 @@ program
             process.exit(-1);
         }
 
-        await storage.init({ "dir": persistDir });
+        await storage.init({ "dir": storagePath });
 
         await storage.setItem("cli_imei", imei);
 
@@ -143,7 +144,7 @@ program
 
         let dc= await getDcInstance();
 
-        text = textBase64 ? Ami.b64.dec(textBase64) : JSON.parse(`"${text}"`);
+        text = textBase64 ? st.safeBufferFromTo(textBase64, "base64", "utf8") : JSON.parse(`"${text}"`);
 
         try {
 
@@ -202,7 +203,7 @@ async function getImei(options: { imei: string | undefined }): Promise<string> {
 
     if (options.imei) return options.imei;
 
-    await storage.init({ "dir": persistDir });
+    await storage.init({ "dir": storagePath });
 
     let imei = await storage.getItem("cli_imei");
 

@@ -165,7 +165,7 @@ export function start(modems: Modems, ami: Ami) {
 
             return { "success": true, sendDate };
 
-        }
+        };
 
     handlers[api.initialize.method] =
         async (): Promise<api.initialize.Response> => {
@@ -176,7 +176,7 @@ export function start(modems: Modems, ami: Ami) {
                 serviceUpSince
             };
 
-        }
+        };
 
     handlers[api.unlock.method] =
         (params: api.unlock.Params): Promise<api.unlock.Response> => {
@@ -255,7 +255,7 @@ export function start(modems: Modems, ami: Ami) {
 
             return response;
 
-        }
+        };
 
 }
 

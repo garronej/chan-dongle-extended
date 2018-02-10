@@ -1,17 +1,9 @@
 #!/usr/bin/env node
+import * as c from "../lib/_constants";
 
-const serviceName= "dongle-extended";
+require("rejection-tracker").main(c.paths.dirs.project);
 
 import * as path from "path";
-const modulePath = path.join(__dirname, "..", "..");
-const systemdServicePath = path.join("/etc", "systemd", "system", `${serviceName}.service`);
-const udevRulesPath = path.join("/etc", "udev", "rules.d", `99-${serviceName}.rules`);
-const astConfPath= path.join("/etc", "asterisk");
-const dongleConfPath= path.join(astConfPath, "dongle.conf");
-const managerConfPath= path.join(astConfPath, "manager.conf");
-
-require("rejection-tracker").main(modulePath);
-
 import { exec } from "child_process";
 import * as readline from "readline";
 import { readFileSync, writeFile, unlinkSync, existsSync } from "fs";
@@ -31,7 +23,7 @@ program
         "Create udev rules for granting R/W access on dongles on connect",
         "and disable the wwan network interface created by the dongles",
         "Enable Asterisk Manager and create a user for this module",
-        `Register a systemd service: ${serviceName}.service`
+        `Register a systemd service: ${c.serviceName}.service`
     ].join(" "))
     .action(async () => {
 
@@ -92,9 +84,9 @@ async function installService() {
         "Now you will be ask to choose the user that will run the service\n",
     ].join("").yellow);
 
-    const user = (await ask("User? (press enter for root)")) || "root";
+    const user = c.user || (await ask("User? (press enter for root)")) || "root";
 
-    const group = (await ask("Group? (press enter for root)")) || "root";
+    const group = c.group || (await ask("Group? (press enter for root)")) || "root";
 
     let service = [
         `[Unit]`,
@@ -103,10 +95,10 @@ async function installService() {
         ``,
         `[Service]`,
         `ExecStartPre=${node_execpath} ${__filename} prestart`,
-        `ExecStart=${node_execpath} ${modulePath}/dist/lib/main`,
+        `ExecStart=${node_execpath} ${c.paths.dirs.project}/dist/lib/main`,
         `ExecStopPost=${node_execpath} ${__filename} poststop`,
         `PermissionsStartOnly=true`,
-        `WorkingDirectory=${modulePath}`,
+        `WorkingDirectory=${c.paths.dirs.project}`,
         `Restart=always`,
         `RestartSec=10`,
         `StandardOutput=syslog`,
@@ -121,29 +113,27 @@ async function installService() {
         ``
     ].join("\n");
 
-    await writeFileAssertSuccess(systemdServicePath, service);
+
+    await writeFileAssertSuccess(c.paths.files.systemdServiceFile, service);
 
     await run("systemctl daemon-reload");
 
     console.log([
         `Chan dongle extended service installed!`.green,
-        `${systemdServicePath}: \n\n ${service}`,
+        `${c.paths.files.systemdServiceFile}: \n\n ${service}`,
         `To run the service:`.yellow,
-        `sudo systemctl start ${serviceName}`,
+        `sudo systemctl start ${c.serviceName}`,
         `To automatically start the service on boot:`.yellow,
-        `sudo systemctl enable ${serviceName}`,
+        `sudo systemctl enable ${c.serviceName}`,
     ].join("\n"));
 
 }
 
 async function mkPersistDir() {
 
+    await run(`mkdir -p ${c.paths.dirs.persist}`);
 
-    let pathPersist = path.join(modulePath, ".node-persist");
-
-    await run(`mkdir -p ${pathPersist}`);
-
-    await run(`chmod 777 ${pathPersist}`);
+    await run(`chmod 777 ${c.paths.dirs.persist}`);
 
     console.log("Persist dir created");
 
@@ -171,6 +161,7 @@ async function enableManager() {
         "writetimeout": "5000"
     };
 
+    const managerConfPath = path.join(c.paths.dirs.asterisk, "manager.conf");
 
     if (existsSync(managerConfPath)) {
         try {
@@ -221,11 +212,11 @@ async function setUdevRules() {
 
     }
 
-    await writeFileAssertSuccess(udevRulesPath, rules);
+    await writeFileAssertSuccess(c.paths.files.udevRules, rules);
 
     await run("systemctl restart udev.service");
 
-    console.log(`Success: Rules wrote in ${udevRulesPath}:\n\n${rules}`.green);
+    console.log(`Success: Rules wrote in ${c.paths.files.udevRules}:\n\n${rules}`.green);
 
 
 }
@@ -267,8 +258,8 @@ async function checkDependencies() {
 
     }
 
-    if (!existsSync(astConfPath)) {
-        console.log(`Error: ${astConfPath} does not exist`.red);
+    if (!existsSync(c.paths.dirs.asterisk)) {
+        console.log(`Error: ${c.paths.dirs.asterisk} does not exist`.red);
         process.exit(-1);
     }
 
@@ -292,6 +283,8 @@ async function resetChanDongle() {
 
     await chanDongleConfManager.reset()
 
+    const dongleConfPath = path.join(c.paths.dirs.asterisk, "dongle.conf");
+
     await run(`chmod u+rw,g+rw,o+rw ${dongleConfPath}`);
 
     console.log("chan dongle has been reset");
@@ -301,7 +294,7 @@ async function resetChanDongle() {
 
 async function removeUdevRules() {
 
-    try { unlinkSync(udevRulesPath); } catch (error) { }
+    try { unlinkSync(c.paths.files.udevRules); } catch (error) { }
 
     await run("systemctl restart udev.service");
 
@@ -313,17 +306,17 @@ async function removeService() {
 
     try {
 
-        await run(`systemctl stop ${serviceName}.service`);
+        await run(`systemctl stop ${c.serviceName}.service`);
 
-        await run(`systemctl disable ${serviceName}.service`);
+        await run(`systemctl disable ${c.serviceName}.service`);
 
     } catch (error) { }
 
-    try { unlinkSync(systemdServicePath); } catch (error) { }
+    try { unlinkSync(c.paths.files.systemdServiceFile); } catch (error) { }
 
     await run("systemctl daemon-reload");
 
-    console.log(`${serviceName}.service removed from systemd`.green);
+    console.log(`${c.serviceName}.service removed from systemd`.green);
 
 }
 

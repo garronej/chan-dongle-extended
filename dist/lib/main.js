@@ -42,17 +42,19 @@ var ts_gsm_modem_1 = require("ts-gsm-modem");
 var trackable_map_1 = require("trackable-map");
 var storage = require("./appStorage");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
-var amiUser = chan_dongle_extended_client_1.misc.amiUser;
 var repl = require("./repl");
 var dialplan = require("./dialplan");
 var api = require("./api");
 var bridge = require("./bridge");
+var c = require("./_constants");
 var _debug = require("debug");
 var debug = _debug("_main");
 var modems = new trackable_map_1.TrackableMap();
-var ami = chan_dongle_extended_client_1.Ami.getInstance(amiUser);
+var ami = chan_dongle_extended_client_1.Ami.getInstance(chan_dongle_extended_client_1.misc.amiUser);
 bridge.start(modems);
-dialplan.start(modems, ami);
+if (!c.disableSmsDialplan) {
+    dialplan.start(modems, ami);
+}
 api.start(modems, ami);
 if (process.env["NODE_ENV"] !== "production") {
     repl.start(modems);

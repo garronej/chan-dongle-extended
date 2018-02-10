@@ -1,24 +1,12 @@
 import * as runExclusive from "run-exclusive";
-import * as superJson from "super-json";
-import * as storage from "node-persist";
-import * as path from "path";
 import { Message } from "ts-gsm-modem";
+import * as tt from "transfer-tools";
+import * as c from "./_constants";
+import * as path from "path";
+import * as storage from "node-persist";
 
-namespace JSON {
-    const myJson = superJson.create({
-        "magic": '#!',
-        "serializers": [superJson.dateSerializer]
-    });
+const JSON_CUSTOM= tt.JSON_CUSTOM.get();
 
-    export function stringify(obj: any): string {
-        return myJson.stringify(obj);
-    }
-
-    export function parse(str: string): any {
-        return myJson.parse(str);
-    }
-
-}
 
 export type AppData = {
     pins: {
@@ -40,9 +28,9 @@ const read_ = runExclusive.build(
         if (!init) {
 
             await storage.init({
-                "dir": path.join(__dirname, "..", "..", ".node-persist", "storage"),
-                "parse": JSON.parse,
-                "stringify": JSON.stringify
+                "dir": path.join(c.paths.dirs.persist, "app"),
+                "parse": JSON_CUSTOM.parse,
+                "stringify": JSON_CUSTOM.stringify
             });
 
             init = true;
@@ -53,7 +41,7 @@ const read_ = runExclusive.build(
 
         callback(appData);
 
-        await Promise.resolve();
+        await new Promise<void>(resolve=> setTimeout(()=> resolve(), 0));
 
         limitSize(appData);
 

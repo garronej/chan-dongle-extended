@@ -16,22 +16,28 @@ import { TrackableMap } from "trackable-map";
 import * as storage from "./appStorage";
 import { LockedModem, Modems } from "./defs";
 import { Ami, misc } from "../chan-dongle-extended-client";
-import amiUser = misc.amiUser;
 
 import * as repl from "./repl";
 import * as dialplan from "./dialplan";
 import * as api from "./api";
 import * as bridge from "./bridge";
+import * as c from "./_constants";
 
 import * as _debug from "debug";
 let debug = _debug("_main");
 
 const modems: Modems = new TrackableMap();
 
-const ami = Ami.getInstance(amiUser);
+const ami = Ami.getInstance(misc.amiUser);
 
 bridge.start(modems);
-dialplan.start(modems, ami);
+
+if( !c.disableSmsDialplan ){
+
+    dialplan.start(modems, ami);
+
+}
+
 api.start(modems, ami);
 
 if (process.env["NODE_ENV"] !== "production") {

@@ -47,15 +47,9 @@ var __values = (this && this.__values) || function (o) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-var serviceName = "dongle-extended";
+var c = require("../lib/_constants");
+require("rejection-tracker").main(c.paths.dirs.project);
 var path = require("path");
-var modulePath = path.join(__dirname, "..", "..");
-var systemdServicePath = path.join("/etc", "systemd", "system", serviceName + ".service");
-var udevRulesPath = path.join("/etc", "udev", "rules.d", "99-" + serviceName + ".rules");
-var astConfPath = path.join("/etc", "asterisk");
-var dongleConfPath = path.join(astConfPath, "dongle.conf");
-var managerConfPath = path.join(astConfPath, "manager.conf");
-require("rejection-tracker").main(modulePath);
 var child_process_1 = require("child_process");
 var readline = require("readline");
 var fs_1 = require("fs");
@@ -74,7 +68,7 @@ program
     "Create udev rules for granting R/W access on dongles on connect",
     "and disable the wwan network interface created by the dongles",
     "Enable Asterisk Manager and create a user for this module",
-    "Register a systemd service: " + serviceName + ".service"
+    "Register a systemd service: " + c.serviceName + ".service"
 ].join(" "))
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
     return __generator(this, function (_a) {
@@ -153,20 +147,30 @@ program
 program.parse(process.argv);
 function installService() {
     return __awaiter(this, void 0, void 0, function () {
-        var node_execpath, user, group, service;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var node_execpath, user, _a, group, _b, service;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
                     node_execpath = process.argv[0];
                     console.log([
                         "Now you will be ask to choose the user that will run the service\n",
                     ].join("").yellow);
+                    _a = c.user;
+                    if (_a) return [3 /*break*/, 2];
                     return [4 /*yield*/, ask("User? (press enter for root)")];
                 case 1:
-                    user = (_a.sent()) || "root";
-                    return [4 /*yield*/, ask("Group? (press enter for root)")];
+                    _a = (_c.sent());
+                    _c.label = 2;
                 case 2:
-                    group = (_a.sent()) || "root";
+                    user = _a || "root";
+                    _b = c.group;
+                    if (_b) return [3 /*break*/, 4];
+                    return [4 /*yield*/, ask("Group? (press enter for root)")];
+                case 3:
+                    _b = (_c.sent());
+                    _c.label = 4;
+                case 4:
+                    group = _b || "root";
                     service = [
                         "[Unit]",
                         "Description=chan dongle extended service",
@@ -174,10 +178,10 @@ function installService() {
                         "",
                         "[Service]",
                         "ExecStartPre=" + node_execpath + " " + __filename + " prestart",
-                        "ExecStart=" + node_execpath + " " + modulePath + "/dist/lib/main",
+                        "ExecStart=" + node_execpath + " " + c.paths.dirs.project + "/dist/lib/main",
                         "ExecStopPost=" + node_execpath + " " + __filename + " poststop",
                         "PermissionsStartOnly=true",
-                        "WorkingDirectory=" + modulePath,
+                        "WorkingDirectory=" + c.paths.dirs.project,
                         "Restart=always",
                         "RestartSec=10",
                         "StandardOutput=syslog",
@@ -191,19 +195,19 @@ function installService() {
                         "WantedBy=multi-user.target",
                         ""
                     ].join("\n");
-                    return [4 /*yield*/, writeFileAssertSuccess(systemdServicePath, service)];
-                case 3:
-                    _a.sent();
+                    return [4 /*yield*/, writeFileAssertSuccess(c.paths.files.systemdServiceFile, service)];
+                case 5:
+                    _c.sent();
                     return [4 /*yield*/, run("systemctl daemon-reload")];
-                case 4:
-                    _a.sent();
+                case 6:
+                    _c.sent();
                     console.log([
                         "Chan dongle extended service installed!".green,
-                        systemdServicePath + ": \n\n " + service,
+                        c.paths.files.systemdServiceFile + ": \n\n " + service,
                         "To run the service:".yellow,
-                        "sudo systemctl start " + serviceName,
+                        "sudo systemctl start " + c.serviceName,
                         "To automatically start the service on boot:".yellow,
-                        "sudo systemctl enable " + serviceName,
+                        "sudo systemctl enable " + c.serviceName,
                     ].join("\n"));
                     return [2 /*return*/];
             }
@@ -212,15 +216,12 @@ function installService() {
 }
 function mkPersistDir() {
     return __awaiter(this, void 0, void 0, function () {
-        var pathPersist;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    pathPersist = path.join(modulePath, ".node-persist");
-                    return [4 /*yield*/, run("mkdir -p " + pathPersist)];
+                case 0: return [4 /*yield*/, run("mkdir -p " + c.paths.dirs.persist)];
                 case 1:
                     _a.sent();
-                    return [4 /*yield*/, run("chmod 777 " + pathPersist)];
+                    return [4 /*yield*/, run("chmod 777 " + c.paths.dirs.persist)];
                 case 2:
                     _a.sent();
                     console.log("Persist dir created");
@@ -231,7 +232,7 @@ function mkPersistDir() {
 }
 function enableManager() {
     return __awaiter(this, void 0, void 0, function () {
-        var general, user, error_1, _a;
+        var general, user, managerConfPath, error_1, _a;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
@@ -251,6 +252,7 @@ function enableManager() {
                         "write": "all",
                         "writetimeout": "5000"
                     };
+                    managerConfPath = path.join(c.paths.dirs.asterisk, "manager.conf");
                     if (fs_1.existsSync(managerConfPath)) {
                         try {
                             general = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(managerConfPath, "utf8")).general;
@@ -315,13 +317,13 @@ function setUdevRules() {
                         }
                         finally { if (e_1) throw e_1.error; }
                     }
-                    return [4 /*yield*/, writeFileAssertSuccess(udevRulesPath, rules)];
+                    return [4 /*yield*/, writeFileAssertSuccess(c.paths.files.udevRules, rules)];
                 case 1:
                     _b.sent();
                     return [4 /*yield*/, run("systemctl restart udev.service")];
                 case 2:
                     _b.sent();
-                    console.log(("Success: Rules wrote in " + udevRulesPath + ":\n\n" + rules).green);
+                    console.log(("Success: Rules wrote in " + c.paths.files.udevRules + ":\n\n" + rules).green);
                     return [2 /*return*/];
             }
         });
@@ -374,8 +376,8 @@ function checkDependencies() {
                     process.exit(-1);
                     return [3 /*break*/, 8];
                 case 8:
-                    if (!fs_1.existsSync(astConfPath)) {
-                        console.log(("Error: " + astConfPath + " does not exist").red);
+                    if (!fs_1.existsSync(c.paths.dirs.asterisk)) {
+                        console.log(("Error: " + c.paths.dirs.asterisk + " does not exist").red);
                         process.exit(-1);
                     }
                     console.log("asterisk ok");
@@ -392,11 +394,13 @@ function checkDependencies() {
 }
 function resetChanDongle() {
     return __awaiter(this, void 0, void 0, function () {
+        var dongleConfPath;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, chanDongleConfManager_1.chanDongleConfManager.reset()];
                 case 1:
                     _a.sent();
+                    dongleConfPath = path.join(c.paths.dirs.asterisk, "dongle.conf");
                     return [4 /*yield*/, run("chmod u+rw,g+rw,o+rw " + dongleConfPath)];
                 case 2:
                     _a.sent();
@@ -412,7 +416,7 @@ function removeUdevRules() {
             switch (_a.label) {
                 case 0:
                     try {
-                        fs_1.unlinkSync(udevRulesPath);
+                        fs_1.unlinkSync(c.paths.files.udevRules);
                     }
                     catch (error) { }
                     return [4 /*yield*/, run("systemctl restart udev.service")];
@@ -431,10 +435,10 @@ function removeService() {
             switch (_a.label) {
                 case 0:
                     _a.trys.push([0, 3, , 4]);
-                    return [4 /*yield*/, run("systemctl stop " + serviceName + ".service")];
+                    return [4 /*yield*/, run("systemctl stop " + c.serviceName + ".service")];
                 case 1:
                     _a.sent();
-                    return [4 /*yield*/, run("systemctl disable " + serviceName + ".service")];
+                    return [4 /*yield*/, run("systemctl disable " + c.serviceName + ".service")];
                 case 2:
                     _a.sent();
                     return [3 /*break*/, 4];
@@ -443,13 +447,13 @@ function removeService() {
                     return [3 /*break*/, 4];
                 case 4:
                     try {
-                        fs_1.unlinkSync(systemdServicePath);
+                        fs_1.unlinkSync(c.paths.files.systemdServiceFile);
                     }
                     catch (error) { }
                     return [4 /*yield*/, run("systemctl daemon-reload")];
                 case 5:
                     _a.sent();
-                    console.log((serviceName + ".service removed from systemd").green);
+                    console.log((c.serviceName + ".service removed from systemd").green);
                     return [2 /*return*/];
             }
         });

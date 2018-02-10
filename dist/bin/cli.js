@@ -37,13 +37,15 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-require("rejection-tracker").main(__dirname, "..", "..");
+var c = require("../lib/_constants");
+require("rejection-tracker").main(c.paths.dirs.project);
 var program = require("commander");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
 var storage = require("node-persist");
 var path = require("path");
 require("colors");
-var persistDir = path.join(__dirname, "..", "..", ".node-persist", "storage");
+var st = require("../../node_modules/transfer-tools/dist/lib/stringTransform");
+var storagePath = path.join(c.paths.dirs.persist, "cli");
 program
     .command("list")
     .description("List dongles")
@@ -88,7 +90,7 @@ program
                     console.log("Error: no such dongle connected".red);
                     process.exit(-1);
                 }
-                return [4 /*yield*/, storage.init({ "dir": persistDir })];
+                return [4 /*yield*/, storage.init({ "dir": storagePath })];
             case 2:
                 _a.sent();
                 return [4 /*yield*/, storage.setItem("cli_imei", imei)];
@@ -180,7 +182,7 @@ program
                 return [4 /*yield*/, getDcInstance()];
             case 2:
                 dc = _a.sent();
-                text = textBase64 ? chan_dongle_extended_client_1.Ami.b64.dec(textBase64) : JSON.parse("\"" + text + "\"");
+                text = textBase64 ? st.safeBufferFromTo(textBase64, "base64", "utf8") : JSON.parse("\"" + text + "\"");
                 _a.label = 3;
             case 3:
                 _a.trys.push([3, 5, , 6]);
@@ -245,7 +247,7 @@ function getImei(options) {
                 case 0:
                     if (options.imei)
                         return [2 /*return*/, options.imei];
-                    return [4 /*yield*/, storage.init({ "dir": persistDir })];
+                    return [4 /*yield*/, storage.init({ "dir": storagePath })];
                 case 1:
                     _a.sent();
                     return [4 /*yield*/, storage.getItem("cli_imei")];
