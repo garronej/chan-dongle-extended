@@ -44,7 +44,6 @@ var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
 var storage = require("node-persist");
 var path = require("path");
 require("colors");
-var st = require("../../node_modules/transfer-tools/dist/lib/stringTransform");
 var storagePath = path.join(c.paths.dirs.persist, "cli");
 program
     .command("list")
@@ -164,9 +163,9 @@ program
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("-n, --number [number]", "target phone number")
     .option("-t, --text [text]", "Text of the message")
-    .option("-t64, --text-base64 [textBase64]", "Text Base64 encoded")
+    .option("-T, --text-base64 [textBase64]", "Text Base64 encoded")
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var number, text, textBase64, imei, dc, sendMessageResult, error_2;
+    var number, text, textBase64, imei, dc, st, sendMessageResult, error_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -182,12 +181,19 @@ program
                 return [4 /*yield*/, getDcInstance()];
             case 2:
                 dc = _a.sent();
-                text = textBase64 ? st.safeBufferFromTo(textBase64, "base64", "utf8") : JSON.parse("\"" + text + "\"");
-                _a.label = 3;
+                if (!textBase64) return [3 /*break*/, 4];
+                return [4 /*yield*/, Promise.resolve().then(function () { return require("transfer-tools/dist/lib/stringTransform"); })];
             case 3:
-                _a.trys.push([3, 5, , 6]);
-                return [4 /*yield*/, dc.sendMessage(imei, number, text)];
+                st = _a.sent();
+                text = st.safeBufferFromTo(textBase64, "base64", "utf8");
+                return [3 /*break*/, 5];
             case 4:
+                text = JSON.parse("\"" + text + "\"");
+                _a.label = 5;
+            case 5:
+                _a.trys.push([5, 7, , 8]);
+                return [4 /*yield*/, dc.sendMessage(imei, number, text)];
+            case 6:
                 sendMessageResult = _a.sent();
                 if (sendMessageResult.success) {
                     console.log(sendMessageResult.sendDate.getTime());
@@ -197,13 +203,13 @@ program
                     console.log(0);
                     process.exit(1);
                 }
-                return [3 /*break*/, 6];
-            case 5:
+                return [3 /*break*/, 8];
+            case 7:
                 error_2 = _a.sent();
                 console.log(error_2.message.red);
                 process.exit(1);
                 return [2 /*return*/];
-            case 6: return [2 /*return*/];
+            case 8: return [2 /*return*/];
         }
     });
 }); });

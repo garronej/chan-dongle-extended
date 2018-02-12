@@ -72,7 +72,7 @@ same = n,NoOp(SMS_DATE=${SMS_DATE})
 same = n,NoOp(BASE64_DECODE(SMS_BASE64)=${BASE64_DECODE(${SMS_BASE64})})
 same = n,Set(SEND_TIME=${SHELL(dongle send --imei ${DONGLEIMEI} --number ${SMS_NUMBER} --text-base64 ${BASE64_ENCODE(OK, got you! 👌)})})
 ;Or just use System instead of SHELL system if you don't care about the status report
-;same = n,System(dongle send --i ${DONGLEIMEI} --n ${SMS_NUMBER} --t64 ${BASE64_ENCODE(OK, got you! 👌)})
+;same = n,System(dongle send -i ${DONGLEIMEI} -n ${SMS_NUMBER} -T ${BASE64_ENCODE(OK, got you! 👌)})
 same = n,Hangup()
 
 ;Check that the message have been received

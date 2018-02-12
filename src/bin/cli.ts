@@ -8,7 +8,6 @@ import * as storage from "node-persist";
 import * as path from "path";
 import "colors";
 
-import * as st from "../../node_modules/transfer-tools/dist/lib/stringTransform";
 
 const storagePath= path.join(c.paths.dirs.persist, "cli");
 
@@ -129,7 +128,7 @@ program
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("-n, --number [number]", "target phone number")
     .option("-t, --text [text]", "Text of the message")
-    .option("-t64, --text-base64 [textBase64]", "Text Base64 encoded")
+    .option("-T, --text-base64 [textBase64]", "Text Base64 encoded")
     .action(async options => {
 
         let { number, text, textBase64 } = options;
@@ -144,7 +143,17 @@ program
 
         let dc= await getDcInstance();
 
-        text = textBase64 ? st.safeBufferFromTo(textBase64, "base64", "utf8") : JSON.parse(`"${text}"`);
+        if( textBase64 ){
+
+            const st = await import("transfer-tools/dist/lib/stringTransform");
+
+            text= st.safeBufferFromTo(textBase64, "base64", "utf8");
+
+        }else{
+
+            text= JSON.parse(`"${text}"`);
+
+        }
 
         try {
 
