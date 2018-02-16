@@ -16,8 +16,6 @@ function cleanup {
 }
 trap cleanup EXIT
 
-sudo systemctl stop dongle-extended
-
 sleep 2
 
 sudo node $SCRIPTS prestart
