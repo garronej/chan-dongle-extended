@@ -1,9 +1,8 @@
 export declare class Tty0tty {
     readonly leftEnd: string;
     readonly rightEnd: string;
-    private static store;
-    static getPair(): Tty0tty;
-    release(): void;
+    static makeFactory(): (() => Tty0tty);
     private available;
     private constructor();
+    release(): void;
 }

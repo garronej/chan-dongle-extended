@@ -60,7 +60,7 @@ function start(modems) {
         "prompt": "> "
     }).context;
     Object.defineProperty(context, "exit", {
-        "get": function () { return process.exit(0); }
+        "get": function () { return process.emit("beforeExit", 0); }
     });
     Object.defineProperty(context, "accessPoints", {
         "get": function () { return ts_gsm_modem_1.ConnectionMonitor.getInstance().connectedModems; }

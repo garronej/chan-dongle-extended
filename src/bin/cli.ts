@@ -1,22 +1,20 @@
 #!/usr/bin/env node
-import * as c from "../lib/_constants";
-require("rejection-tracker").main(c.paths.dirs.project);
+require("rejection-tracker").main(__filename, "..", "..");
 
 import * as program from "commander";
 import { DongleController as Dc } from "../chan-dongle-extended-client";
 import * as storage from "node-persist";
-import * as path from "path";
+import * as localsManager from "../lib/localsManager";
 import "colors";
 
-
-const storagePath= path.join(c.paths.dirs.persist, "cli");
+let storage_path = "./cli";
 
 program
     .command("list")
     .description("List dongles")
     .action(async options => {
 
-        let dc= await getDcInstance();
+        let dc = await getDcInstance();
 
         try {
 
@@ -47,14 +45,14 @@ program
             process.exit(-1);
         }
 
-        let dc= await getDcInstance();
+        let dc = await getDcInstance();
 
         if (!dc.dongles.has(imei)) {
             console.log("Error: no such dongle connected".red);
             process.exit(-1);
         }
 
-        await storage.init({ "dir": storagePath });
+        await storage.init({ "dir": storage_path });
 
         await storage.setItem("cli_imei", imei);
 
@@ -81,13 +79,13 @@ program
             process.exit(-1);
         }
 
-        let dc= await getDcInstance();
+        let dc = await getDcInstance();
 
         let unlockResult;
 
         try {
 
-            if (options.pin){
+            if (options.pin) {
                 unlockResult = await dc.unlock(imei, options.pin);
             } else {
 
@@ -141,17 +139,17 @@ program
 
         let imei = await getImei(options);
 
-        let dc= await getDcInstance();
+        let dc = await getDcInstance();
 
-        if( textBase64 ){
+        if (textBase64) {
 
             const st = await import("transfer-tools/dist/lib/stringTransform");
 
-            text= st.safeBufferFromTo(textBase64, "base64", "utf8");
+            text = st.safeBufferFromTo(textBase64, "base64", "utf8");
 
-        }else{
+        } else {
 
-            text= JSON.parse(`"${text}"`);
+            text = JSON.parse(`"${text}"`);
 
         }
 
@@ -185,7 +183,7 @@ program
 
         let flush = (options.flush === true);
 
-        let dc= await getDcInstance();
+        let dc = await getDcInstance();
 
         try {
 
@@ -212,7 +210,7 @@ async function getImei(options: { imei: string | undefined }): Promise<string> {
 
     if (options.imei) return options.imei;
 
-    await storage.init({ "dir": storagePath });
+    await storage.init({ "dir": storage_path });
 
     let imei = await storage.getItem("cli_imei");
 
@@ -225,22 +223,24 @@ async function getImei(options: { imei: string | undefined }): Promise<string> {
 
 }
 
-async function getDcInstance(): Promise<Dc>{
+async function getDcInstance(): Promise<Dc> {
 
-        let dc = Dc.getInstance();
+    let { locals } = localsManager.get()
 
-        try{
+    let dc = Dc.getInstance(locals.bind_addr, locals.port);
 
-            await dc.initialization;
+    try {
 
-        }catch {
+        await dc.prInitialization;
 
-            console.log("dongle-extended is not running".red);
-            process.exit(1);
+    } catch {
 
-        }
+        console.log("dongle-extended is not running".red);
+        process.exit(1);
 
-        return dc;
+    }
+
+    return dc;
 
 }
 

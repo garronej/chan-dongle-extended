@@ -1,10 +1,10 @@
 import * as repl from "repl";
 import { Modem, ConnectionMonitor } from "ts-gsm-modem";
 
-import { Modems } from "./defs";
+import * as types from "./types";
 import "colors";
 
-export function start(modems: Modems) {
+export function start(modems: types.Modems) {
 
     const { context } = repl.start({
         "terminal": true,
@@ -12,7 +12,7 @@ export function start(modems: Modems) {
     }) as any;
 
     Object.defineProperty(context, "exit", {
-        "get": () => process.exit(0)
+        "get": () => process.emit("beforeExit", 0)
     });
 
     Object.defineProperty(context, "accessPoints", {

@@ -1,19 +1,16 @@
 import * as runExclusive from "run-exclusive";
 import { Message } from "ts-gsm-modem";
 import * as tt from "transfer-tools";
-import * as c from "./_constants";
-import * as path from "path";
 import * as storage from "node-persist";
 
 const JSON_CUSTOM= tt.JSON_CUSTOM.get();
-
 
 export type AppData = {
     pins: {
         [iccidOrImei: string]: string;
     };
     messages: { [imsi: string]: Message[] };
-}
+};
 
 const defaultStorageData: AppData = {
     "pins": {},
@@ -28,7 +25,7 @@ const read_ = runExclusive.build(
         if (!init) {
 
             await storage.init({
-                "dir": path.join(c.paths.dirs.persist, "app"),
+                "dir": "./app",
                 "parse": JSON_CUSTOM.parse,
                 "stringify": JSON_CUSTOM.stringify
             });

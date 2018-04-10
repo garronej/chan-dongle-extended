@@ -1,5 +1,5 @@
 "use strict";
-/*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
+/*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>tty0tty.leftEnd<-->tty0tty.rightEnd<CHAN DONGLE>*/
 /*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -54,36 +54,42 @@ var __read = (this && this.__read) || function (o, n) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var ts_gsm_modem_1 = require("ts-gsm-modem");
-var chanDongleConfManager_1 = require("./chanDongleConfManager");
 var Tty0tty_1 = require("./Tty0tty");
+var logger_1 = require("./logger");
 var _debug = require("debug");
-var debug = _debug("_bridge");
-debug.enabled = false;
-var defs_1 = require("./defs");
-function start(modems) {
+var debug = _debug("bridge");
+debug.enabled = true;
+debug.log = logger_1.log;
+var fileOnlyDebug = _debug("bridge");
+fileOnlyDebug.enabled = true;
+fileOnlyDebug.log = logger_1.fileOnlyLog;
+var types = require("./types");
+function init(modems, chanDongleConfManagerApi) {
+    bridge.chanDongleConfManagerApi = chanDongleConfManagerApi;
+    var tty0ttyFactory = Tty0tty_1.Tty0tty.makeFactory();
     modems.evtCreate.attach(function (_a) {
         var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];
-        if (defs_1.matchLockedModem(modem))
+        if (types.LockedModem.match(modem)) {
             return;
-        bridge(accessPoint, modem);
+        }
+        bridge(accessPoint, modem, tty0ttyFactory());
     });
 }
-exports.start = start;
+exports.init = init;
 var ok = "\r\nOK\r\n";
-function bridge(accessPoint, modem) {
+function bridge(accessPoint, modem, tty0tty) {
     return __awaiter(this, void 0, void 0, function () {
         var _this = this;
-        var voidModem, portVirtual, serviceProviderShort, forwardResp;
+        var portVirtual, serviceProviderShort, forwardResp;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    voidModem = Tty0tty_1.Tty0tty.getPair();
-                    chanDongleConfManager_1.chanDongleConfManager.addDongle({
+                    bridge.chanDongleConfManagerApi.addDongle({
                         "dongleName": accessPoint.friendlyId,
-                        "data": voidModem.rightEnd,
+                        "data": tty0tty.rightEnd,
                         "audio": accessPoint.audioIfPath
                     });
-                    portVirtual = new ts_gsm_modem_1.SerialPortExt(voidModem.leftEnd, {
+                    portVirtual = new ts_gsm_modem_1.SerialPortExt(tty0tty.leftEnd, {
                         "baudRate": 115200,
                         "parser": ts_gsm_modem_1.SerialPortExt.parsers.readline("\r")
                     });
@@ -92,7 +98,7 @@ function bridge(accessPoint, modem) {
                             switch (_a.label) {
                                 case 0:
                                     debug("Modem terminate => closing bridge");
-                                    return [4 /*yield*/, chanDongleConfManager_1.chanDongleConfManager.removeDongle(accessPoint.friendlyId)];
+                                    return [4 /*yield*/, bridge.chanDongleConfManagerApi.removeDongle(accessPoint.friendlyId)];
                                 case 1:
                                     _a.sent();
                                     debug("Dongle removed from chan dongle config");
@@ -103,7 +109,7 @@ function bridge(accessPoint, modem) {
                                     debug("Virtual port closed");
                                     _a.label = 3;
                                 case 3:
-                                    voidModem.release();
+                                    tty0tty.release();
                                     return [2 /*return*/];
                             }
                         });
@@ -118,14 +124,14 @@ function bridge(accessPoint, modem) {
                             debug(("Newer command from chanDongle, dropping " + JSON.stringify(rawResp)).red);
                             return;
                         }
-                        debug("response: " + JSON.stringify(rawResp).blue);
+                        fileOnlyDebug("response: " + JSON.stringify(rawResp).blue);
                         portVirtual.writeAndDrain(rawResp);
                     };
                     portVirtual.on("data", function (buff) {
                         if (modem.isTerminated)
                             return;
                         var command = buff.toString("utf8") + "\r";
-                        debug("from chan_dongle: " + JSON.stringify(command));
+                        fileOnlyDebug("from chan_dongle: " + JSON.stringify(command));
                         if (command === "ATZ\r" ||
                             command.match(/^AT\+CNMI=/)) {
                             forwardResp(ok);
@@ -158,7 +164,7 @@ function bridge(accessPoint, modem) {
                 case 1:
                     _a.sent();
                     modem.evtUnsolicitedAtMessage.attach(function (urc) {
-                        debug("forwarding urc: " + JSON.stringify(urc.raw).blue);
+                        fileOnlyDebug("forwarding urc: " + JSON.stringify(urc.raw).blue);
                         portVirtual.writeAndDrain(urc.raw);
                     });
                     return [2 /*return*/];
@@ -166,5 +172,6 @@ function bridge(accessPoint, modem) {
         });
     });
 }
-exports.bridge = bridge;
 ;
+(function (bridge) {
+})(bridge || (bridge = {}));

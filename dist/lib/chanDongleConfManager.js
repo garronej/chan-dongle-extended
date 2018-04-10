@@ -1,4 +1,12 @@
 "use strict";
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -34,141 +42,143 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __values = (this && this.__values) || function (o) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
+    if (m) return m.call(o);
+    return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+};
 Object.defineProperty(exports, "__esModule", { value: true });
-var fs_1 = require("fs");
+var fs = require("fs");
 var ini_extended_1 = require("ini-extended");
 var runExclusive = require("run-exclusive");
 var path = require("path");
-var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
-var astConfPath = path.join("/etc", "asterisk");
-var dongleConfPath = path.join(astConfPath, "dongle.conf");
-var _debug = require("debug");
-var debug = _debug("_ChanDongleConfManager");
-var config = undefined;
-var chanDongleConfManager;
-(function (chanDongleConfManager) {
-    var _this = this;
-    var groupRef = runExclusive.createGroupRef();
-    function getConfig() {
-        if (!config)
-            config = loadConfig();
-        return config;
+var localsManager = require("./localsManager");
+var default_staticModuleConfiguration = {
+    "general": {
+        "interval": "10000000",
+        "jbenable": "no"
+    },
+    "defaults": {
+        "context": "from-dongle",
+        "group": "0",
+        "rxgain": "0",
+        "txgain": "0",
+        "autodeletesms": "no",
+        "resetdongle": "yes",
+        "u2diag": "-1",
+        "usecallingpres": "yes",
+        "callingpres": "allowed_passed_screen",
+        "disablesms": "yes",
+        "language": "en",
+        "smsaspdu": "yes",
+        "mindtmfgap": "45",
+        "mindtmfduration": "80",
+        "mindtmfinterval": "200",
+        "callwaiting": "auto",
+        "disable": "no",
+        "initstate": "start",
+        "exten": "+12345678987",
+        "dtmf": "relax"
     }
-    chanDongleConfManager.getConfig = getConfig;
-    chanDongleConfManager.reset = runExclusive.build(groupRef, function () { return __awaiter(_this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    if (!config)
-                        config = loadConfig();
-                    return [4 /*yield*/, update()];
-                case 1:
-                    _a.sent();
-                    return [2 /*return*/];
-            }
-        });
-    }); });
-    chanDongleConfManager.addDongle = runExclusive.build(groupRef, function (_a) {
-        var dongleName = _a.dongleName, data = _a.data, audio = _a.audio;
-        return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_b) {
-                switch (_b.label) {
-                    case 0:
-                        if (!config)
-                            config = loadConfig();
-                        config[dongleName] = { audio: audio, data: data };
-                        return [4 /*yield*/, update()];
-                    case 1:
-                        _b.sent();
-                        return [2 /*return*/];
-                }
-            });
-        });
-    });
-    chanDongleConfManager.removeDongle = runExclusive.build(groupRef, function (dongleName) { return __awaiter(_this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    if (!config)
-                        config = loadConfig();
-                    delete config[dongleName];
-                    return [4 /*yield*/, update()];
-                case 1:
-                    _a.sent();
-                    return [2 /*return*/];
-            }
-        });
-    }); });
-})(chanDongleConfManager = exports.chanDongleConfManager || (exports.chanDongleConfManager = {}));
-function update() {
+};
+function getApi(ami) {
     var _this = this;
-    return new Promise(function (resolve) { return fs_1.writeFile(dongleConfPath, ini_extended_1.ini.stringify(config), { "encoding": "utf8", "flag": "w" }, function (error) { return __awaiter(_this, void 0, void 0, function () {
+    var dongle_conf_path = path.join(localsManager.get().astdirs.astetcdir, "dongle.conf");
+    var staticModuleConfiguration = (function () {
+        try {
+            var _a = ini_extended_1.ini.parseStripWhitespace(fs.readFileSync(dongle_conf_path).toString("utf8")), general = _a.general, defaults = _a.defaults;
+            console.assert(!!general && !!defaults);
+            defaults.autodeletesms = default_staticModuleConfiguration.defaults["autodeletesms"];
+            general.interval = default_staticModuleConfiguration.general["interval"];
+            for (var key in defaults) {
+                if (!defaults[key]) {
+                    defaults[key] = default_staticModuleConfiguration.defaults[key];
+                }
+            }
+            return { general: general, defaults: defaults };
+        }
+        catch (_b) {
+            return default_staticModuleConfiguration;
+        }
+    })();
+    var state = __assign({}, staticModuleConfiguration);
+    var update = function () { return new Promise(function (resolve) { return fs.writeFile(dongle_conf_path, Buffer.from(ini_extended_1.ini.stringify(state), "utf8"), function (error) { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (error)
+                    if (error) {
                         throw error;
-                    return [4 /*yield*/, reloadChanDongle()];
+                    }
+                    return [4 /*yield*/, ami.postAction("DongleReload", { "when": "gracefully" })];
                 case 1:
                     _a.sent();
                     resolve();
                     return [2 /*return*/];
             }
         });
-    }); }); });
+    }); }); }); };
+    var groupRef = runExclusive.createGroupRef();
+    var api = {
+        staticModuleConfiguration: staticModuleConfiguration,
+        "reset": runExclusive.build(groupRef, function () { return __awaiter(_this, void 0, void 0, function () {
+            var _a, _b, key, e_1, _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        try {
+                            for (_a = __values(Object.keys(state).filter(function (key) { return key !== "general" && key !== "defaults"; })), _b = _a.next(); !_b.done; _b = _a.next()) {
+                                key = _b.value;
+                                delete state[key];
+                            }
+                        }
+                        catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                        finally {
+                            try {
+                                if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
+                            }
+                            finally { if (e_1) throw e_1.error; }
+                        }
+                        return [4 /*yield*/, update()];
+                    case 1:
+                        _d.sent();
+                        return [2 /*return*/];
+                }
+            });
+        }); }),
+        "addDongle": runExclusive.build(groupRef, function (_a) {
+            var dongleName = _a.dongleName, data = _a.data, audio = _a.audio;
+            return __awaiter(_this, void 0, void 0, function () {
+                return __generator(this, function (_b) {
+                    switch (_b.label) {
+                        case 0:
+                            state[dongleName] = { audio: audio, data: data };
+                            return [4 /*yield*/, update()];
+                        case 1:
+                            _b.sent();
+                            return [2 /*return*/];
+                    }
+                });
+            });
+        }),
+        "removeDongle": runExclusive.build(groupRef, function (dongleName) { return __awaiter(_this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        delete state[dongleName];
+                        return [4 /*yield*/, update()];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        }); })
+    };
+    api.reset();
+    return api;
 }
-function reloadChanDongle() {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, chan_dongle_extended_client_1.Ami.getInstance().postAction("DongleReload", { "when": "gracefully" })];
-                case 1:
-                    _a.sent();
-                    debug("update chan_dongle config");
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-exports.reloadChanDongle = reloadChanDongle;
-function loadConfig() {
-    try {
-        var _a = ini_extended_1.ini.parseStripWhitespace(fs_1.readFileSync(dongleConfPath, "utf8")), general = _a.general, defaults = _a.defaults;
-        defaults.autodeletesms = "false";
-        defaults.disablesms = "no";
-        general.interval = "10000";
-        return { general: general, defaults: defaults };
-    }
-    catch (error) {
-        return {
-            "general": {
-                "interval": "10000000",
-                "jbenable": "no",
-                "jbmaxsize": "100",
-                "jbimpl": "fixed"
-            },
-            "defaults": {
-                "context": "from-dongle",
-                "group": "0",
-                "rxgain": "0",
-                "txgain": "0",
-                "autodeletesms": "no",
-                "resetdongle": "yes",
-                "u2diag": "-1",
-                "usecallingpres": "yes",
-                "callingpres": "allowed_passed_screen",
-                "disablesms": "no",
-                "language": "en",
-                "smsaspdu": "yes",
-                "mindtmfgap": "45",
-                "mindtmfduration": "80",
-                "mindtmfinterval": "200",
-                "callwaiting": "auto",
-                "disable": "no",
-                "initstate": "start",
-                "exten": "+12345678987",
-                "dtmf": "relax"
-            }
-        };
-    }
-}
+exports.getApi = getApi;

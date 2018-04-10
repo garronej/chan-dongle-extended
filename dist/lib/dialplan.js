@@ -24,21 +24,20 @@ var __read = (this && this.__read) || function (o, n) {
     return ar;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
+var ts_ami_1 = require("ts-ami");
 var tt = require("transfer-tools");
-var lt = require("./defs");
-var matchModem = lt.matchModem;
-var chanDongleConfManager_1 = require("./chanDongleConfManager");
+var types = require("./types");
+var logger_1 = require("./logger");
 var _debug = require("debug");
-var debug = _debug("_dialplan");
-function start(modems, ami) {
-    var configDefault = chanDongleConfManager_1.chanDongleConfManager.getConfig().defaults;
-    var dialplanContext = configDefault.context;
-    var defaultNumber = configDefault.exten;
+var debug = _debug("dialplan");
+debug.enabled = true;
+debug.log = logger_1.log;
+function init(modems, ami, dialplanContext, defaultNumber) {
     modems.evtCreate.attach(function (_a) {
         var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];
-        if (!matchModem(modem))
+        if (!types.matchModem(modem)) {
             return;
+        }
         var dongleVariables = {
             "DONGLENAME": accessPoint.friendlyId,
             "DONGLEPROVIDER": "" + modem.serviceProviderName,
@@ -48,10 +47,11 @@ function start(modems, ami) {
         };
         modem.evtMessage.attach(function (message) {
             debug("Notify Message");
-            var textSplit = tt.stringTransform.textSplit(chan_dongle_extended_client_1.Ami.headerValueMaxLength, tt.stringTransform.safeBufferFromTo(message.text, "utf8", "base64"));
-            var variables = __assign({}, dongleVariables, { "SMS_NUMBER": message.number, "SMS_DATE": message.date.toISOString(), "SMS_TEXT_SPLIT_COUNT": "" + textSplit.length, "SMS_BASE64": tt.stringTransformExt.b64crop(chan_dongle_extended_client_1.Ami.headerValueMaxLength, message.text) });
-            for (var i = 0; i < textSplit.length; i++)
+            var textSplit = tt.stringTransform.textSplit(ts_ami_1.Ami.headerValueMaxLength, tt.stringTransform.safeBufferFromTo(message.text, "utf8", "base64"));
+            var variables = __assign({}, dongleVariables, { "SMS_NUMBER": message.number, "SMS_DATE": message.date.toISOString(), "SMS_TEXT_SPLIT_COUNT": "" + textSplit.length, "SMS_BASE64": tt.stringTransformExt.b64crop(ts_ami_1.Ami.headerValueMaxLength, message.text) });
+            for (var i = 0; i < textSplit.length; i++) {
                 variables["SMS_BASE64_PART_" + i] = textSplit[i];
+            }
             ami.originateLocalChannel(dialplanContext, "reassembled-sms", variables);
         });
         modem.evtMessageStatusReport.attach(function (statusReport) {
@@ -62,4 +62,4 @@ function start(modems, ami) {
         });
     });
 }
-exports.start = start;
+exports.init = init;

@@ -38,8 +38,6 @@ var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var runExclusive = require("run-exclusive");
 var tt = require("transfer-tools");
-var c = require("./_constants");
-var path = require("path");
 var storage = require("node-persist");
 var JSON_CUSTOM = tt.JSON_CUSTOM.get();
 var defaultStorageData = {
@@ -54,7 +52,7 @@ var read_ = runExclusive.build(function (callback) { return __awaiter(_this, voi
             case 0:
                 if (!!init) return [3 /*break*/, 2];
                 return [4 /*yield*/, storage.init({
-                        "dir": path.join(c.paths.dirs.persist, "app"),
+                        "dir": "./app",
                         "parse": JSON_CUSTOM.parse,
                         "stringify": JSON_CUSTOM.stringify
                     })];

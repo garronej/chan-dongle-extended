@@ -1,3 +1,3 @@
-import { Modems } from "./defs";
-import { Ami } from "../chan-dongle-extended-client";
-export declare function start(modems: Modems, ami: Ami): void;
+import { Ami } from "ts-ami";
+import * as types from "./types";
+export declare function init(modems: types.Modems, ami: Ami, dialplanContext: string, defaultNumber: string): void;

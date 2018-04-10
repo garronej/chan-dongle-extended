@@ -1,37 +1,47 @@
-import * as c from "./_constants";
+import * as child_process from "child_process";
 
 export class Tty0tty {
 
-    private static store = (() => {
+    public static makeFactory(): (() => Tty0tty) {
 
-        let out: Tty0tty[] = [];
+        let store: Tty0tty[] = (() => {
 
-        let index = 0;
+            //should return 24
+            let pairCount = (child_process.execSync("ls /dev")
+                .toString("utf8")
+                .match(/(tnt[0-9]+)/g)!
+                .length) / 2
+                ;
 
-        for (let _ of new Array(c.tty0ttyPairCount)) {
+            let out: Tty0tty[] = [];
 
-            out.push(new Tty0tty(`/dev/tnt${index++}`, `/dev/tnt${index++}`));
+            let index = 0;
 
-        }
+            while (!!(pairCount--)) {
 
-        return out;
+                out.push(new Tty0tty(`/dev/tnt${index++}`, `/dev/tnt${index++}`));
 
-    })();
-
-    public static getPair(): Tty0tty {
-
-        for (let pair of this.store)
-            if (pair.available) {
-                pair.available = false;
-                return pair;
             }
 
-        throw new Error("No more void modem available");
+            return out;
 
-    }
+        })();
 
-    public release(): void {
-        this.available = true;
+        return () => {
+
+            let tty0tty = store.find(({ available }) => available);
+
+            if (!tty0tty) {
+                throw new Error("No more void modem available");
+            }
+
+            tty0tty.available = false;
+
+            return tty0tty;
+
+        };
+
+
     }
 
     private available = true;
@@ -40,4 +50,9 @@ export class Tty0tty {
         public readonly leftEnd: string,
         public readonly rightEnd: string
     ) { }
+
+    public release(): void {
+        this.available = true;
+    }
+
 }

@@ -1,32 +1,23 @@
 {
   "name": "chan-dongle-extended",
-  "version": "2.4.2",
+  "version": "3.0.0",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
   "scripts": {
     "postinstall": "npm run remove-bold-color",
-    "remove-bold-color": "sed -i '/bold: string;/d' ./node_modules/@types/colors/index.d.ts",
+    "remove-bold-color": "sed -i '/bold: string;/d' ./node_modules/@types/colors/index.d.ts || true",
     "tsc": "node ./node_modules/typescript/bin/tsc -p ./tsconfig.json && chmod +x ./dist/bin/*.js",
     "tsc-w": "node ./node_modules/typescript/bin/tsc -w -p ./tsconfig.json",
-    "start": "/bin/bash ./src/bin/start.sh"
+    "start": "sudo ./working_directory/main.sh",
+    "log": "tail -f -n 1000 ./working_directory/current.log",
+    "uninstaller": "sudo node ./dist/bin/installer uninstall",
+    "installer": "sudo node ./dist/bin/installer install"
   },
   "repository": {
     "type": "git",
     "url": "git+https://github.com/garronej/chan-dongle-extended.git"
   },
-  "bin": {
-    "dongle": "./dist/bin/cli.js",
-    "dongle-extended-admin": "./dist/bin/scripts.js"
-  },
-  "keywords": [
-    "chan_dongle",
-    "asterisk",
-    "multipart SMS",
-    "phonebook",
-    "contact",
-    "PIN"
-  ],
   "author": "Joseph Garrone",
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
@@ -35,14 +26,17 @@
     "commander": "2.11.0",
     "debug": "^2.6.1",
     "ini-extended": "github:garronej/ini-extended",
+    "node-persist": "^2.1.0",
     "rejection-tracker": "github:garronej/rejection-tracker",
     "run-exclusive": "github:garronej/run-exclusive",
     "timer-extended": "garronej/timer-extended",
     "trackable-map": "garronej/trackable-map",
     "transfer-tools": "garronej/transfer-tools",
+    "ts-ami": "github:garronej/ts-ami",
     "ts-events-extended": "garronej/ts-events-extended",
     "ts-gsm-modem": "git+https://206e4c24cb9a1e4a8d42b7ac86e4a026b02cee42:x-oauth-basic@github.com/garronej/ts-gsm-modem.git",
-    "node-persist": "^2.1.0"
+    "ts-sip": "github:garronej/ts-sip",
+    "winston": "^3.0.0-rc4"
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",

@@ -1,26 +1,26 @@
-import { Modems } from "./defs";
-
-import { Ami } from "../chan-dongle-extended-client";
+import { Ami } from "ts-ami";
 import * as tt from "transfer-tools";
+import * as types from "./types";
 
-import * as lt from "./defs";
-import matchModem = lt.matchModem;
-
-import { chanDongleConfManager } from "./chanDongleConfManager";
+import { log } from "./logger";
 
 import * as _debug from "debug";
-let debug = _debug("_dialplan");
+let debug = _debug("dialplan");
+debug.enabled= true;
+debug.log= log;
 
-export function start(modems: Modems, ami: Ami) {
-
-    let configDefault= chanDongleConfManager.getConfig().defaults;
-
-    const dialplanContext = configDefault.context;
-    const defaultNumber= configDefault.exten;
+export function init(
+    modems: types.Modems,
+    ami: Ami,
+    dialplanContext: string,
+    defaultNumber: string
+) {
 
     modems.evtCreate.attach(([modem, accessPoint]) => {
 
-        if (!matchModem(modem)) return;
+        if (!types.matchModem(modem)) {
+            return;
+        }
 
         const dongleVariables = {
             "DONGLENAME": accessPoint.friendlyId,
@@ -34,7 +34,7 @@ export function start(modems: Modems, ami: Ami) {
 
             debug("Notify Message");
 
-            let textSplit= tt.stringTransform.textSplit(
+            let textSplit = tt.stringTransform.textSplit(
                 Ami.headerValueMaxLength,
                 tt.stringTransform.safeBufferFromTo(message.text, "utf8", "base64")
             );
@@ -44,11 +44,12 @@ export function start(modems: Modems, ami: Ami) {
                 "SMS_NUMBER": message.number,
                 "SMS_DATE": message.date.toISOString(),
                 "SMS_TEXT_SPLIT_COUNT": `${textSplit.length}`,
-                "SMS_BASE64": tt.stringTransformExt.b64crop( Ami.headerValueMaxLength, message.text)
+                "SMS_BASE64": tt.stringTransformExt.b64crop(Ami.headerValueMaxLength, message.text)
             };
 
-            for (let i = 0; i < textSplit.length; i++)
+            for (let i = 0; i < textSplit.length; i++){
                 variables[`SMS_BASE64_PART_${i}`] = textSplit[i];
+            }
 
             ami.originateLocalChannel(dialplanContext, "reassembled-sms", variables);
 

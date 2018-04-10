@@ -37,14 +37,13 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-var c = require("../lib/_constants");
-require("rejection-tracker").main(c.paths.dirs.project);
+require("rejection-tracker").main(__filename, "..", "..");
 var program = require("commander");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
 var storage = require("node-persist");
-var path = require("path");
+var localsManager = require("../lib/localsManager");
 require("colors");
-var storagePath = path.join(c.paths.dirs.persist, "cli");
+var storage_path = "./cli";
 program
     .command("list")
     .description("List dongles")
@@ -89,7 +88,7 @@ program
                     console.log("Error: no such dongle connected".red);
                     process.exit(-1);
                 }
-                return [4 /*yield*/, storage.init({ "dir": storagePath })];
+                return [4 /*yield*/, storage.init({ "dir": storage_path })];
             case 2:
                 _a.sent();
                 return [4 /*yield*/, storage.setItem("cli_imei", imei)];
@@ -253,7 +252,7 @@ function getImei(options) {
                 case 0:
                     if (options.imei)
                         return [2 /*return*/, options.imei];
-                    return [4 /*yield*/, storage.init({ "dir": storagePath })];
+                    return [4 /*yield*/, storage.init({ "dir": storage_path })];
                 case 1:
                     _a.sent();
                     return [4 /*yield*/, storage.getItem("cli_imei")];
@@ -270,15 +269,16 @@ function getImei(options) {
 }
 function getDcInstance() {
     return __awaiter(this, void 0, void 0, function () {
-        var dc, _a;
+        var locals, dc, _a;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    dc = chan_dongle_extended_client_1.DongleController.getInstance();
+                    locals = localsManager.get().locals;
+                    dc = chan_dongle_extended_client_1.DongleController.getInstance(locals.bind_addr, locals.port);
                     _b.label = 1;
                 case 1:
                     _b.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, dc.initialization];
+                    return [4 /*yield*/, dc.prInitialization];
                 case 2:
                     _b.sent();
                     return [3 /*break*/, 4];

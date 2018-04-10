@@ -8,7 +8,7 @@ import {
 
 import { TrackableMap } from "trackable-map";
 
-export interface LockedModem {
+export type LockedModem= {
     imei: string;
     manufacturer: string;
     model: string;
@@ -17,17 +17,20 @@ export interface LockedModem {
     pinState: AtMessage.LockedPinState;
     tryLeft: number;
     performUnlock: PerformUnlock;
-}
+};
 
-export type Modems= TrackableMap<AccessPoint, Modem | LockedModem>;
+export namespace LockedModem {
 
-export function matchLockedModem(modem: any ): modem is LockedModem {
-    try{
-        return !!(modem as LockedModem).performUnlock;
-    }catch{
-        return false;
+    export function match(modem: any): modem is LockedModem {
+        try {
+            return !!(modem as LockedModem).performUnlock;
+        } catch{
+            return false;
+        }
     }
 }
+
+export type Modems = TrackableMap<AccessPoint, Modem | LockedModem>;
 
 export function matchModem(modem: any): modem is Modem {
     return modem instanceof Modem;

@@ -1,19 +1,14 @@
-import { types } from "../chan-dongle-extended-client";
-export interface DynamicModuleConfiguration extends types.ModuleConfiguration {
-    [dongleName: string]: {
-        audio: string;
-        data: string;
-    } | any;
-}
-export interface DongleConf {
+import { types as dcTypes } from "../chan-dongle-extended-client";
+import { Ami } from "ts-ami";
+export declare type DongleConf = {
     dongleName: string;
     data: string;
     audio: string;
-}
-export declare namespace chanDongleConfManager {
-    function getConfig(): DynamicModuleConfiguration;
-    const reset: () => Promise<void>;
-    const addDongle: ({ dongleName, data, audio }: DongleConf) => Promise<void>;
-    const removeDongle: (dongleName: string) => Promise<void>;
-}
-export declare function reloadChanDongle(): Promise<void>;
+};
+export declare type Api = {
+    staticModuleConfiguration: dcTypes.StaticModuleConfiguration;
+    reset(): Promise<void>;
+    addDongle(dongleConf: DongleConf): Promise<void>;
+    removeDongle(dongleName: string): Promise<void>;
+};
+export declare function getApi(ami: Ami): Api;

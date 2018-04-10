@@ -1,6 +1,6 @@
 import { Modem, PerformUnlock, AtMessage, AccessPoint } from "ts-gsm-modem";
 import { TrackableMap } from "trackable-map";
-export interface LockedModem {
+export declare type LockedModem = {
     imei: string;
     manufacturer: string;
     model: string;
@@ -9,7 +9,9 @@ export interface LockedModem {
     pinState: AtMessage.LockedPinState;
     tryLeft: number;
     performUnlock: PerformUnlock;
+};
+export declare namespace LockedModem {
+    function match(modem: any): modem is LockedModem;
 }
 export declare type Modems = TrackableMap<AccessPoint, Modem | LockedModem>;
-export declare function matchLockedModem(modem: any): modem is LockedModem;
 export declare function matchModem(modem: any): modem is Modem;

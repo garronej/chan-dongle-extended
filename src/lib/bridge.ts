@@ -1,151 +1,165 @@
-/*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>voidModem.leftEnd<-->voidModem.rightEnd<CHAN DONGLE>*/
+/*<HARDWARE>usb<-->accessPoint.dataIfPath<THIS MODULE>tty0tty.leftEnd<-->tty0tty.rightEnd<CHAN DONGLE>*/
 /*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
 
-import { SerialPortExt, AtMessage, Modem } from "ts-gsm-modem";
-import { chanDongleConfManager } from "./chanDongleConfManager";
+import { SerialPortExt, AtMessage, Modem, AccessPoint } from "ts-gsm-modem";
+import { Api as ChanDongleConfManageApi } from "./chanDongleConfManager";
 import { Tty0tty } from "./Tty0tty";
-import { AccessPoint } from "gsm-modem-connection";
+import { log, fileOnlyLog } from "./logger";
 
 import * as _debug from "debug";
-let debug = _debug("_bridge");
 
-debug.enabled= false;
+let debug = _debug("bridge");
+debug.enabled= true;
+debug.log= log;
 
-import { Modems, matchLockedModem } from "./defs";
+let fileOnlyDebug= _debug("bridge");
+fileOnlyDebug.enabled= true;
+fileOnlyDebug.log= fileOnlyLog;
 
+import * as types from "./types";
 
-export function start(modems: Modems){
+export function init(modems: types.Modems, chanDongleConfManagerApi: ChanDongleConfManageApi ) {
 
-    modems.evtCreate.attach(([modem, accessPoint])=> {
+    bridge.chanDongleConfManagerApi=chanDongleConfManagerApi;
 
-        if( matchLockedModem(modem) ) return;
+    let tty0ttyFactory = Tty0tty.makeFactory();
 
-        bridge(accessPoint, modem);
+    modems.evtCreate.attach(([modem, accessPoint]) => {
+
+        if (types.LockedModem.match(modem)) {
+            return;
+        }
+
+        bridge(accessPoint, modem, tty0ttyFactory());
 
     });
 
-} 
+}
 
 const ok = "\r\nOK\r\n";
 
-export async function bridge( accessPoint: AccessPoint, modem: Modem ){
+async function bridge(accessPoint: AccessPoint, modem: Modem, tty0tty: Tty0tty) {
 
-        let voidModem = Tty0tty.getPair();
+    bridge.chanDongleConfManagerApi.addDongle({
+        "dongleName": accessPoint.friendlyId,
+        "data": tty0tty.rightEnd,
+        "audio": accessPoint.audioIfPath
+    });
 
-        chanDongleConfManager.addDongle({
-            "dongleName": accessPoint.friendlyId,
-            "data": voidModem.rightEnd,
-            "audio": accessPoint.audioIfPath
-        });
+    let portVirtual = new SerialPortExt(
+        tty0tty.leftEnd,
+        {
+            "baudRate": 115200,
+            "parser": SerialPortExt.parsers.readline("\r")
+        }
+    );
 
-        let portVirtual = new SerialPortExt(
-            voidModem.leftEnd,
-            {
-                "baudRate": 115200,
-                "parser": SerialPortExt.parsers.readline("\r")
-            }
-        );
+    modem.evtTerminate.attachOnce(
+        async () => {
 
-        modem.evtTerminate.attachOnce(
-            async () => {
+            debug("Modem terminate => closing bridge");
 
-                debug("Modem terminate => closing bridge");
+            await bridge.chanDongleConfManagerApi.removeDongle(accessPoint.friendlyId);
 
-                await chanDongleConfManager.removeDongle(accessPoint.friendlyId);
+            debug("Dongle removed from chan dongle config");
 
-                debug("Dongle removed from chan dongle config");
+            if (portVirtual.isOpen()) {
 
-                if (portVirtual.isOpen()) {
+                await new Promise<void>(
+                    resolve => portVirtual.close(() => resolve())
+                );
 
-                    await new Promise<void>(
-                        resolve => portVirtual.close(() => resolve())
-                    );
-
-                    debug("Virtual port closed");
-                }
-
-                voidModem.release();
-
-            }
-        );
-
-        portVirtual.evtError.attach(serialPortError => {
-            debug("uncaught error serialPortVirtual", serialPortError);
-            modem.terminate();
-        });
-
-        const serviceProviderShort = (modem.serviceProviderName || "Unknown SP").substring(0, 15);
-
-        const forwardResp = (rawResp: string) => {
-
-            if (modem.runCommand_isRunning) {
-                debug(`Newer command from chanDongle, dropping ${JSON.stringify(rawResp)}`.red);
-                return;
+                debug("Virtual port closed");
             }
 
-            debug("response: " + JSON.stringify(rawResp).blue);
+            tty0tty.release();
 
-            portVirtual.writeAndDrain(rawResp);
+        }
+    );
 
-        };
+    portVirtual.evtError.attach(serialPortError => {
+        debug("uncaught error serialPortVirtual", serialPortError);
+        modem.terminate();
+    });
 
-        portVirtual.on("data", (buff: Buffer) => {
+    const serviceProviderShort = (modem.serviceProviderName || "Unknown SP").substring(0, 15);
 
-            if (modem.isTerminated) return;
+    const forwardResp = (rawResp: string) => {
 
-            let command = buff.toString("utf8") + "\r";
+        if (modem.runCommand_isRunning) {
+            debug(`Newer command from chanDongle, dropping ${JSON.stringify(rawResp)}`.red);
+            return;
+        }
 
-            debug("from chan_dongle: " + JSON.stringify(command));
+        fileOnlyDebug("response: " + JSON.stringify(rawResp).blue);
 
-            if (
-                command === "ATZ\r" ||
-                command.match(/^AT\+CNMI=/)
-            ) {
+        portVirtual.writeAndDrain(rawResp);
 
-                forwardResp(ok);
-                return;
+    };
 
-            } else if (command === "AT\r") {
+    portVirtual.on("data", (buff: Buffer) => {
 
-                forwardResp(ok);
-                modem.ping();
-                return;
+        if (modem.isTerminated) return;
 
-            } else if (command === "AT+COPS?\r") {
+        let command = buff.toString("utf8") + "\r";
 
-                forwardResp(`\r\n+COPS: 0,0,"${serviceProviderShort}",0\r\n${ok}`);
-                return;
+        fileOnlyDebug("from chan_dongle: " + JSON.stringify(command));
 
-            }
+        if (
+            command === "ATZ\r" ||
+            command.match(/^AT\+CNMI=/)
+        ) {
 
-            if (modem.runCommand_queuedCallCount) {
+            forwardResp(ok);
+            return;
 
-                debug([
-                    `a command is already running and`,
-                    `${modem.runCommand_queuedCallCount} command in stack`,
-                    `flushing the pending command in stack`
-                ].join("\n").yellow);
+        } else if (command === "AT\r") {
 
-            }
+            forwardResp(ok);
+            modem.ping();
+            return;
 
-            modem.runCommand_cancelAllQueuedCalls();
+        } else if (command === "AT+COPS?\r") {
 
-            modem.runCommand(command, {
-                "recoverable": true,
-                "reportMode": AtMessage.ReportMode.NO_DEBUG_INFO,
-                "retryOnErrors": false
-            }, (_, __, rawResp) => forwardResp(rawResp));
+            forwardResp(`\r\n+COPS: 0,0,"${serviceProviderShort}",0\r\n${ok}`);
+            return;
 
-        });
+        }
 
-        await portVirtual.evtData.waitFor();
+        if (modem.runCommand_queuedCallCount) {
 
-        modem.evtUnsolicitedAtMessage.attach(urc => {
+            debug([
+                `a command is already running and`,
+                `${modem.runCommand_queuedCallCount} command in stack`,
+                `flushing the pending command in stack`
+            ].join("\n").yellow);
 
-            debug(`forwarding urc: ${JSON.stringify(urc.raw).blue}`);
+        }
 
-            portVirtual.writeAndDrain(urc.raw)
+        modem.runCommand_cancelAllQueuedCalls();
 
-        });
+        modem.runCommand(command, {
+            "recoverable": true,
+            "reportMode": AtMessage.ReportMode.NO_DEBUG_INFO,
+            "retryOnErrors": false
+        }, (_, __, rawResp) => forwardResp(rawResp));
+
+    });
+
+    await portVirtual.evtData.waitFor();
+
+    modem.evtUnsolicitedAtMessage.attach(urc => {
+
+        fileOnlyDebug(`forwarding urc: ${JSON.stringify(urc.raw).blue}`);
+
+        portVirtual.writeAndDrain(urc.raw)
+
+    });
 
 };
+
+namespace bridge {
+
+    export let chanDongleConfManagerApi!: ChanDongleConfManageApi;
+
+}

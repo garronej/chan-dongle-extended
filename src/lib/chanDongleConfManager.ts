@@ -1,96 +1,105 @@
-import { writeFile, readFileSync } from "fs";
+import * as fs from "fs";
 import { ini } from "ini-extended";
 import * as runExclusive from "run-exclusive";
 import * as path from "path";
+import * as localsManager from "./localsManager";
 
-import { Ami, types } from "../chan-dongle-extended-client";
+import { types as dcTypes } from "../chan-dongle-extended-client";
+import { Ami } from "ts-ami";
 
-export interface DynamicModuleConfiguration extends types.ModuleConfiguration {
-    [dongleName: string]: {
-        audio: string;
-        data: string;
-    } | any;
-}
-
-const astConfPath = path.join("/etc", "asterisk");
-const dongleConfPath = path.join(astConfPath, "dongle.conf");
-
-import * as _debug from "debug";
-let debug = _debug("_ChanDongleConfManager");
-
-
-export interface DongleConf {
+export type DongleConf= {
     dongleName: string;
     data: string;
     audio: string;
 }
 
+export type Api = {
+    staticModuleConfiguration: dcTypes.StaticModuleConfiguration;
+    reset(): Promise<void>;
+    addDongle(dongleConf: DongleConf): Promise<void>;
+    removeDongle(dongleName: string): Promise<void>;
+};
 
-let config: DynamicModuleConfiguration | undefined = undefined;
-
-export namespace chanDongleConfManager {
-
-    const groupRef = runExclusive.createGroupRef();
-
-    export function getConfig(): DynamicModuleConfiguration {
-
-        if (!config) config = loadConfig();
-
-        return config;
-
+const default_staticModuleConfiguration: dcTypes.StaticModuleConfiguration = {
+    "general": {
+        "interval": "10000000",
+        "jbenable": "no"
+    },
+    "defaults": {
+        "context": "from-dongle",
+        "group": "0",
+        "rxgain": "0",
+        "txgain": "0",
+        "autodeletesms": "no",
+        "resetdongle": "yes",
+        "u2diag": "-1",
+        "usecallingpres": "yes",
+        "callingpres": "allowed_passed_screen",
+        "disablesms": "yes",
+        "language": "en",
+        "smsaspdu": "yes",
+        "mindtmfgap": "45",
+        "mindtmfduration": "80",
+        "mindtmfinterval": "200",
+        "callwaiting": "auto",
+        "disable": "no",
+        "initstate": "start",
+        "exten": "+12345678987",
+        "dtmf": "relax"
     }
+};
 
-    export const reset = runExclusive.build(groupRef,
-        async () => {
+export function getApi(ami: Ami): Api {
 
-            if (!config) config = loadConfig();
+    let dongle_conf_path = path.join(localsManager.get().astdirs.astetcdir, "dongle.conf");
 
-            await update();
+    const staticModuleConfiguration: dcTypes.StaticModuleConfiguration = (() => {
+
+        try {
+
+            let { general, defaults } = ini.parseStripWhitespace(
+                fs.readFileSync(dongle_conf_path).toString("utf8")
+            );
+
+            console.assert(!!general && !!defaults);
+
+            defaults.autodeletesms = default_staticModuleConfiguration.defaults["autodeletesms"];
+            general.interval = default_staticModuleConfiguration.general["interval"];
+
+            for( let key in defaults ){
+
+                if( !defaults[key] ){
+                    defaults[key]= default_staticModuleConfiguration.defaults[key];
+                }
+
+            }
+
+            return { general, defaults };
+
+        } catch  {
+
+            return default_staticModuleConfiguration;
 
         }
-    );
 
+    })();
 
-    export const addDongle = runExclusive.build(groupRef,
-        async ({ dongleName, data, audio }: DongleConf) => {
+    const state = { ...staticModuleConfiguration };
 
-            if (!config) config = loadConfig();
-
-            config[dongleName] = { audio, data };
-
-            await update();
-
-        }
-    );
-
-    export const removeDongle = runExclusive.build(groupRef,
-        async (dongleName: string) => {
-
-            if (!config) config = loadConfig();
-
-            delete config[dongleName];
-
-            await update();
-
-        }
-    );
-
-
-}
-
-
-function update(): Promise<void> {
-
-    return new Promise<void>(
-        resolve => writeFile(
-            dongleConfPath,
-            ini.stringify(config),
-            { "encoding": "utf8", "flag": "w" },
+    const update = (): Promise<void> => new Promise<void>(
+        resolve => fs.writeFile(
+            dongle_conf_path,
+            Buffer.from(ini.stringify(state), "utf8"),
             async error => {
 
-                if (error) throw error;
+                if (error) {
+                    throw error;
+                }
 
-                await reloadChanDongle();
+                await ami.postAction(
+                    "DongleReload",
+                    { "when": "gracefully" }
+                );
 
                 resolve();
 
@@ -98,68 +107,51 @@ function update(): Promise<void> {
         )
     );
 
-}
+    const groupRef = runExclusive.createGroupRef();
 
+    const api: Api = {
+        staticModuleConfiguration,
+        "reset": runExclusive.build(groupRef,
+            async () => {
 
-export async function reloadChanDongle() {
+                for (let key of Object.keys(state).filter(key => key !== "general" && key !== "defaults")) {
 
-    await Ami.getInstance().postAction(
-        "DongleReload",
-        { "when": "gracefully" }
-    );
+                    delete state[key];
 
-    debug("update chan_dongle config");
+                }
 
-}
+                await update();
 
-
-
-function loadConfig(): DynamicModuleConfiguration {
-
-    try {
-
-        let { general, defaults } = ini.parseStripWhitespace(
-            readFileSync(dongleConfPath, "utf8")
-        );
-
-        defaults.autodeletesms = "false";
-        defaults.disablesms = "no";
-        general.interval = "10000";
-
-        return { general, defaults };
-
-    } catch (error) {
-
-        return {
-            "general": {
-                "interval": "10000000",
-                "jbenable": "no",
-                "jbmaxsize": "100",
-                "jbimpl": "fixed"
-            } as any,
-            "defaults": {
-                "context": "from-dongle",
-                "group": "0",
-                "rxgain": "0",
-                "txgain": "0",
-                "autodeletesms": "no",
-                "resetdongle": "yes",
-                "u2diag": "-1",
-                "usecallingpres": "yes",
-                "callingpres": "allowed_passed_screen",
-                "disablesms": "no",
-                "language": "en",
-                "smsaspdu": "yes",
-                "mindtmfgap": "45",
-                "mindtmfduration": "80",
-                "mindtmfinterval": "200",
-                "callwaiting": "auto",
-                "disable": "no",
-                "initstate": "start",
-                "exten": "+12345678987",
-                "dtmf": "relax"
             }
-        } as any;
+        ),
+        "addDongle": runExclusive.build(groupRef,
+            async ({ dongleName, data, audio }: DongleConf) => {
 
-    }
+                state[dongleName] = { audio, data };
+
+                await update();
+
+            }
+        ),
+        "removeDongle": runExclusive.build(groupRef,
+            async (dongleName: string) => {
+
+                delete state[dongleName];
+
+                await update();
+
+            }
+        )
+
+    };
+
+    api.reset();
+
+    return api;
+
 }
+
+
+
+
+

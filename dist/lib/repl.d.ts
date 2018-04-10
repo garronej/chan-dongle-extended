@@ -1,3 +1,3 @@
-import { Modems } from "./defs";
+import * as types from "./types";
 import "colors";
-export declare function start(modems: Modems): void;
+export declare function start(modems: types.Modems): void;
