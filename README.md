@@ -2,7 +2,7 @@
 
 NOTE: This work in progress the API is likely to change greatly.
 
-An extension for chan_dongle that feature: 
+An extension for asterisk chan_dongle that feature: 
 
 * PIN/PUK codes:
      No need to disable LOCK anymore, list connected dongle that need to be
@@ -22,6 +22,7 @@ An extension for chan_dongle that feature:
 
 This module is a middleware between the Huawei devices and chan_dongle. 
 It will work with any version of asterisk/chan_dongle.
+Anyway by installing this module asterisk chan dongle will be automatically installed.
 
 There is two way to interact with the module: 
 
@@ -52,8 +53,7 @@ Usage: dongle [options] [command]
 
 More info on every command by typing e.g: `dongle unlock --help`
 
-All the listed commands are accessible via Asterisk Manager ( documentation incoming )
-The module has a specific JavaScript client: `garronej/chan-dongle-extended-client`
+The module is deigned to be interfaced via this client: `garronej/chan-dongle-extended-client`
 
 # Dialplan example:
 
@@ -130,79 +130,25 @@ it is to avoid asterisk buffer overflow. You can use the
 SMS_TEXT_SPLIT_COUNT=n and SMS_BASE64_PART_0..n-1 variables to retrieve very long SMS. 
 In order to reassemble the message you must decode each part then concatenate.
 
-# Requirement
-
-* `node >= 4.0.0`
-* `asterisk and chan_dongle`
-* `python` (`v2.7` recommended, `v3.x.x` is __*not*__ supported) `pip and virtualenv`
-* `[tty0tty](https://github.com/garronej/tty0tty)` 
-(install from the fork garronej/tty0tty, not the main repository or you will be limited to 4 dongles )
-* `make`
-* A proper C/C++ compiler toolchain, like [GCC](https://gcc.gnu.org)
-
-Note: Before installing you may want to backup your dongle.conf file.
-
-# Installation guide ( on raspbian, can be adapted to other linux distribution )
-
-* Install general dependencies:
-````bash
-$ sudo apt-get install build-essential python-pip libudev-dev && sudo pip install virtualenv
-````
-
-* Installing tty0tty: 
-Follow the instructions @: https://github.com/garronej/tty0tty
-
-* Instating Node.js: 
-Follow the instructions @: https://gist.github.com/garronej/6a1eecb9dde9d9184014c5d25a9b6d1c
-Or do it your way...
-
-* Install the module
-
-If you can globaly install package without root privilege ( cf: https://docs.npmjs.com/getting-started/fixing-npm-permissions )
-Then logged with your user profile ( eg "pi" or "admin" )
-```` bash
-$  npm install -g garronej/chan-dongle-extended
-$  sudo $(which dongle-extended-admin) postinstall
-````
-The second line will install a systemd service to start the daemon and optionaly to load it at boot time.
-You will be asked to tell which user will run the daemon, you should should use your unix user profile ( eg: user: pi, group: pi )
-
-Alternatively, if you can't install npm package globaly:
-``` bash
-$ sudo npm install --unsafe-perm -g garronej/chan-dongle-extended && sudo dongle-extended-admin postinstall
-```
-
-
-# Uninstall
-
-```` bash
-$  sudo $(which dongle-extended-admin) preuninstall
-$  npm install -g garronej/chan-dongle-extended
-````
-
-Alternatively: 
-
-``` bash
-$ sudo dongle-extended-admin preuninstall && sudo  npm uninstall --unsafe-perm -g chan-dongle-extended
-```
-
-# For dev:
-
+# Install:
 
 * Install
 ``` bash
 $ git clone https://github.com/garronej/chan-dongle-extended
 $ cd chan-dongle-extended
+$ sudo node dist/bin/install_prereq
 $ npm install
-$ ln -s $(pwd)/dist/bin/cli.js ~/.npm-global/bin/dongle
-$ sudo node dist/bin/scripts.js postinstall
+#To see install option run: node dist/bin/installer install --help
+$ sudo node dist/bin/installer install
 ```
 * Run
 ``` bash
+#As service:
+$ sudo systemctl start dongle
+#Debug:
 $ npm start
 ```
 * Uninstall
 ``` bash
-$ sudo node dist/bin/scripts.js preuninstall
-$ rm ~/.npm-global/bin/dongle
+$ sudo node dist/bin/installer uninstall
 ```
