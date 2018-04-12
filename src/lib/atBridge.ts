@@ -2,25 +2,28 @@
 /*<HARDWARE>usb<-->/dev/ttyUSB1<THIS MODULE>/dev/tnt0<-->/dev/tnt1<CHAN DONGLE>*/
 
 import { SerialPortExt, AtMessage, Modem, AccessPoint } from "ts-gsm-modem";
-import { Api as ChanDongleConfManageApi } from "./chanDongleConfManager";
+import { Api as ConfManagerApi } from "./confManager";
 import { Tty0tty } from "./Tty0tty";
 import { log, fileOnlyLog } from "./logger";
 
-import * as _debug from "debug";
+import * as debugFactory from "debug";
 
-let debug = _debug("bridge");
+const debug = debugFactory("bridge");
 debug.enabled= true;
 debug.log= log;
 
-let fileOnlyDebug= _debug("bridge");
+let fileOnlyDebug= debugFactory("bridge");
 fileOnlyDebug.enabled= true;
 fileOnlyDebug.log= fileOnlyLog;
 
 import * as types from "./types";
 
-export function init(modems: types.Modems, chanDongleConfManagerApi: ChanDongleConfManageApi ) {
+export function init(
+    modems: types.Modems, 
+    chanDongleConfManagerApi: ConfManagerApi 
+) {
 
-    bridge.chanDongleConfManagerApi=chanDongleConfManagerApi;
+    atBridge.confManagerApi=chanDongleConfManagerApi;
 
     let tty0ttyFactory = Tty0tty.makeFactory();
 
@@ -30,7 +33,7 @@ export function init(modems: types.Modems, chanDongleConfManagerApi: ChanDongleC
             return;
         }
 
-        bridge(accessPoint, modem, tty0ttyFactory());
+        atBridge(accessPoint, modem, tty0ttyFactory());
 
     });
 
@@ -38,9 +41,13 @@ export function init(modems: types.Modems, chanDongleConfManagerApi: ChanDongleC
 
 const ok = "\r\nOK\r\n";
 
-async function bridge(accessPoint: AccessPoint, modem: Modem, tty0tty: Tty0tty) {
+async function atBridge(
+    accessPoint: AccessPoint, 
+    modem: Modem, 
+    tty0tty: Tty0tty
+) {
 
-    bridge.chanDongleConfManagerApi.addDongle({
+    atBridge.confManagerApi.addDongle({
         "dongleName": accessPoint.friendlyId,
         "data": tty0tty.rightEnd,
         "audio": accessPoint.audioIfPath
@@ -59,7 +66,7 @@ async function bridge(accessPoint: AccessPoint, modem: Modem, tty0tty: Tty0tty) 
 
             debug("Modem terminate => closing bridge");
 
-            await bridge.chanDongleConfManagerApi.removeDongle(accessPoint.friendlyId);
+            await atBridge.confManagerApi.removeDongle(accessPoint.friendlyId);
 
             debug("Dongle removed from chan dongle config");
 
@@ -158,8 +165,8 @@ async function bridge(accessPoint: AccessPoint, modem: Modem, tty0tty: Tty0tty) 
 
 };
 
-namespace bridge {
+namespace atBridge {
 
-    export let chanDongleConfManagerApi!: ChanDongleConfManageApi;
+    export let confManagerApi!: ConfManagerApi;
 
 }

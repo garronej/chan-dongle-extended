@@ -20,7 +20,9 @@ var Locals;
         "port": chan_dongle_extended_client_1.misc.port,
         "ami_port": 5038,
         "disable_sms_dialplan": false,
-        "build_across_linux_kernel": "[ $(uname -r) on install ]"
+        "build_across_linux_kernel": null,
+        "ast_include_dir_path": "/usr/include/",
+        "assume_chan_dongle_installed": false
     };
 })(Locals = exports.Locals || (exports.Locals = {}));
 var Astdirs;

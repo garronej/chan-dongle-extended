@@ -6,29 +6,19 @@ import * as program from "commander";
 import { execSync } from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import { apt_get_install } from "./apt_get_installer";
+import * as scriptLib from "../tools/scriptLib";
+import * as readline from "readline";
 
 import * as localsManager from "../lib/localsManager";
 
-import "colors";
-
 const node_path = process.argv[0];
 const module_path = path.join(__dirname, "..", "..");
-
-let [cli_path, main_path] = (() => {
-
-    let bind_dir_path = path.join(module_path, "dist", "bin");
-
-    return [
-        path.join(bind_dir_path, "cli.js"),
-        path.join(bind_dir_path, "main.js")
-    ];
-
-})();
-
+const [cli_js_path, main_js_path] = ["cli.js", "main.js"].map(f => path.join(module_path, "dist", "bin", f));
 const working_directory_path = path.join(module_path, "working_directory");
+const stop_sh_path = path.join(working_directory_path, "stop.sh");
+const wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
 
-let _install = program.command("install").description("install");
+let _install = program.command("install");
 
 for (let key in localsManager.Locals.defaults) {
 
@@ -52,16 +42,8 @@ _install.action(async options => {
 
     console.log("---Installing chan-dongle-extended---");
 
-    if (fs.existsSync(working_directory_path)) {
-
-        console.log("already installed".red);
-
-        process.exit(-1);
-
-    }
 
     let locals: localsManager.Locals = { ...localsManager.Locals.defaults };
-
 
     for (let key in localsManager.Locals.defaults) {
 
@@ -71,10 +53,87 @@ _install.action(async options => {
 
     }
 
-    locals.build_across_linux_kernel= `${execSync("uname -r")}`;
+    locals.build_across_linux_kernel = `${execSync("uname -r")}`;
 
-    //@ts-ignore
-    let { astetcdir, astsbindir, astmoddir, astrundir } = localsManager.get.readAstdirs(locals.astetcdir);
+    try {
+
+        var astdirs = localsManager.get.readAstdirs(locals.astetcdir);
+
+    } catch ({ message }) {
+
+        console.log(scriptLib.colorize(`Asterisk is probably not installed: ${message}`, "RED"));
+
+        process.exit(-1);
+
+        return;
+
+    }
+
+    if (fs.existsSync(working_directory_path)) {
+
+        process.stdout.write(scriptLib.colorize("Already installed, erasing previous install... ", "YELLOW"));
+
+        await uninstall(locals, astdirs);
+
+       console.log("DONE");
+
+    }
+
+    try {
+
+        await install(locals, astdirs);
+
+    } catch{
+
+        process.stdout.write(scriptLib.colorize("Rollback install ...", "YELLOW"));
+
+        await uninstall(locals, astdirs);
+
+        console.log("DONE");
+
+        process.exit(-1);
+
+        return;
+
+    }
+
+    console.log("---DONE---");
+
+    process.exit(0);
+
+});
+
+program
+    .command("uninstall")
+    .action(async () => {
+
+        console.log("---Uninstalling chan-dongle-extended---");
+
+        try {
+
+            var { locals, astdirs } = localsManager.get(working_directory_path);
+
+        } catch{
+
+            console.log(scriptLib.colorize("Not installed", "YELLOW"));
+
+            process.exit(0);
+
+            return;
+
+        }
+
+        uninstall(locals, astdirs, "VERBOSE");
+
+        console.log("---DONE---");
+
+        process.exit(0);
+
+    });
+
+async function install(locals: localsManager.Locals, astdirs: localsManager.Astdirs) {
+
+    const { astetcdir, astsbindir, astmoddir, astrundir } = astdirs;
 
     unixUser.create(locals.service_name);
 
@@ -93,7 +152,17 @@ _install.action(async options => {
 
     })();
 
-    tty0tty.install();
+    await tty0tty.install();
+
+    if (locals.assume_chan_dongle_installed) {
+
+        console.log(scriptLib.colorize("Assuming chan_dongle already installed.", "YELLOW"));
+
+    } else {
+
+        await chan_dongle.install(astsbindir, locals.ast_include_dir_path, astmoddir);
+
+    }
 
     await udevRules.create(locals.service_name);
 
@@ -107,136 +176,66 @@ _install.action(async options => {
         locals.service_name, astetcdir, locals.ami_port, astsbindir, astrundir
     );
 
-    console.log("---DONE---");
+}
 
-    process.exit(0);
+function uninstall(
+    locals: localsManager.Locals,
+    astdirs: localsManager.Astdirs,
+    verbose?: "VERBOSE" | undefined
+) {
 
-});
+    const write: (str: string) => void = !!verbose ? process.stdout.write.bind(process.stdout) : (() => { });
+    const log = (str: string) => write(`${str}\n`);
 
-program
-    .command("uninstall")
-    .action(async () => {
+    const runRecover = (description: string, action: () => void) => {
 
-        console.log("---Uninstalling chan-dongle-extended---");
-
-        let { locals } = localsManager.get(working_directory_path);
+        write(description);
 
         try {
 
-            process.stdout.write("Stopping service ... ");
+            action();
 
-            execSync(`systemctl stop ${locals.service_name}`);
-
-            console.log("ok".green);
+            log(scriptLib.colorize("ok", "GREEN"));
 
         } catch ({ message }) {
 
-            console.log(message.red);
+            log(scriptLib.colorize(message, "RED"));
 
         }
 
-        try {
+    }
 
-            execSync(`pkill -u ${locals.service_name}`);
+    runRecover("Stopping running instance ... ", () => execSync(stop_sh_path));
 
-        } catch{ }
+    if (locals.assume_chan_dongle_installed) {
 
+        log("Skipping uninstall of chan_dongle.so as it was installed separately");
 
-        try {
+    } else {
 
-            process.stdout.write("Removing cli tool symbolic link ... ");
+        runRecover("Uninstalling chan_dongle.so ... ", () => chan_dongle.remove(astdirs.astmoddir, astdirs.astsbindir));
 
-            execSync(`rm $(which ${locals.service_name})`);
+    }
 
-            console.log("ok".green);
+    runRecover("Removing cli tool symbolic link ... ", () => execSync(`rm $(which ${locals.service_name})`));
 
-        } catch ({ message }) {
+    runRecover("Removing systemd service ... ", () => systemd.remove(locals.service_name));
 
-            console.log(message.red);
+    runRecover("Removing udev rules ... ", () => udevRules.remove(locals.service_name));
 
-        }
+    runRecover("Removing tty0tty kernel module ...", () => tty0tty.remove());
 
-        try {
+    runRecover("Removing app working directory ... ", () => workingDirectory.remove());
 
-            process.stdout.write("Removing systemd service ... ");
+    runRecover("Deleting unix user ... ", () => unixUser.remove(locals.service_name));
 
-            systemd.remove(locals.service_name);;
-
-            console.log("ok".green);
-
-        } catch ({ message }) {
-
-            console.log(message.red);
-
-        }
-
-        try {
-
-            process.stdout.write("Removing udev rules ... ");
-
-            udevRules.remove(locals.service_name);
-
-            console.log("ok".green);
-
-        } catch ({ message }) {
-
-            console.log(message.red);
-
-        }
-
-        try{
-
-            process.stdout.write("Removing tty0tty kernel module ...");
-
-            tty0tty.remove();
-
-            console.log(`${"ok".green} ( need reboot )`);
-
-        }catch({ message }){
-
-            console.log(message.red);
-
-        }
-
-        try {
-
-            process.stdout.write("Removing app working directory ... ");
-
-            workingDirectory.remove();
-
-            console.log("ok".green);
-
-        } catch ({ message }) {
-
-            console.log(message.red);
-
-        }
-
-        try {
-
-            process.stdout.write("Deleting unix user ... ");
-
-            unixUser.remove(locals.service_name);
-
-            console.log("ok".green);
-
-        } catch ({ message }) {
-
-            console.log(message.red);
-
-        }
-
-        console.log("---DONE---");
-
-        process.exit(0);
-
-    });
+}
 
 namespace tty0tty {
 
     const load_module_file_path = "/etc/modules";
 
-    export function install() {
+    export async function install() {
 
         process.stdout.write("Checking for linux kernel headers ...");
 
@@ -244,65 +243,60 @@ namespace tty0tty {
 
             execSync("ls /lib/modules/$(uname -r)/build 2>/dev/null");
 
-            console.log("found, OK".green);
+            console.log(`found, ${scriptLib.colorize("OK", "GREEN")}`);
 
         } catch{
 
-            process.stdout.write("not found ...");
+            readline.clearLine(process.stdout, 0);
+            process.stdout.write("\r");
 
-            try {
+            if (
+                !!execSync("cat /etc/os-release")
+                    .toString("utf8")
+                    .match(/^NAME=.*Raspbian.*$/m)
+            ) {
 
-                console.assert(!!`${execSync("cat /etc/os-release")}`.match(/^NAME=.*Raspbian.*$/m));
+                await scriptLib.apt_get_install(`raspberrypi-kernel-headers`);
 
-                apt_get_install(`raspberrypi-kernel-headers`);
+            } else {
 
-            } catch{
-
-                apt_get_install(`linux-headers-$(uname -r)`);
+                await scriptLib.apt_get_install(`linux-headers-$(uname -r)`);
 
             }
 
+
         }
 
-        apt_get_install("git", "git");
+        await scriptLib.apt_get_install("git", "git");
 
-        console.log("Building and installing tty0tty kernel module >>>");
+        let { onSuccess, onError } = scriptLib.showLoad("Building and installing tty0tty kernel module");
+
+        const tty0tty_dir_path = path.join(working_directory_path, "tty0tty");
+
+        const exec = (cmd: string) => scriptLib.showLoad.exec(cmd, onError);
+        const cdExec = (cmd: string) => exec(`(cd ${path.join(tty0tty_dir_path, "module")} && ${cmd})`);
+
+        await exec(`git clone https://github.com/garronej/tty0tty ${tty0tty_dir_path}`);
+
+        await cdExec("make");
+
+        await cdExec("cp tty0tty.ko /lib/modules/$(uname -r)/kernel/drivers/misc/");
+
+        await exec("depmod");
+
+        await exec("modprobe tty0tty");
 
         try {
 
-            const tty0tty_dir_path = path.join(working_directory_path, "tty0tty");
+            execSync(`cat ${load_module_file_path} | grep tty0tty`);
 
-            const tty0tty_module_dir_path = path.join(tty0tty_dir_path, "module");
+        } catch {
 
-            execSync(`git clone https://github.com/garronej/tty0tty ${tty0tty_dir_path}`);
-
-            execSync(`make --directory=${tty0tty_module_dir_path}`);
-
-            execSync(`cp ${path.join(tty0tty_module_dir_path, "tty0tty.ko")} /lib/modules/$(uname -r)/kernel/drivers/misc/`);
-
-            execSync("depmod");
-
-            execSync("modprobe tty0tty");
-
-            try {
-
-                execSync(`cat ${load_module_file_path} | grep tty0tty`);
-
-            } catch {
-
-                execSync(`echo tty0tty >> ${load_module_file_path}`);
-
-            }
-
-        } catch ({ message }) {
-
-            console.log(message.red);
-
-            process.exit(-1);
+            await exec(`echo tty0tty >> ${load_module_file_path}`);
 
         }
 
-        console.log("<<< tty0tty successfully installed".green);
+        onSuccess("OK");
 
     }
 
@@ -322,6 +316,52 @@ namespace tty0tty {
 
 }
 
+namespace chan_dongle {
+
+    export async function install(astsbindir: string, ast_include_dir_path: string, astmoddir: string) {
+
+        let { onSuccess, onError } = scriptLib.showLoad(
+            `Building and installing asterisk chan_dongle ( may take several minutes )`
+        );
+
+        let ast_ver = execSync(`${path.join(astsbindir, "asterisk")} -V`)
+            .toString("utf8")
+            .match(/^Asterisk\s(.*)\n$/)![1]
+            ;
+
+
+        let chan_dongle_dir_path = path.join(working_directory_path, "asterisk-chan-dongle");
+
+        const exec = (cmd: string) => scriptLib.showLoad.exec(cmd, onError);
+        const cdExec = (cmd: string) => exec(`(cd ${chan_dongle_dir_path} && ${cmd})`);
+
+        await exec(`git clone https://github.com/garronej/asterisk-chan-dongle ${chan_dongle_dir_path}`);
+
+        await cdExec("./bootstrap");
+
+        await cdExec(`./configure --with-astversion=${ast_ver} --with-asterisk=${ast_include_dir_path}`);
+
+        await cdExec("make");
+
+        await cdExec(`cp chan_dongle.so ${astmoddir}`);
+
+        onSuccess("OK");
+
+    }
+
+    export function remove(astmoddir: string, astsbindir: string) {
+
+        try {
+
+            execSync(`${path.join(astsbindir, "asterisk")} -rx "module unload chan_dongle.so"`);
+
+        } catch{ }
+
+        execSync(`rm -f ${path.join(astmoddir, "chan_dongle.so")}`);
+
+    }
+
+}
 
 namespace workingDirectory {
 
@@ -333,7 +373,7 @@ namespace workingDirectory {
 
         execSync(`chown ${service_name}:${service_name} ${working_directory_path}`);
 
-        console.log("ok".green);
+        console.log(scriptLib.colorize("OK", "GREEN"));
     }
 
     export function remove() {
@@ -352,12 +392,11 @@ namespace unixUser {
 
         execSync(`useradd -M ${service_name} -s /bin/false -d ${working_directory_path}`);
 
-        console.log("ok".green);
+        console.log(scriptLib.colorize("OK", "GREEN"));
 
     }
 
     export function remove(service_name: string) {
-
 
         execSync(`userdel ${service_name}`);
 
@@ -377,7 +416,7 @@ function grantDongleConfigFileAccess(astetcdir: string, service_name: string): v
 
     execSync(`chmod u+rw ${dongle_path}`);
 
-    console.log("ok".green);
+    console.log(scriptLib.colorize("OK", "GREEN"));
 
 }
 
@@ -395,10 +434,18 @@ function createShellScripts(service_name: string, astsbindir: string): void {
 
     };
 
-    createShellScripts.wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
+    writeAndSetPerms(
+        stop_sh_path,
+        [
+            `#!/usr/bin/env bash`,
+            ``,
+            `pkill -u ${service_name} -SIGUSR2 || true`,
+            ``
+        ].join("\n")
+    );
 
     writeAndSetPerms(
-        createShellScripts.wait_ast_sh_path,
+        wait_ast_sh_path,
         [
             `#!/usr/bin/env bash`,
             ``,
@@ -406,7 +453,6 @@ function createShellScripts(service_name: string, astsbindir: string): void {
             `do`,
             `   sleep 3`,
             `done`,
-            `pkill -u ${service_name} || true`,
             ``
         ].join("\n")
     );
@@ -424,7 +470,7 @@ function createShellScripts(service_name: string, astsbindir: string): void {
             `do`,
             `   args="$args \\"$param\\""`,
             `done`,
-            `sudo su -s $(which bash) -c "${node_path} ${cli_path} $args" ${service_name}`,
+            `sudo su -s $(which bash) -c "${node_path} ${cli_js_path} $args" ${service_name}`,
             ``
         ].join("\n")
     );
@@ -436,24 +482,20 @@ function createShellScripts(service_name: string, astsbindir: string): void {
         [
             `#!/usr/bin/env bash`,
             ``,
-            `systemctl stop ${service_name}`,
+            `${stop_sh_path}`,
+            `${wait_ast_sh_path}`,
             `cd ${working_directory_path}`,
-            `args=$@`,
-            `${createShellScripts.wait_ast_sh_path}`,
-            `su -s $(which bash) -c "${node_path} ${main_path} $args" ${service_name}`,
+            `su -s $(which bash) -c "${node_path} ${main_js_path}" ${service_name}`,
             ``
         ].join("\n")
     );
 
-    console.log("ok".green);
+    console.log(scriptLib.colorize("OK", "GREEN"));
 
 }
 
-namespace createShellScripts {
 
-    export let wait_ast_sh_path: string;
 
-}
 
 namespace systemd {
 
@@ -473,13 +515,14 @@ namespace systemd {
             `After=network.target`,
             ``,
             `[Service]`,
-            `ExecStartPre=${createShellScripts.wait_ast_sh_path}`,
-            `ExecStart=${node_path} ${main_path}`,
+            `ExecStartPre=${stop_sh_path} && ${wait_ast_sh_path}`,
+            `ExecStart=${node_path} ${main_js_path}`,
             `Environment=NODE_ENV=production`,
             `PermissionsStartOnly=true`,
             `StandardOutput=journal`,
             `WorkingDirectory=${working_directory_path}`,
             `Restart=always`,
+            `RestartPreventExitStatus=0`,
             `RestartSec=10`,
             `User=${service_name}`,
             `Group=${service_name}`,
@@ -495,7 +538,7 @@ namespace systemd {
 
         execSync(`systemctl enable ${service_name} --quiet`);
 
-        console.log("ok".green);
+        console.log(scriptLib.colorize("OK", "GREEN"));
 
     }
 
@@ -590,7 +633,7 @@ async function enableAsteriskManager(
 
     }
 
-    console.log("ok".green);
+    console.log(scriptLib.colorize("OK", "GREEN"));
 
 }
 
@@ -647,7 +690,7 @@ namespace udevRules {
 
         execSync("systemctl restart udev.service");
 
-        console.log("ok".green);
+        console.log(scriptLib.colorize("OK", "GREEN"));
 
         execSync(`chown ${service_name}:${service_name} ${rules_path}`);
 

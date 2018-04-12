@@ -14,7 +14,9 @@ export namespace Locals {
         "port": dcMisc.port,
         "ami_port": 5038,
         "disable_sms_dialplan": false,
-        "build_across_linux_kernel": "[ $(uname -r) on install ]"
+        "build_across_linux_kernel": null as any as string,
+        "ast_include_dir_path": "/usr/include/",
+        "assume_chan_dongle_installed": false
     };
 
 }

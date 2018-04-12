@@ -1,11 +1,6 @@
 import {
-    Modem,
-    InitializationError,
-    UnlockResult,
-    AccessPoint,
-    ConnectionMonitor,
-    AtMessage,
-    PerformUnlock
+    Modem, InitializationError, UnlockResult, AccessPoint,
+    ConnectionMonitor, AtMessage, PerformUnlock 
 } from "ts-gsm-modem";
 import { TrackableMap } from "trackable-map";
 import * as storage from "./appStorage";
@@ -14,20 +9,21 @@ import { Ami } from "ts-ami";
 import * as repl from "./repl";
 import * as dialplan from "./dialplan";
 import * as api from "./api";
-import * as bridge from "./bridge";
+import * as atBridge from "./atBridge";
 import { SyncEvent } from "ts-events-extended";
-import * as chanDongleConfManager from "./chanDongleConfManager";
+import * as confManager from "./confManager";
 import * as types from "./types";
-import { log, clearCurrentLog, backupCurrentLog } from "./logger";
+import { log, backupCurrentLog } from "./logger";
 import { execSync } from "child_process";
 
 import * as localManger from "./localsManager";
 
-import * as _debug from "debug";
-let debug = _debug("main");
+import "colors";
+
+import * as debugFactory from "debug";
+let debug = debugFactory("main");
 debug.enabled = true;
 debug.log = log;
-
 
 const modems: types.Modems = new TrackableMap();
 const evtScheduleRetry = new SyncEvent<AccessPoint>();
@@ -36,76 +32,29 @@ export async function launch() {
 
     const { locals } = localManger.get();
 
-    clearCurrentLog();
-
     const ami = Ami.getInstance(dcMisc.amiUser);
 
-    const chanDongleConfManagerApi = chanDongleConfManager.getApi(ami);
+    const chanDongleConfManagerApi = await confManager.getApi(ami);
 
-    (() => {
+    setExitHandlers(chanDongleConfManagerApi);
 
-        const onExit: any = async (signal, code) => {
+    if (locals.build_across_linux_kernel !== `${execSync("uname -r")}`) {
 
-            if (code !== 0) {
+        debug("Kernel have been updated, tty0tty need to be re compiled");
 
-                backupCurrentLog();
-
-            }
-
-            try {
-
-                await chanDongleConfManagerApi.reset();
-
-            } catch{ }
-
-            process.exit(code);
-
-        }
-
-        process.once("SIGINT", onExit);
-        process.once("SIGUSR1", onExit);
-
-        process.once("beforeExit", code => onExit("", code));
-
-        process.removeAllListeners("uncaughtException");
-
-        process.once("uncaughtException", error => {
-
-            debug("uncaughtException", error);
-
-            onExit("", -1);
-
-        });
-
-        process.removeAllListeners("unhandledRejection");
-
-        process.once("unhandledRejection", error => {
-
-            debug("unhandledRejection", error);
-
-            onExit("", -1);
-
-        });
-
-    })();
-
-    console.assert(
-        locals.build_across_linux_kernel === `${execSync("uname -r")}`,
-        "Kernel have been updated, need re install"
-    );
-
-    if (!locals.disable_sms_dialplan) {
-
-        dialplan.init(
-            modems,
-            ami,
-            chanDongleConfManagerApi.staticModuleConfiguration.defaults["context"],
-            chanDongleConfManagerApi.staticModuleConfiguration.defaults["exten"]
-        );
+        process.emit("beforeExit", 0);
 
     }
 
-    await bridge.init(modems, chanDongleConfManagerApi);
+    if (!locals.disable_sms_dialplan) {
+
+        let { defaults } = chanDongleConfManagerApi.staticModuleConfiguration;
+
+        dialplan.init(modems, ami, defaults["context"], defaults["exten"]);
+
+    }
+
+    await atBridge.init(modems, chanDongleConfManagerApi);
 
     await api.launch(modems, chanDongleConfManagerApi.staticModuleConfiguration);
 
@@ -134,7 +83,6 @@ export async function launch() {
 
     });
 
-
 };
 
 async function createModem(accessPoint: AccessPoint) {
@@ -148,46 +96,43 @@ async function createModem(accessPoint: AccessPoint) {
         modem = await Modem.create({
             "dataIfPath": accessPoint.dataIfPath,
             "unlock": (modemInfo, iccid, pinState, tryLeft, performUnlock) =>
-                unlock(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock),
+                onLockedModem(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock),
             log,
         });
 
     } catch (error) {
 
-        modems.delete(accessPoint);
-
-        let initializationError: InitializationError = error;
-
-        debug(`Initialization error: ${initializationError.message}`);
-
-        let { modemInfos } = initializationError;
-
-        if (modemInfos.hasSim !== false) {
-            evtScheduleRetry.post(accessPoint);
-        }
+        onModemInitializationFailed(
+            accessPoint,
+            error.message,
+            (error as InitializationError).modemInfos
+        );
 
         return;
 
     }
 
-    modem.evtTerminate.attachOnce(
-        error => {
-
-            modems.delete(accessPoint);
-
-            debug(`Terminate... ${error ? error.message : "No internal error"}`);
-
-            evtScheduleRetry.post(accessPoint);
-
-        }
-    );
-
-    modems.set(accessPoint, modem);
+    onModem(accessPoint, modem);
 
 }
 
+function onModemInitializationFailed(
+    accessPoint: AccessPoint,
+    message: string,
+    modemInfos: InitializationError["modemInfos"]
+) {
 
-async function unlock(
+    debug(`Modem initialization failed: ${message}`.red, modemInfos);
+
+    modems.delete(accessPoint);
+
+    if (modemInfos.hasSim !== false) {
+        evtScheduleRetry.post(accessPoint);
+    }
+
+}
+
+async function onLockedModem(
     accessPoint: AccessPoint,
     modemInfos: {
         imei: string;
@@ -200,6 +145,8 @@ async function unlock(
     tryLeft: number,
     performUnlock: PerformUnlock
 ) {
+
+    debug("onLockedModem", { ...modemInfos, iccid, pinState, tryLeft });
 
     let appData = await storage.read();
 
@@ -280,5 +227,93 @@ async function unlock(
     };
 
     modems.set(accessPoint, lockedModem);
+
+}
+
+function onModem(
+    accessPoint: AccessPoint,
+    modem: Modem
+) {
+
+    debug("Modem successfully initialized".green);
+
+    modem.evtTerminate.attachOnce(
+        error => {
+
+            modems.delete(accessPoint);
+
+            debug(`Terminate... ${error ? error.message : "No internal error"}`);
+
+            evtScheduleRetry.post(accessPoint);
+
+        }
+    );
+
+    modems.set(accessPoint, modem);
+
+}
+
+function setExitHandlers(
+    chanDongleConfManagerApi: confManager.Api
+) {
+
+    const cleanupAndExit = async (code: number) => {
+
+        debug(`cleaning up and exiting with code ${code}`);
+
+        if (code !== 0) {
+
+            backupCurrentLog();
+
+        }
+
+        try {
+
+            await chanDongleConfManagerApi.reset();
+
+        } catch{ }
+
+        process.exit(code);
+
+    }
+
+    //Ctrl+C
+    process.once("SIGINT", () => {
+
+        debug("Ctrl+C pressed ( SIGINT )");
+
+        cleanupAndExit(2);
+
+    });
+
+    process.once("SIGUSR2", () => {
+
+        debug("Stop script called (SIGUSR2)");
+
+        cleanupAndExit(0);
+
+    });
+
+    process.once("beforeExit", code => cleanupAndExit(code));
+
+    process.removeAllListeners("uncaughtException");
+
+    process.once("uncaughtException", error => {
+
+        debug("uncaughtException", error);
+
+        cleanupAndExit(-1);
+
+    });
+
+    process.removeAllListeners("unhandledRejection");
+
+    process.once("unhandledRejection", error => {
+
+        debug("unhandledRejection", error);
+
+        cleanupAndExit(-1);
+
+    });
 
 }

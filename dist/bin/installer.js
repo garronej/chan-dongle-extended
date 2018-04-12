@@ -76,20 +76,16 @@ var program = require("commander");
 var child_process_1 = require("child_process");
 var fs = require("fs");
 var path = require("path");
-var apt_get_installer_1 = require("./apt_get_installer");
+var scriptLib = require("../tools/scriptLib");
+var readline = require("readline");
 var localsManager = require("../lib/localsManager");
-require("colors");
 var node_path = process.argv[0];
 var module_path = path.join(__dirname, "..", "..");
-var _a = __read((function () {
-    var bind_dir_path = path.join(module_path, "dist", "bin");
-    return [
-        path.join(bind_dir_path, "cli.js"),
-        path.join(bind_dir_path, "main.js")
-    ];
-})(), 2), cli_path = _a[0], main_path = _a[1];
+var _a = __read(["cli.js", "main.js"].map(function (f) { return path.join(module_path, "dist", "bin", f); }), 2), cli_js_path = _a[0], main_js_path = _a[1];
 var working_directory_path = path.join(module_path, "working_directory");
-var _install = program.command("install").description("install");
+var stop_sh_path = path.join(working_directory_path, "stop.sh");
+var wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
+var _install = program.command("install");
 for (var key in localsManager.Locals.defaults) {
     var value = localsManager.Locals.defaults[key];
     switch (typeof value) {
@@ -105,15 +101,11 @@ for (var key in localsManager.Locals.defaults) {
     }
 }
 _install.action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var locals, key, _a, astetcdir, astsbindir, astmoddir, astrundir;
+    var locals, key, astdirs, message, _a;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 console.log("---Installing chan-dongle-extended---");
-                if (fs.existsSync(working_directory_path)) {
-                    console.log("already installed".red);
-                    process.exit(-1);
-                }
                 locals = __assign({}, localsManager.Locals.defaults);
                 for (key in localsManager.Locals.defaults) {
                     if (options[key] !== undefined) {
@@ -121,24 +113,38 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
                     }
                 }
                 locals.build_across_linux_kernel = "" + child_process_1.execSync("uname -r");
-                _a = localsManager.get.readAstdirs(locals.astetcdir), astetcdir = _a.astetcdir, astsbindir = _a.astsbindir, astmoddir = _a.astmoddir, astrundir = _a.astrundir;
-                unixUser.create(locals.service_name);
-                workingDirectory.create(locals.service_name);
-                (function () {
-                    var local_path = path.join(working_directory_path, localsManager.file_name);
-                    fs.writeFileSync(local_path, Buffer.from(JSON.stringify(locals, null, 2), "utf8"));
-                    child_process_1.execSync("chown " + locals.service_name + ":" + locals.service_name + " " + local_path);
-                })();
-                tty0tty.install();
-                return [4 /*yield*/, udevRules.create(locals.service_name)];
+                try {
+                    astdirs = localsManager.get.readAstdirs(locals.astetcdir);
+                }
+                catch (_c) {
+                    message = _c.message;
+                    console.log(scriptLib.colorize("Asterisk is probably not installed: " + message, "RED"));
+                    process.exit(-1);
+                    return [2 /*return*/];
+                }
+                if (!fs.existsSync(working_directory_path)) return [3 /*break*/, 2];
+                process.stdout.write(scriptLib.colorize("Already installed, erasing previous install... ", "YELLOW"));
+                return [4 /*yield*/, uninstall(locals, astdirs)];
             case 1:
                 _b.sent();
-                createShellScripts(locals.service_name, astsbindir);
-                systemd.create(locals.service_name);
-                grantDongleConfigFileAccess(astetcdir, locals.service_name);
-                return [4 /*yield*/, enableAsteriskManager(locals.service_name, astetcdir, locals.ami_port, astsbindir, astrundir)];
+                console.log("DONE");
+                _b.label = 2;
             case 2:
+                _b.trys.push([2, 4, , 6]);
+                return [4 /*yield*/, install(locals, astdirs)];
+            case 3:
                 _b.sent();
+                return [3 /*break*/, 6];
+            case 4:
+                _a = _b.sent();
+                process.stdout.write(scriptLib.colorize("Rollback install ...", "YELLOW"));
+                return [4 /*yield*/, uninstall(locals, astdirs)];
+            case 5:
+                _b.sent();
+                console.log("DONE");
+                process.exit(-1);
+                return [2 /*return*/];
+            case 6:
                 console.log("---DONE---");
                 process.exit(0);
                 return [2 /*return*/];
@@ -148,125 +154,160 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
 program
     .command("uninstall")
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
-    var locals, message, message, message, message, message, message, message;
-    return __generator(this, function (_a) {
+    var _a, locals, astdirs;
+    return __generator(this, function (_b) {
         console.log("---Uninstalling chan-dongle-extended---");
-        locals = localsManager.get(working_directory_path).locals;
         try {
-            process.stdout.write("Stopping service ... ");
-            child_process_1.execSync("systemctl stop " + locals.service_name);
-            console.log("ok".green);
+            _a = localsManager.get(working_directory_path), locals = _a.locals, astdirs = _a.astdirs;
         }
-        catch (_b) {
-            message = _b.message;
-            console.log(message.red);
+        catch (_c) {
+            console.log(scriptLib.colorize("Not installed", "YELLOW"));
+            process.exit(0);
+            return [2 /*return*/];
         }
-        try {
-            child_process_1.execSync("pkill -u " + locals.service_name);
-        }
-        catch (_c) { }
-        try {
-            process.stdout.write("Removing cli tool symbolic link ... ");
-            child_process_1.execSync("rm $(which " + locals.service_name + ")");
-            console.log("ok".green);
-        }
-        catch (_d) {
-            message = _d.message;
-            console.log(message.red);
-        }
-        try {
-            process.stdout.write("Removing systemd service ... ");
-            systemd.remove(locals.service_name);
-            ;
-            console.log("ok".green);
-        }
-        catch (_e) {
-            message = _e.message;
-            console.log(message.red);
-        }
-        try {
-            process.stdout.write("Removing udev rules ... ");
-            udevRules.remove(locals.service_name);
-            console.log("ok".green);
-        }
-        catch (_f) {
-            message = _f.message;
-            console.log(message.red);
-        }
-        try {
-            process.stdout.write("Removing tty0tty kernel module ...");
-            tty0tty.remove();
-            console.log("ok".green + " ( need reboot )");
-        }
-        catch (_g) {
-            message = _g.message;
-            console.log(message.red);
-        }
-        try {
-            process.stdout.write("Removing app working directory ... ");
-            workingDirectory.remove();
-            console.log("ok".green);
-        }
-        catch (_h) {
-            message = _h.message;
-            console.log(message.red);
-        }
-        try {
-            process.stdout.write("Deleting unix user ... ");
-            unixUser.remove(locals.service_name);
-            console.log("ok".green);
-        }
-        catch (_j) {
-            message = _j.message;
-            console.log(message.red);
-        }
+        uninstall(locals, astdirs, "VERBOSE");
         console.log("---DONE---");
         process.exit(0);
         return [2 /*return*/];
     });
 }); });
+function install(locals, astdirs) {
+    return __awaiter(this, void 0, void 0, function () {
+        var astetcdir, astsbindir, astmoddir, astrundir;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    astetcdir = astdirs.astetcdir, astsbindir = astdirs.astsbindir, astmoddir = astdirs.astmoddir, astrundir = astdirs.astrundir;
+                    unixUser.create(locals.service_name);
+                    workingDirectory.create(locals.service_name);
+                    (function () {
+                        var local_path = path.join(working_directory_path, localsManager.file_name);
+                        fs.writeFileSync(local_path, Buffer.from(JSON.stringify(locals, null, 2), "utf8"));
+                        child_process_1.execSync("chown " + locals.service_name + ":" + locals.service_name + " " + local_path);
+                    })();
+                    return [4 /*yield*/, tty0tty.install()];
+                case 1:
+                    _a.sent();
+                    if (!locals.assume_chan_dongle_installed) return [3 /*break*/, 2];
+                    console.log(scriptLib.colorize("Assuming chan_dongle already installed.", "YELLOW"));
+                    return [3 /*break*/, 4];
+                case 2: return [4 /*yield*/, chan_dongle.install(astsbindir, locals.ast_include_dir_path, astmoddir)];
+                case 3:
+                    _a.sent();
+                    _a.label = 4;
+                case 4: return [4 /*yield*/, udevRules.create(locals.service_name)];
+                case 5:
+                    _a.sent();
+                    createShellScripts(locals.service_name, astsbindir);
+                    systemd.create(locals.service_name);
+                    grantDongleConfigFileAccess(astetcdir, locals.service_name);
+                    return [4 /*yield*/, enableAsteriskManager(locals.service_name, astetcdir, locals.ami_port, astsbindir, astrundir)];
+                case 6:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+function uninstall(locals, astdirs, verbose) {
+    var write = !!verbose ? process.stdout.write.bind(process.stdout) : (function () { });
+    var log = function (str) { return write(str + "\n"); };
+    var runRecover = function (description, action) {
+        write(description);
+        try {
+            action();
+            log(scriptLib.colorize("ok", "GREEN"));
+        }
+        catch (_a) {
+            var message = _a.message;
+            log(scriptLib.colorize(message, "RED"));
+        }
+    };
+    runRecover("Stopping running instance ... ", function () { return child_process_1.execSync(stop_sh_path); });
+    if (locals.assume_chan_dongle_installed) {
+        log("Skipping uninstall of chan_dongle.so as it was installed separately");
+    }
+    else {
+        runRecover("Uninstalling chan_dongle.so ... ", function () { return chan_dongle.remove(astdirs.astmoddir, astdirs.astsbindir); });
+    }
+    runRecover("Removing cli tool symbolic link ... ", function () { return child_process_1.execSync("rm $(which " + locals.service_name + ")"); });
+    runRecover("Removing systemd service ... ", function () { return systemd.remove(locals.service_name); });
+    runRecover("Removing udev rules ... ", function () { return udevRules.remove(locals.service_name); });
+    runRecover("Removing tty0tty kernel module ...", function () { return tty0tty.remove(); });
+    runRecover("Removing app working directory ... ", function () { return workingDirectory.remove(); });
+    runRecover("Deleting unix user ... ", function () { return unixUser.remove(locals.service_name); });
+}
 var tty0tty;
 (function (tty0tty) {
     var load_module_file_path = "/etc/modules";
     function install() {
-        process.stdout.write("Checking for linux kernel headers ...");
-        try {
-            child_process_1.execSync("ls /lib/modules/$(uname -r)/build 2>/dev/null");
-            console.log("found, OK".green);
-        }
-        catch (_a) {
-            process.stdout.write("not found ...");
-            try {
-                console.assert(!!("" + child_process_1.execSync("cat /etc/os-release")).match(/^NAME=.*Raspbian.*$/m));
-                apt_get_installer_1.apt_get_install("raspberrypi-kernel-headers");
-            }
-            catch (_b) {
-                apt_get_installer_1.apt_get_install("linux-headers-$(uname -r)");
-            }
-        }
-        apt_get_installer_1.apt_get_install("git", "git");
-        console.log("Building and installing tty0tty kernel module >>>");
-        try {
-            var tty0tty_dir_path = path.join(working_directory_path, "tty0tty");
-            var tty0tty_module_dir_path = path.join(tty0tty_dir_path, "module");
-            child_process_1.execSync("git clone https://github.com/garronej/tty0tty " + tty0tty_dir_path);
-            child_process_1.execSync("make --directory=" + tty0tty_module_dir_path);
-            child_process_1.execSync("cp " + path.join(tty0tty_module_dir_path, "tty0tty.ko") + " /lib/modules/$(uname -r)/kernel/drivers/misc/");
-            child_process_1.execSync("depmod");
-            child_process_1.execSync("modprobe tty0tty");
-            try {
-                child_process_1.execSync("cat " + load_module_file_path + " | grep tty0tty");
-            }
-            catch (_c) {
-                child_process_1.execSync("echo tty0tty >> " + load_module_file_path);
-            }
-        }
-        catch (_d) {
-            var message = _d.message;
-            console.log(message.red);
-            process.exit(-1);
-        }
-        console.log("<<< tty0tty successfully installed".green);
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, _b, onSuccess, onError, tty0tty_dir_path, exec, cdExec, _c;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
+                    case 0:
+                        process.stdout.write("Checking for linux kernel headers ...");
+                        _d.label = 1;
+                    case 1:
+                        _d.trys.push([1, 2, , 7]);
+                        child_process_1.execSync("ls /lib/modules/$(uname -r)/build 2>/dev/null");
+                        console.log("found, " + scriptLib.colorize("OK", "GREEN"));
+                        return [3 /*break*/, 7];
+                    case 2:
+                        _a = _d.sent();
+                        readline.clearLine(process.stdout, 0);
+                        process.stdout.write("\r");
+                        if (!!!child_process_1.execSync("cat /etc/os-release")
+                            .toString("utf8")
+                            .match(/^NAME=.*Raspbian.*$/m)) return [3 /*break*/, 4];
+                        return [4 /*yield*/, scriptLib.apt_get_install("raspberrypi-kernel-headers")];
+                    case 3:
+                        _d.sent();
+                        return [3 /*break*/, 6];
+                    case 4: return [4 /*yield*/, scriptLib.apt_get_install("linux-headers-$(uname -r)")];
+                    case 5:
+                        _d.sent();
+                        _d.label = 6;
+                    case 6: return [3 /*break*/, 7];
+                    case 7: return [4 /*yield*/, scriptLib.apt_get_install("git", "git")];
+                    case 8:
+                        _d.sent();
+                        _b = scriptLib.showLoad("Building and installing tty0tty kernel module"), onSuccess = _b.onSuccess, onError = _b.onError;
+                        tty0tty_dir_path = path.join(working_directory_path, "tty0tty");
+                        exec = function (cmd) { return scriptLib.showLoad.exec(cmd, onError); };
+                        cdExec = function (cmd) { return exec("(cd " + path.join(tty0tty_dir_path, "module") + " && " + cmd + ")"); };
+                        return [4 /*yield*/, exec("git clone https://github.com/garronej/tty0tty " + tty0tty_dir_path)];
+                    case 9:
+                        _d.sent();
+                        return [4 /*yield*/, cdExec("make")];
+                    case 10:
+                        _d.sent();
+                        return [4 /*yield*/, cdExec("cp tty0tty.ko /lib/modules/$(uname -r)/kernel/drivers/misc/")];
+                    case 11:
+                        _d.sent();
+                        return [4 /*yield*/, exec("depmod")];
+                    case 12:
+                        _d.sent();
+                        return [4 /*yield*/, exec("modprobe tty0tty")];
+                    case 13:
+                        _d.sent();
+                        _d.label = 14;
+                    case 14:
+                        _d.trys.push([14, 15, , 17]);
+                        child_process_1.execSync("cat " + load_module_file_path + " | grep tty0tty");
+                        return [3 /*break*/, 17];
+                    case 15:
+                        _c = _d.sent();
+                        return [4 /*yield*/, exec("echo tty0tty >> " + load_module_file_path)];
+                    case 16:
+                        _d.sent();
+                        return [3 /*break*/, 17];
+                    case 17:
+                        onSuccess("OK");
+                        return [2 /*return*/];
+                }
+            });
+        });
     }
     tty0tty.install = install;
     function remove() {
@@ -275,13 +316,59 @@ var tty0tty;
     }
     tty0tty.remove = remove;
 })(tty0tty || (tty0tty = {}));
+var chan_dongle;
+(function (chan_dongle) {
+    function install(astsbindir, ast_include_dir_path, astmoddir) {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, onSuccess, onError, ast_ver, chan_dongle_dir_path, exec, cdExec;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _a = scriptLib.showLoad("Building and installing asterisk chan_dongle ( may take several minutes )"), onSuccess = _a.onSuccess, onError = _a.onError;
+                        ast_ver = child_process_1.execSync(path.join(astsbindir, "asterisk") + " -V")
+                            .toString("utf8")
+                            .match(/^Asterisk\s(.*)\n$/)[1];
+                        chan_dongle_dir_path = path.join(working_directory_path, "asterisk-chan-dongle");
+                        exec = function (cmd) { return scriptLib.showLoad.exec(cmd, onError); };
+                        cdExec = function (cmd) { return exec("(cd " + chan_dongle_dir_path + " && " + cmd + ")"); };
+                        return [4 /*yield*/, exec("git clone https://github.com/garronej/asterisk-chan-dongle " + chan_dongle_dir_path)];
+                    case 1:
+                        _b.sent();
+                        return [4 /*yield*/, cdExec("./bootstrap")];
+                    case 2:
+                        _b.sent();
+                        return [4 /*yield*/, cdExec("./configure --with-astversion=" + ast_ver + " --with-asterisk=" + ast_include_dir_path)];
+                    case 3:
+                        _b.sent();
+                        return [4 /*yield*/, cdExec("make")];
+                    case 4:
+                        _b.sent();
+                        return [4 /*yield*/, cdExec("cp chan_dongle.so " + astmoddir)];
+                    case 5:
+                        _b.sent();
+                        onSuccess("OK");
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }
+    chan_dongle.install = install;
+    function remove(astmoddir, astsbindir) {
+        try {
+            child_process_1.execSync(path.join(astsbindir, "asterisk") + " -rx \"module unload chan_dongle.so\"");
+        }
+        catch (_a) { }
+        child_process_1.execSync("rm -f " + path.join(astmoddir, "chan_dongle.so"));
+    }
+    chan_dongle.remove = remove;
+})(chan_dongle || (chan_dongle = {}));
 var workingDirectory;
 (function (workingDirectory) {
     function create(service_name) {
         process.stdout.write("Creating app working directory '" + working_directory_path + "' ... ");
         child_process_1.execSync("mkdir " + working_directory_path);
         child_process_1.execSync("chown " + service_name + ":" + service_name + " " + working_directory_path);
-        console.log("ok".green);
+        console.log(scriptLib.colorize("OK", "GREEN"));
     }
     workingDirectory.create = create;
     function remove() {
@@ -294,7 +381,7 @@ var unixUser;
     function create(service_name) {
         process.stdout.write("Creating unix user '" + service_name + "' ... ");
         child_process_1.execSync("useradd -M " + service_name + " -s /bin/false -d " + working_directory_path);
-        console.log("ok".green);
+        console.log(scriptLib.colorize("OK", "GREEN"));
     }
     unixUser.create = create;
     function remove(service_name) {
@@ -308,7 +395,7 @@ function grantDongleConfigFileAccess(astetcdir, service_name) {
     child_process_1.execSync("touch " + dongle_path);
     child_process_1.execSync("chown " + service_name + ":" + service_name + " " + dongle_path);
     child_process_1.execSync("chmod u+rw " + dongle_path);
-    console.log("ok".green);
+    console.log(scriptLib.colorize("OK", "GREEN"));
 }
 function createShellScripts(service_name, astsbindir) {
     process.stdout.write("Creating launch scripts ... ");
@@ -317,15 +404,19 @@ function createShellScripts(service_name, astsbindir) {
         child_process_1.execSync("chown " + service_name + ":" + service_name + " " + script_path);
         child_process_1.execSync("chmod +x " + script_path);
     };
-    createShellScripts.wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
-    writeAndSetPerms(createShellScripts.wait_ast_sh_path, [
+    writeAndSetPerms(stop_sh_path, [
+        "#!/usr/bin/env bash",
+        "",
+        "pkill -u " + service_name + " -SIGUSR2 || true",
+        ""
+    ].join("\n"));
+    writeAndSetPerms(wait_ast_sh_path, [
         "#!/usr/bin/env bash",
         "",
         "until " + path.join(astsbindir, "asterisk") + " -rx \"core waitfullybooted\"",
         "do",
         "   sleep 3",
         "done",
-        "pkill -u " + service_name + " || true",
         ""
     ].join("\n"));
     var cli_sh_path = path.join(working_directory_path, "cli.sh");
@@ -338,24 +429,21 @@ function createShellScripts(service_name, astsbindir) {
         "do",
         "   args=\"$args \\\"$param\\\"\"",
         "done",
-        "sudo su -s $(which bash) -c \"" + node_path + " " + cli_path + " $args\" " + service_name,
+        "sudo su -s $(which bash) -c \"" + node_path + " " + cli_js_path + " $args\" " + service_name,
         ""
     ].join("\n"));
     child_process_1.execSync("ln -s " + cli_sh_path + " " + path.join(astsbindir, service_name));
     writeAndSetPerms(path.join(working_directory_path, "main.sh"), [
         "#!/usr/bin/env bash",
         "",
-        "systemctl stop " + service_name,
+        "" + stop_sh_path,
+        "" + wait_ast_sh_path,
         "cd " + working_directory_path,
-        "args=$@",
-        "" + createShellScripts.wait_ast_sh_path,
-        "su -s $(which bash) -c \"" + node_path + " " + main_path + " $args\" " + service_name,
+        "su -s $(which bash) -c \"" + node_path + " " + main_js_path + "\" " + service_name,
         ""
     ].join("\n"));
-    console.log("ok".green);
+    console.log(scriptLib.colorize("OK", "GREEN"));
 }
-(function (createShellScripts) {
-})(createShellScripts || (createShellScripts = {}));
 var systemd;
 (function (systemd) {
     function get_service_path(service_name) {
@@ -370,13 +458,14 @@ var systemd;
             "After=network.target",
             "",
             "[Service]",
-            "ExecStartPre=" + createShellScripts.wait_ast_sh_path,
-            "ExecStart=" + node_path + " " + main_path,
+            "ExecStartPre=" + stop_sh_path + " && " + wait_ast_sh_path,
+            "ExecStart=" + node_path + " " + main_js_path,
             "Environment=NODE_ENV=production",
             "PermissionsStartOnly=true",
             "StandardOutput=journal",
             "WorkingDirectory=" + working_directory_path,
             "Restart=always",
+            "RestartPreventExitStatus=0",
             "RestartSec=10",
             "User=" + service_name,
             "Group=" + service_name,
@@ -388,7 +477,7 @@ var systemd;
         fs.writeFileSync(service_path, Buffer.from(service, "utf8"));
         child_process_1.execSync("systemctl daemon-reload");
         child_process_1.execSync("systemctl enable " + service_name + " --quiet");
-        console.log("ok".green);
+        console.log(scriptLib.colorize("OK", "GREEN"));
     }
     systemd.create = create;
     function remove(service_name) {
@@ -447,7 +536,7 @@ function enableAsteriskManager(service_name, astetcdir, ami_port, astsbindir, as
                     if (fs.existsSync(path.join(astrundir, "asterisk.ctl"))) {
                         child_process_1.execSync(path.join(astsbindir, "asterisk") + " -rx \"core reload\"");
                     }
-                    console.log("ok".green);
+                    console.log(scriptLib.colorize("OK", "GREEN"));
                     return [2 /*return*/];
             }
         });
@@ -508,7 +597,7 @@ var udevRules;
                         ].join(", ") + "\n";
                         fs.writeFileSync(rules_path, rules);
                         child_process_1.execSync("systemctl restart udev.service");
-                        console.log("ok".green);
+                        console.log(scriptLib.colorize("OK", "GREEN"));
                         child_process_1.execSync("chown " + service_name + ":" + service_name + " " + rules_path);
                         child_process_1.execSync("chown root:" + service_name + " /dev/tnt*");
                         child_process_1.execSync("chmod u+rw,g+rw /dev/tnt*");
@@ -518,7 +607,7 @@ var udevRules;
                                     switch (_g.label) {
                                         case 0:
                                             monitor = ConnectionMonitor.getInstance();
-                                            process.stdout.write("Detecting currently connected modems ... ");
+                                            console.log("Detecting currently connected modems ... ");
                                             return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(function () { return resolve(); }, 4100); })];
                                         case 1:
                                             _g.sent();
@@ -528,7 +617,6 @@ var udevRules;
                                             try {
                                                 for (_a = __values(monitor.connectedModems), _b = _a.next(); !_b.done; _b = _a.next()) {
                                                     accessPoint = _b.value;
-                                                    console.log("Detected modem currently connected: \n", accessPoint.toString());
                                                     try {
                                                         for (_c = __values([accessPoint.audioIfPath, accessPoint.dataIfPath]), _d = _c.next(); !_d.done; _d = _c.next()) {
                                                             device_path = _d.value;

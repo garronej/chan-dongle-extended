@@ -6,6 +6,12 @@ import * as localsManager from "./localsManager";
 
 import { types as dcTypes } from "../chan-dongle-extended-client";
 import { Ami } from "ts-ami";
+import { log } from "./logger";
+
+import * as debugFactory from "debug";
+let debug = debugFactory("confManager");
+debug.enabled = true;
+debug.log = log;
 
 export type DongleConf= {
     dongleName: string;
@@ -49,7 +55,38 @@ const default_staticModuleConfiguration: dcTypes.StaticModuleConfiguration = {
     }
 };
 
-export function getApi(ami: Ami): Api {
+async function loadChanDongleSo(ami: Ami): Promise<void> {
+
+    try {
+
+        let { response } = await ami.postAction("ModuleCheck", {
+            "module": "chan_dongle.so"
+        });
+
+        if (response !== "Success") {
+
+            throw new Error("not loaded");
+
+        }
+
+    } catch{
+
+        debug("chan_dongle.so is not loaded, loading manually");
+
+        await ami.postAction("ModuleLoad", {
+            "module": "chan_dongle.so",
+            "loadtype": "load"
+        });
+
+    }
+
+    debug("chan_dongle.so is loaded");
+
+}
+
+export async function getApi(ami: Ami): Promise<Api> {
+
+    await loadChanDongleSo(ami);
 
     let dongle_conf_path = path.join(localsManager.get().astdirs.astetcdir, "dongle.conf");
 
@@ -66,10 +103,10 @@ export function getApi(ami: Ami): Api {
             defaults.autodeletesms = default_staticModuleConfiguration.defaults["autodeletesms"];
             general.interval = default_staticModuleConfiguration.general["interval"];
 
-            for( let key in defaults ){
+            for (let key in defaults) {
 
-                if( !defaults[key] ){
-                    defaults[key]= default_staticModuleConfiguration.defaults[key];
+                if (!defaults[key]) {
+                    defaults[key] = default_staticModuleConfiguration.defaults[key];
                 }
 
             }

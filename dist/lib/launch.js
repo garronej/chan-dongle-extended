@@ -1,4 +1,12 @@
 "use strict";
+var __assign = (this && this.__assign) || Object.assign || function(t) {
+    for (var s, i = 1, n = arguments.length; i < n; i++) {
+        s = arguments[i];
+        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
+            t[p] = s[p];
+    }
+    return t;
+};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -43,77 +51,44 @@ var ts_ami_1 = require("ts-ami");
 var repl = require("./repl");
 var dialplan = require("./dialplan");
 var api = require("./api");
-var bridge = require("./bridge");
+var atBridge = require("./atBridge");
 var ts_events_extended_1 = require("ts-events-extended");
-var chanDongleConfManager = require("./chanDongleConfManager");
+var confManager = require("./confManager");
 var logger_1 = require("./logger");
 var child_process_1 = require("child_process");
 var localManger = require("./localsManager");
-var _debug = require("debug");
-var debug = _debug("main");
+require("colors");
+var debugFactory = require("debug");
+var debug = debugFactory("main");
 debug.enabled = true;
 debug.log = logger_1.log;
 var modems = new trackable_map_1.TrackableMap();
 var evtScheduleRetry = new ts_events_extended_1.SyncEvent();
 function launch() {
     return __awaiter(this, void 0, void 0, function () {
-        var _this = this;
-        var locals, ami, chanDongleConfManagerApi, monitor;
+        var locals, ami, chanDongleConfManagerApi, defaults, monitor;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     locals = localManger.get().locals;
-                    logger_1.clearCurrentLog();
                     ami = ts_ami_1.Ami.getInstance(chan_dongle_extended_client_1.misc.amiUser);
-                    chanDongleConfManagerApi = chanDongleConfManager.getApi(ami);
-                    (function () {
-                        var onExit = function (signal, code) { return __awaiter(_this, void 0, void 0, function () {
-                            var _a;
-                            return __generator(this, function (_b) {
-                                switch (_b.label) {
-                                    case 0:
-                                        if (code !== 0) {
-                                            logger_1.backupCurrentLog();
-                                        }
-                                        _b.label = 1;
-                                    case 1:
-                                        _b.trys.push([1, 3, , 4]);
-                                        return [4 /*yield*/, chanDongleConfManagerApi.reset()];
-                                    case 2:
-                                        _b.sent();
-                                        return [3 /*break*/, 4];
-                                    case 3:
-                                        _a = _b.sent();
-                                        return [3 /*break*/, 4];
-                                    case 4:
-                                        process.exit(code);
-                                        return [2 /*return*/];
-                                }
-                            });
-                        }); };
-                        process.once("SIGINT", onExit);
-                        process.once("SIGUSR1", onExit);
-                        process.once("beforeExit", function (code) { return onExit("", code); });
-                        process.removeAllListeners("uncaughtException");
-                        process.once("uncaughtException", function (error) {
-                            debug("uncaughtException", error);
-                            onExit("", -1);
-                        });
-                        process.removeAllListeners("unhandledRejection");
-                        process.once("unhandledRejection", function (error) {
-                            debug("unhandledRejection", error);
-                            onExit("", -1);
-                        });
-                    })();
-                    console.assert(locals.build_across_linux_kernel === "" + child_process_1.execSync("uname -r"), "Kernel have been updated, need re install");
-                    if (!locals.disable_sms_dialplan) {
-                        dialplan.init(modems, ami, chanDongleConfManagerApi.staticModuleConfiguration.defaults["context"], chanDongleConfManagerApi.staticModuleConfiguration.defaults["exten"]);
-                    }
-                    return [4 /*yield*/, bridge.init(modems, chanDongleConfManagerApi)];
+                    return [4 /*yield*/, confManager.getApi(ami)];
                 case 1:
+                    chanDongleConfManagerApi = _a.sent();
+                    setExitHandlers(chanDongleConfManagerApi);
+                    if (locals.build_across_linux_kernel !== "" + child_process_1.execSync("uname -r")) {
+                        debug("Kernel have been updated, tty0tty need to be re compiled");
+                        process.emit("beforeExit", 0);
+                    }
+                    if (!locals.disable_sms_dialplan) {
+                        defaults = chanDongleConfManagerApi.staticModuleConfiguration.defaults;
+                        dialplan.init(modems, ami, defaults["context"], defaults["exten"]);
+                    }
+                    return [4 /*yield*/, atBridge.init(modems, chanDongleConfManagerApi)];
+                case 2:
                     _a.sent();
                     return [4 /*yield*/, api.launch(modems, chanDongleConfManagerApi.staticModuleConfiguration)];
-                case 2:
+                case 3:
                     _a.sent();
                     if (process.env["NODE_ENV"] !== "production") {
                         repl.start(modems);
@@ -138,7 +113,7 @@ exports.launch = launch;
 ;
 function createModem(accessPoint) {
     return __awaiter(this, void 0, void 0, function () {
-        var modem, error_1, initializationError, modemInfos;
+        var modem, error_1;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -149,7 +124,7 @@ function createModem(accessPoint) {
                     return [4 /*yield*/, ts_gsm_modem_1.Modem.create({
                             "dataIfPath": accessPoint.dataIfPath,
                             "unlock": function (modemInfo, iccid, pinState, tryLeft, performUnlock) {
-                                return unlock(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock);
+                                return onLockedModem(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock);
                             },
                             log: logger_1.log,
                         })];
@@ -158,33 +133,31 @@ function createModem(accessPoint) {
                     return [3 /*break*/, 4];
                 case 3:
                     error_1 = _a.sent();
-                    modems.delete(accessPoint);
-                    initializationError = error_1;
-                    debug("Initialization error: " + initializationError.message);
-                    modemInfos = initializationError.modemInfos;
-                    if (modemInfos.hasSim !== false) {
-                        evtScheduleRetry.post(accessPoint);
-                    }
+                    onModemInitializationFailed(accessPoint, error_1.message, error_1.modemInfos);
                     return [2 /*return*/];
                 case 4:
-                    modem.evtTerminate.attachOnce(function (error) {
-                        modems.delete(accessPoint);
-                        debug("Terminate... " + (error ? error.message : "No internal error"));
-                        evtScheduleRetry.post(accessPoint);
-                    });
-                    modems.set(accessPoint, modem);
+                    onModem(accessPoint, modem);
                     return [2 /*return*/];
             }
         });
     });
 }
-function unlock(accessPoint, modemInfos, iccid, pinState, tryLeft, performUnlock) {
+function onModemInitializationFailed(accessPoint, message, modemInfos) {
+    debug(("Modem initialization failed: " + message).red, modemInfos);
+    modems.delete(accessPoint);
+    if (modemInfos.hasSim !== false) {
+        evtScheduleRetry.post(accessPoint);
+    }
+}
+function onLockedModem(accessPoint, modemInfos, iccid, pinState, tryLeft, performUnlock) {
     return __awaiter(this, void 0, void 0, function () {
         var _this = this;
         var appData, pin, unlockResult, lockedModem;
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, storage.read()];
+                case 0:
+                    debug("onLockedModem", __assign({}, modemInfos, { iccid: iccid, pinState: pinState, tryLeft: tryLeft }));
+                    return [4 /*yield*/, storage.read()];
                 case 1:
                     appData = _a.sent();
                     pin = appData.pins[iccid || modemInfos.imei];
@@ -257,5 +230,62 @@ function unlock(accessPoint, modemInfos, iccid, pinState, tryLeft, performUnlock
                     return [2 /*return*/];
             }
         });
+    });
+}
+function onModem(accessPoint, modem) {
+    debug("Modem successfully initialized".green);
+    modem.evtTerminate.attachOnce(function (error) {
+        modems.delete(accessPoint);
+        debug("Terminate... " + (error ? error.message : "No internal error"));
+        evtScheduleRetry.post(accessPoint);
+    });
+    modems.set(accessPoint, modem);
+}
+function setExitHandlers(chanDongleConfManagerApi) {
+    var _this = this;
+    var cleanupAndExit = function (code) { return __awaiter(_this, void 0, void 0, function () {
+        var _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
+                case 0:
+                    debug("cleaning up and exiting with code " + code);
+                    if (code !== 0) {
+                        logger_1.backupCurrentLog();
+                    }
+                    _b.label = 1;
+                case 1:
+                    _b.trys.push([1, 3, , 4]);
+                    return [4 /*yield*/, chanDongleConfManagerApi.reset()];
+                case 2:
+                    _b.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    _a = _b.sent();
+                    return [3 /*break*/, 4];
+                case 4:
+                    process.exit(code);
+                    return [2 /*return*/];
+            }
+        });
+    }); };
+    //Ctrl+C
+    process.once("SIGINT", function () {
+        debug("Ctrl+C pressed ( SIGINT )");
+        cleanupAndExit(2);
+    });
+    process.once("SIGUSR2", function () {
+        debug("Stop script called (SIGUSR2)");
+        cleanupAndExit(0);
+    });
+    process.once("beforeExit", function (code) { return cleanupAndExit(code); });
+    process.removeAllListeners("uncaughtException");
+    process.once("uncaughtException", function (error) {
+        debug("uncaughtException", error);
+        cleanupAndExit(-1);
+    });
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", function (error) {
+        debug("unhandledRejection", error);
+        cleanupAndExit(-1);
     });
 }

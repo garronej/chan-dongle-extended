@@ -8,6 +8,8 @@ export declare namespace Locals {
         "ami_port": number;
         "disable_sms_dialplan": boolean;
         "build_across_linux_kernel": string;
+        "ast_include_dir_path": string;
+        "assume_chan_dongle_installed": boolean;
     };
 }
 export declare type Astdirs = typeof Astdirs.phony;

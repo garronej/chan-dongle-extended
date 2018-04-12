@@ -11,27 +11,10 @@ const logger = winston.createLogger({
             "level": "debug",
             "filename": current_log_filename,
             "maxsize": 1000000
-        })
+        }),
+        new winston.transports.Console({ "level": "info" })
     ]
 });
-
-if (process.env.NODE_ENV !== 'production') {
-
-    logger.add(
-        new winston.transports.Console({ "level": "info" })
-    );
-
-}
-
-export function clearCurrentLog() {
-
-    try {
-
-        execSync(`mv ${current_log_filename} previous.log 2>/dev/null`);
-
-    } catch{ }
-
-}
 
 export function backupCurrentLog() {
 
@@ -58,6 +41,12 @@ export function backupCurrentLog() {
     }
 
     execSync(`cp ${current_log_filename} crash_report_${Date.now()}.log`);
+
+    try {
+
+        execSync(`mv ${current_log_filename} previous.log 2>/dev/null`);
+
+    } catch{ }
 
 }
 
