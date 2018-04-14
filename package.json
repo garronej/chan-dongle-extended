@@ -1,13 +1,13 @@
 {
   "name": "chan-dongle-extended",
-  "version": "3.0.1",
+  "version": "3.1.0",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
   "scripts": {
     "postinstall": "npm run remove-bold-color",
     "remove-bold-color": "sed -i '/bold: string;/d' ./node_modules/@types/colors/index.d.ts || true",
-    "tsc": "node ./node_modules/typescript/bin/tsc -p ./tsconfig.json && chmod +x ./dist/bin/*.js",
+    "tsc": "node ./node_modules/typescript/bin/tsc -p ./tsconfig.json",
     "tsc-w": "node ./node_modules/typescript/bin/tsc -w -p ./tsconfig.json",
     "start": "sudo ./working_directory/main.sh",
     "log": "tail -f -n 1000 ./working_directory/current.log",
@@ -29,7 +29,6 @@
     "node-persist": "^2.1.0",
     "rejection-tracker": "github:garronej/rejection-tracker",
     "run-exclusive": "github:garronej/run-exclusive",
-    "timer-extended": "garronej/timer-extended",
     "trackable-map": "garronej/trackable-map",
     "transfer-tools": "garronej/transfer-tools",
     "ts-ami": "github:garronej/ts-ami",

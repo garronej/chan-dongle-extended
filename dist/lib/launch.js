@@ -244,14 +244,26 @@ function onModem(accessPoint, modem) {
 function setExitHandlers(chanDongleConfManagerApi) {
     var _this = this;
     var cleanupAndExit = function (code) { return __awaiter(_this, void 0, void 0, function () {
-        var _a;
+        var exitSync, _a;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
+                    exitSync = function () {
+                        if (code !== 0) {
+                            debug("Create crash report");
+                            logger_1.createCrashReport();
+                        }
+                        else {
+                            debug("Backup log");
+                            logger_1.backupCurrentLog();
+                        }
+                        process.exit(code);
+                    };
                     debug("cleaning up and exiting with code " + code);
-                    if (code !== 0) {
-                        logger_1.backupCurrentLog();
-                    }
+                    setTimeout(function () {
+                        debug("Force quit");
+                        exitSync();
+                    }, 2000);
                     _b.label = 1;
                 case 1:
                     _b.trys.push([1, 3, , 4]);
@@ -263,7 +275,7 @@ function setExitHandlers(chanDongleConfManagerApi) {
                     _a = _b.sent();
                     return [3 /*break*/, 4];
                 case 4:
-                    process.exit(code);
+                    exitSync();
                     return [2 /*return*/];
             }
         });

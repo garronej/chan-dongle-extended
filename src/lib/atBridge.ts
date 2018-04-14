@@ -8,7 +8,7 @@ import { log, fileOnlyLog } from "./logger";
 
 import * as debugFactory from "debug";
 
-const debug = debugFactory("bridge");
+const debug = debugFactory("atBridge");
 debug.enabled= true;
 debug.log= log;
 
@@ -68,15 +68,12 @@ async function atBridge(
 
             await atBridge.confManagerApi.removeDongle(accessPoint.friendlyId);
 
-            debug("Dongle removed from chan dongle config");
-
             if (portVirtual.isOpen()) {
 
                 await new Promise<void>(
                     resolve => portVirtual.close(() => resolve())
                 );
 
-                debug("Virtual port closed");
             }
 
             tty0tty.release();

@@ -57,6 +57,8 @@ const default_staticModuleConfiguration: dcTypes.StaticModuleConfiguration = {
 
 async function loadChanDongleSo(ami: Ami): Promise<void> {
 
+    debug("Checking if chan_dongle.so is loaded...");
+
     try {
 
         let { response } = await ami.postAction("ModuleCheck", {
@@ -80,13 +82,18 @@ async function loadChanDongleSo(ami: Ami): Promise<void> {
 
     }
 
-    debug("chan_dongle.so is loaded");
+    debug("chan_dongle.so is loaded!");
 
 }
 
 export async function getApi(ami: Ami): Promise<Api> {
 
     await loadChanDongleSo(ami);
+
+    ami.evt.attach(
+        ({ event })=> event === "FullyBooted", 
+        ()=> loadChanDongleSo(ami)
+    );
 
     let dongle_conf_path = path.join(localsManager.get().astdirs.astetcdir, "dongle.conf");
 
@@ -133,12 +140,11 @@ export async function getApi(ami: Ami): Promise<Api> {
                     throw error;
                 }
 
-                await ami.postAction(
-                    "DongleReload",
-                    { "when": "gracefully" }
-                );
-
                 resolve();
+
+                ami.postAction("DongleReload", { "when": "gracefully" })
+                    .catch(() => debug("Dongle reload fail, is asterisk running?"))
+                    ;
 
             }
         )
@@ -150,6 +156,8 @@ export async function getApi(ami: Ami): Promise<Api> {
         staticModuleConfiguration,
         "reset": runExclusive.build(groupRef,
             async () => {
+
+                debug("reset");
 
                 for (let key of Object.keys(state).filter(key => key !== "general" && key !== "defaults")) {
 
@@ -164,6 +172,8 @@ export async function getApi(ami: Ami): Promise<Api> {
         "addDongle": runExclusive.build(groupRef,
             async ({ dongleName, data, audio }: DongleConf) => {
 
+                debug("addDongle", { dongleName, data, audio });
+
                 state[dongleName] = { audio, data };
 
                 await update();
@@ -172,6 +182,8 @@ export async function getApi(ami: Ami): Promise<Api> {
         ),
         "removeDongle": runExclusive.build(groupRef,
             async (dongleName: string) => {
+
+                debug("removeDongle", { dongleName });
 
                 delete state[dongleName];
 

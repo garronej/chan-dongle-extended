@@ -18,9 +18,10 @@ var logger = winston.createLogger({
         new winston.transports.Console({ "level": "info" })
     ]
 });
-function backupCurrentLog() {
+function createCrashReport() {
     var crashReportRegexp = /^crash_report_([0-9]+)\.log$/;
-    var crash_reports = ("" + child_process_1.execSync("ls"))
+    var crash_reports = child_process_1.execSync("ls")
+        .toString("utf8")
         .split("\n")
         .filter(function (file_name) { return !!file_name.match(crashReportRegexp); })
         .sort(function (f1, f2) {
@@ -31,11 +32,11 @@ function backupCurrentLog() {
         var crash_report = crash_reports.shift();
         child_process_1.execSync("rm " + crash_report);
     }
-    child_process_1.execSync("cp " + current_log_filename + " crash_report_" + Date.now() + ".log");
-    try {
-        child_process_1.execSync("mv " + current_log_filename + " previous.log 2>/dev/null");
-    }
-    catch (_a) { }
+    child_process_1.execSync("mv " + current_log_filename + " crash_report_" + Date.now() + ".log");
+}
+exports.createCrashReport = createCrashReport;
+function backupCurrentLog() {
+    child_process_1.execSync("mv " + current_log_filename + " previous.log 2>/dev/null");
 }
 exports.backupCurrentLog = backupCurrentLog;
 exports.log = function () {

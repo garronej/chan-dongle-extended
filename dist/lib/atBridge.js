@@ -57,7 +57,7 @@ var ts_gsm_modem_1 = require("ts-gsm-modem");
 var Tty0tty_1 = require("./Tty0tty");
 var logger_1 = require("./logger");
 var debugFactory = require("debug");
-var debug = debugFactory("bridge");
+var debug = debugFactory("atBridge");
 debug.enabled = true;
 debug.log = logger_1.log;
 var fileOnlyDebug = debugFactory("bridge");
@@ -101,12 +101,10 @@ function atBridge(accessPoint, modem, tty0tty) {
                                     return [4 /*yield*/, atBridge.confManagerApi.removeDongle(accessPoint.friendlyId)];
                                 case 1:
                                     _a.sent();
-                                    debug("Dongle removed from chan dongle config");
                                     if (!portVirtual.isOpen()) return [3 /*break*/, 3];
                                     return [4 /*yield*/, new Promise(function (resolve) { return portVirtual.close(function () { return resolve(); }); })];
                                 case 2:
                                     _a.sent();
-                                    debug("Virtual port closed");
                                     _a.label = 3;
                                 case 3:
                                     tty0tty.release();

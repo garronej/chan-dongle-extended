@@ -13,7 +13,7 @@ import * as atBridge from "./atBridge";
 import { SyncEvent } from "ts-events-extended";
 import * as confManager from "./confManager";
 import * as types from "./types";
-import { log, backupCurrentLog } from "./logger";
+import { log, backupCurrentLog, createCrashReport } from "./logger";
 import { execSync } from "child_process";
 
 import * as localManger from "./localsManager";
@@ -259,13 +259,35 @@ function setExitHandlers(
 
     const cleanupAndExit = async (code: number) => {
 
+        const exitSync = () => {
+
+            if (code !== 0) {
+
+                debug("Create crash report");
+
+                createCrashReport();
+
+            } else {
+
+                debug("Backup log");
+
+                backupCurrentLog();
+
+            }
+
+            process.exit(code);
+
+        };
+
         debug(`cleaning up and exiting with code ${code}`);
 
-        if (code !== 0) {
+        setTimeout(() => {
 
-            backupCurrentLog();
+            debug("Force quit");
 
-        }
+            exitSync();
+
+        }, 2000);
 
         try {
 
@@ -273,7 +295,7 @@ function setExitHandlers(
 
         } catch{ }
 
-        process.exit(code);
+        exitSync();
 
     }
 

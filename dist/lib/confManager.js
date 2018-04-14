@@ -97,28 +97,31 @@ function loadChanDongleSo(ami) {
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    _b.trys.push([0, 2, , 4]);
+                    debug("Checking if chan_dongle.so is loaded...");
+                    _b.label = 1;
+                case 1:
+                    _b.trys.push([1, 3, , 5]);
                     return [4 /*yield*/, ami.postAction("ModuleCheck", {
                             "module": "chan_dongle.so"
                         })];
-                case 1:
+                case 2:
                     response = (_b.sent()).response;
                     if (response !== "Success") {
                         throw new Error("not loaded");
                     }
-                    return [3 /*break*/, 4];
-                case 2:
+                    return [3 /*break*/, 5];
+                case 3:
                     _a = _b.sent();
                     debug("chan_dongle.so is not loaded, loading manually");
                     return [4 /*yield*/, ami.postAction("ModuleLoad", {
                             "module": "chan_dongle.so",
                             "loadtype": "load"
                         })];
-                case 3:
-                    _b.sent();
-                    return [3 /*break*/, 4];
                 case 4:
-                    debug("chan_dongle.so is loaded");
+                    _b.sent();
+                    return [3 /*break*/, 5];
+                case 5:
+                    debug("chan_dongle.so is loaded!");
                     return [2 /*return*/];
             }
         });
@@ -133,6 +136,10 @@ function getApi(ami) {
                 case 0: return [4 /*yield*/, loadChanDongleSo(ami)];
                 case 1:
                     _a.sent();
+                    ami.evt.attach(function (_a) {
+                        var event = _a.event;
+                        return event === "FullyBooted";
+                    }, function () { return loadChanDongleSo(ami); });
                     dongle_conf_path = path.join(localsManager.get().astdirs.astetcdir, "dongle.conf");
                     staticModuleConfiguration = (function () {
                         try {
@@ -154,17 +161,13 @@ function getApi(ami) {
                     state = __assign({}, staticModuleConfiguration);
                     update = function () { return new Promise(function (resolve) { return fs.writeFile(dongle_conf_path, Buffer.from(ini_extended_1.ini.stringify(state), "utf8"), function (error) { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    if (error) {
-                                        throw error;
-                                    }
-                                    return [4 /*yield*/, ami.postAction("DongleReload", { "when": "gracefully" })];
-                                case 1:
-                                    _a.sent();
-                                    resolve();
-                                    return [2 /*return*/];
+                            if (error) {
+                                throw error;
                             }
+                            resolve();
+                            ami.postAction("DongleReload", { "when": "gracefully" })
+                                .catch(function () { return debug("Dongle reload fail, is asterisk running?"); });
+                            return [2 /*return*/];
                         });
                     }); }); }); };
                     groupRef = runExclusive.createGroupRef();
@@ -175,6 +178,7 @@ function getApi(ami) {
                             return __generator(this, function (_d) {
                                 switch (_d.label) {
                                     case 0:
+                                        debug("reset");
                                         try {
                                             for (_a = __values(Object.keys(state).filter(function (key) { return key !== "general" && key !== "defaults"; })), _b = _a.next(); !_b.done; _b = _a.next()) {
                                                 key = _b.value;
@@ -201,6 +205,7 @@ function getApi(ami) {
                                 return __generator(this, function (_b) {
                                     switch (_b.label) {
                                         case 0:
+                                            debug("addDongle", { dongleName: dongleName, data: data, audio: audio });
                                             state[dongleName] = { audio: audio, data: data };
                                             return [4 /*yield*/, update()];
                                         case 1:
@@ -214,6 +219,7 @@ function getApi(ami) {
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
+                                        debug("removeDongle", { dongleName: dongleName });
                                         delete state[dongleName];
                                         return [4 /*yield*/, update()];
                                     case 1:

@@ -16,11 +16,12 @@ const logger = winston.createLogger({
     ]
 });
 
-export function backupCurrentLog() {
+export function createCrashReport() {
 
     let crashReportRegexp = /^crash_report_([0-9]+)\.log$/;
 
-    let crash_reports = `${execSync("ls")}`
+    let crash_reports = execSync("ls")
+        .toString("utf8")
         .split("\n")
         .filter(file_name => !!file_name.match(crashReportRegexp))
         .sort((f1, f2) => {
@@ -40,15 +41,16 @@ export function backupCurrentLog() {
 
     }
 
-    execSync(`cp ${current_log_filename} crash_report_${Date.now()}.log`);
-
-    try {
-
-        execSync(`mv ${current_log_filename} previous.log 2>/dev/null`);
-
-    } catch{ }
+    execSync(`mv ${current_log_filename} crash_report_${Date.now()}.log`);
 
 }
+
+export function backupCurrentLog(){
+
+    execSync(`mv ${current_log_filename} previous.log 2>/dev/null`);
+
+}
+
 
 export const log: typeof console.log = (...args) => {
 
