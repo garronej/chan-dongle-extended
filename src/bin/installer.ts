@@ -3,8 +3,9 @@
 require("rejection-tracker").main(__dirname, "..", "..");
 
 import * as program from "commander";
-import { execSync as execSyncNoisy } from "child_process";
-const execSync= (cmd: string)=> execSyncNoisy(cmd,{stdio: []}).toString("utf8");
+import * as child_process from "child_process";
+const execSync= (cmd: string)=> child_process.execSync(cmd).toString("utf8");
+const execSyncSilent= (cmd: string)=> child_process.execSync(cmd,{stdio: []}).toString("utf8");
 import * as fs from "fs";
 import * as path from "path";
 import * as scriptLib from "../tools/scriptLib";
@@ -206,7 +207,7 @@ function uninstall(
 
     }
 
-    runRecover("Stopping running instance ... ", () => execSync(stop_sh_path));
+    runRecover("Stopping running instance ... ", () => execSyncSilent(stop_sh_path));
 
     if (locals.assume_chan_dongle_installed) {
 
@@ -218,7 +219,7 @@ function uninstall(
 
     }
 
-    runRecover("Removing cli tool symbolic link ... ", () => execSync(`rm ${path.join(astdirs.astsbindir, locals.service_name)}`));
+    runRecover("Removing cli tool symbolic link ... ", () => execSyncSilent(`rm ${path.join(astdirs.astsbindir, locals.service_name)}`));
 
     runRecover("Removing systemd service ... ", () => systemd.remove(locals.service_name));
 
@@ -287,7 +288,7 @@ namespace tty0tty {
         readline.clearLine(process.stdout, 0);
         process.stdout.write("\r");
 
-        const is_raspbian_host = !!execSync("cat /etc/os-release") .match(/^NAME=.*Raspbian.*$/m) ;
+        const is_raspbian_host = !!execSync("cat /etc/os-release").match(/^NAME=.*Raspbian.*$/m) ;
 
         if (!is_raspbian_host) {
 
@@ -420,7 +421,7 @@ namespace tty0tty {
             )
         );
 
-        execSync(`rm -f /lib/modules/$(uname -r)/kernel/drivers/misc/tty0tty.ko`);
+        execSyncSilent(`rm -f /lib/modules/$(uname -r)/kernel/drivers/misc/tty0tty.ko`);
 
     }
 
@@ -461,11 +462,11 @@ namespace chan_dongle {
 
         try {
 
-            execSync(`${path.join(astsbindir, "asterisk")} -rx "module unload chan_dongle.so"`);
+            execSyncSilent(`${path.join(astsbindir, "asterisk")} -rx "module unload chan_dongle.so"`);
 
         } catch{ }
 
-        execSync(`rm -f ${path.join(astmoddir, "chan_dongle.so")}`);
+        execSyncSilent(`rm -f ${path.join(astmoddir, "chan_dongle.so")}`);
 
     }
 
@@ -486,7 +487,7 @@ namespace workingDirectory {
 
     export function remove() {
 
-        execSync(`rm -r ${working_directory_path}`);
+        execSyncSilent(`rm -r ${working_directory_path}`);
 
     }
 
@@ -506,7 +507,7 @@ namespace unixUser {
 
     export function remove(service_name: string) {
 
-        execSync(`userdel ${service_name}`);
+        execSyncSilent(`userdel ${service_name}`);
 
     }
 
@@ -654,13 +655,13 @@ namespace systemd {
 
         try {
 
-            execSync(`systemctl disable ${service_name} --quiet`);
+            execSyncSilent(`systemctl disable ${service_name} --quiet`);
 
             fs.unlinkSync(get_service_path(service_name));
 
         } catch{ }
 
-        execSync("systemctl daemon-reload");
+        execSyncSilent("systemctl daemon-reload");
 
     }
 
@@ -841,9 +842,9 @@ namespace udevRules {
 
         let rules_path = make_rules_path(service_name);
 
-        execSync(`rm -rf ${rules_path}`);
+        execSyncSilent(`rm -rf ${rules_path}`);
 
-        execSync("systemctl restart udev.service");
+        execSyncSilent("systemctl restart udev.service");
 
     }
 

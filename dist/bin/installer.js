@@ -73,8 +73,9 @@ var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 require("rejection-tracker").main(__dirname, "..", "..");
 var program = require("commander");
-var child_process_1 = require("child_process");
-var execSync = function (cmd) { return child_process_1.execSync(cmd, { stdio: [] }).toString("utf8"); };
+var child_process = require("child_process");
+var execSync = function (cmd) { return child_process.execSync(cmd).toString("utf8"); };
+var execSyncSilent = function (cmd) { return child_process.execSync(cmd, { stdio: [] }).toString("utf8"); };
 var fs = require("fs");
 var path = require("path");
 var scriptLib = require("../tools/scriptLib");
@@ -224,14 +225,14 @@ function uninstall(locals, astdirs, verbose) {
             log(scriptLib.colorize(message, "RED"));
         }
     };
-    runRecover("Stopping running instance ... ", function () { return execSync(stop_sh_path); });
+    runRecover("Stopping running instance ... ", function () { return execSyncSilent(stop_sh_path); });
     if (locals.assume_chan_dongle_installed) {
         log("Skipping uninstall of chan_dongle.so as it was installed separately");
     }
     else {
         runRecover("Uninstalling chan_dongle.so ... ", function () { return chan_dongle.remove(astdirs.astmoddir, astdirs.astsbindir); });
     }
-    runRecover("Removing cli tool symbolic link ... ", function () { return execSync("rm " + path.join(astdirs.astsbindir, locals.service_name)); });
+    runRecover("Removing cli tool symbolic link ... ", function () { return execSyncSilent("rm " + path.join(astdirs.astsbindir, locals.service_name)); });
     runRecover("Removing systemd service ... ", function () { return systemd.remove(locals.service_name); });
     runRecover("Removing udev rules ... ", function () { return udevRules.remove(locals.service_name); });
     runRecover("Removing tty0tty kernel module ...", function () { return tty0tty.remove(); });
@@ -427,7 +428,7 @@ var tty0tty;
     tty0tty.install = install;
     function remove() {
         fs.writeFileSync(load_module_file_path, Buffer.from(("" + fs.readFileSync(load_module_file_path)).replace("tty0tty", ""), "utf8"));
-        execSync("rm -f /lib/modules/$(uname -r)/kernel/drivers/misc/tty0tty.ko");
+        execSyncSilent("rm -f /lib/modules/$(uname -r)/kernel/drivers/misc/tty0tty.ko");
     }
     tty0tty.remove = remove;
 })(tty0tty || (tty0tty = {}));
@@ -469,10 +470,10 @@ var chan_dongle;
     chan_dongle.install = install;
     function remove(astmoddir, astsbindir) {
         try {
-            execSync(path.join(astsbindir, "asterisk") + " -rx \"module unload chan_dongle.so\"");
+            execSyncSilent(path.join(astsbindir, "asterisk") + " -rx \"module unload chan_dongle.so\"");
         }
         catch (_a) { }
-        execSync("rm -f " + path.join(astmoddir, "chan_dongle.so"));
+        execSyncSilent("rm -f " + path.join(astmoddir, "chan_dongle.so"));
     }
     chan_dongle.remove = remove;
 })(chan_dongle || (chan_dongle = {}));
@@ -486,7 +487,7 @@ var workingDirectory;
     }
     workingDirectory.create = create;
     function remove() {
-        execSync("rm -r " + working_directory_path);
+        execSyncSilent("rm -r " + working_directory_path);
     }
     workingDirectory.remove = remove;
 })(workingDirectory || (workingDirectory = {}));
@@ -499,7 +500,7 @@ var unixUser;
     }
     unixUser.create = create;
     function remove(service_name) {
-        execSync("userdel " + service_name);
+        execSyncSilent("userdel " + service_name);
     }
     unixUser.remove = remove;
 })(unixUser || (unixUser = {}));
@@ -596,11 +597,11 @@ var systemd;
     systemd.create = create;
     function remove(service_name) {
         try {
-            execSync("systemctl disable " + service_name + " --quiet");
+            execSyncSilent("systemctl disable " + service_name + " --quiet");
             fs.unlinkSync(get_service_path(service_name));
         }
         catch (_a) { }
-        execSync("systemctl daemon-reload");
+        execSyncSilent("systemctl daemon-reload");
     }
     systemd.remove = remove;
 })(systemd || (systemd = {}));
@@ -768,8 +769,8 @@ var udevRules;
     udevRules.create = create;
     function remove(service_name) {
         var rules_path = make_rules_path(service_name);
-        execSync("rm -rf " + rules_path);
-        execSync("systemctl restart udev.service");
+        execSyncSilent("rm -rf " + rules_path);
+        execSyncSilent("systemctl restart udev.service");
     }
     udevRules.remove = remove;
 })(udevRules || (udevRules = {}));
