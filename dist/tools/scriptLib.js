@@ -82,7 +82,7 @@ exports.showLoad = showLoad;
                     reject(error);
                 }
                 else {
-                    resolve(stdout);
+                    resolve("" + stdout);
                 }
             });
         });
@@ -123,7 +123,7 @@ function apt_get_install(package_name, prog) {
                 case 5:
                     error_1 = _b.sent();
                     apt_get_install.onError(error_1);
-                    return [3 /*break*/, 6];
+                    throw error_1;
                 case 6:
                     onSuccess("DONE");
                     return [2 /*return*/];

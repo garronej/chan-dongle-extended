@@ -85,7 +85,7 @@ export namespace showLoad {
 
                     }else{
 
-                        resolve(stdout);
+                        resolve(`${stdout}`);
 
                     }
 
@@ -141,6 +141,8 @@ export async function apt_get_install(
     } catch(error) {
 
         apt_get_install.onError(error);
+
+        throw error;
 
     }
 

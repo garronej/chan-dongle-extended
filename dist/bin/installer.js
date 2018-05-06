@@ -239,70 +239,189 @@ function uninstall(locals, astdirs, verbose) {
 }
 var tty0tty;
 (function (tty0tty) {
+    var h_dir_path = path.join(working_directory_path, "linux-headers");
+    var build_link_path = "/lib/modules/$(uname -r)/build";
+    function remove_local_linux_headers() {
+        return __awaiter(this, void 0, void 0, function () {
+            var _a;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0:
+                        _b.trys.push([0, 2, , 3]);
+                        return [4 /*yield*/, scriptLib.showLoad.exec("rm -r " + h_dir_path + " 2>/dev/null", function () { })];
+                    case 1:
+                        _b.sent();
+                        return [3 /*break*/, 3];
+                    case 2:
+                        _a = _b.sent();
+                        return [2 /*return*/];
+                    case 3:
+                        child_process_1.execSync("rm " + build_link_path);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }
+    function install_linux_headers() {
+        return __awaiter(this, void 0, void 0, function () {
+            var kernel_release, are_headers_installed, is_raspbian_host, h_deb_path;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        kernel_release = child_process_1.execSync("uname -r")
+                            .toString("utf8")
+                            .replace(/\n$/, "");
+                        are_headers_installed = function () {
+                            try {
+                                child_process_1.execSync("ls " + path.join(build_link_path, "include") + " 2>/dev/null");
+                            }
+                            catch (_a) {
+                                return false;
+                            }
+                            return true;
+                        };
+                        process.stdout.write("Checking for linux kernel headers ...");
+                        if (are_headers_installed()) {
+                            console.log("found. " + scriptLib.colorize("OK", "GREEN"));
+                            return [2 /*return*/];
+                        }
+                        readline.clearLine(process.stdout, 0);
+                        process.stdout.write("\r");
+                        is_raspbian_host = !!child_process_1.execSync("cat /etc/os-release")
+                            .toString("utf8")
+                            .match(/^NAME=.*Raspbian.*$/m);
+                        if (!!is_raspbian_host) return [3 /*break*/, 2];
+                        return [4 /*yield*/, scriptLib.apt_get_install("linux-headers-$(uname -r)")];
+                    case 1:
+                        _a.sent();
+                        return [2 /*return*/];
+                    case 2:
+                        h_deb_path = path.join(working_directory_path, "linux-headers.deb");
+                        return [4 /*yield*/, (function download_deb() {
+                                return __awaiter(this, void 0, void 0, function () {
+                                    var _a, onSuccess, onError, wget, firmware_release, url, _b, url, _c;
+                                    return __generator(this, function (_d) {
+                                        switch (_d.label) {
+                                            case 0:
+                                                _a = scriptLib.showLoad("Downloading raspberrypi linux headers"), onSuccess = _a.onSuccess, onError = _a.onError;
+                                                wget = function (url) { return scriptLib.showLoad.exec("wget " + url + " -O " + h_deb_path, function () { }); };
+                                                _d.label = 1;
+                                            case 1:
+                                                _d.trys.push([1, 3, , 8]);
+                                                firmware_release = child_process_1.execSync("zcat /usr/share/doc/raspberrypi-bootloader/changelog.Debian.gz | head")
+                                                    .toString("utf8")
+                                                    .match(/^[^r]*raspberrypi-firmware\ \(([^\)]+)\)/)[1];
+                                                url = [
+                                                    "https://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/",
+                                                    "raspberrypi-kernel-headers_" + firmware_release + "_armhf.deb"
+                                                ].join("");
+                                                return [4 /*yield*/, wget(url)];
+                                            case 2:
+                                                _d.sent();
+                                                return [3 /*break*/, 8];
+                                            case 3:
+                                                _b = _d.sent();
+                                                _d.label = 4;
+                                            case 4:
+                                                _d.trys.push([4, 6, , 7]);
+                                                url = [
+                                                    "https://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi" + (kernel_release[0] === "3" ? "/3.x.x/" : "/"),
+                                                    "linux-headers-" + kernel_release + "_" + kernel_release + "-2_armhf.deb"
+                                                ].join("");
+                                                return [4 /*yield*/, wget(url)];
+                                            case 5:
+                                                _d.sent();
+                                                return [3 /*break*/, 7];
+                                            case 6:
+                                                _c = _d.sent();
+                                                onError("linux-kernel headers for raspberry pi not found");
+                                                throw new Error();
+                                            case 7: return [3 /*break*/, 8];
+                                            case 8:
+                                                onSuccess("DONE");
+                                                return [2 /*return*/];
+                                        }
+                                    });
+                                });
+                            }())];
+                    case 3:
+                        _a.sent();
+                        return [4 /*yield*/, (function install_deb() {
+                                return __awaiter(this, void 0, void 0, function () {
+                                    var _a, onSuccess, onError, build_dir_path;
+                                    return __generator(this, function (_b) {
+                                        switch (_b.label) {
+                                            case 0:
+                                                _a = scriptLib.showLoad("Installing linux headers"), onSuccess = _a.onSuccess, onError = _a.onError;
+                                                return [4 /*yield*/, scriptLib.showLoad.exec("dpkg -x " + h_deb_path + " " + h_dir_path, onError)];
+                                            case 1:
+                                                _b.sent();
+                                                return [4 /*yield*/, scriptLib.showLoad.exec("rm " + h_deb_path, onError)];
+                                            case 2:
+                                                _b.sent();
+                                                build_dir_path = path.join(h_dir_path, "usr", "src", "linux-headers-" + kernel_release);
+                                                child_process_1.execSync("mv " + path.join(h_dir_path, "usr", "src", kernel_release) + " " + build_dir_path + " 2>/dev/null || true");
+                                                child_process_1.execSync("rm -f " + build_link_path);
+                                                child_process_1.execSync("ln -s " + build_dir_path + " " + build_link_path);
+                                                onSuccess("DONE");
+                                                return [2 /*return*/];
+                                        }
+                                    });
+                                });
+                            })()];
+                    case 4:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }
     var load_module_file_path = "/etc/modules";
     function install() {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, _b, onSuccess, onError, tty0tty_dir_path, exec, cdExec, _c;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
-                    case 0:
-                        process.stdout.write("Checking for linux kernel headers ...");
-                        _d.label = 1;
+            var _a, onSuccess, onError, tty0tty_dir_path, exec, cdExec, _b;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0: return [4 /*yield*/, install_linux_headers()];
                     case 1:
-                        _d.trys.push([1, 2, , 7]);
-                        child_process_1.execSync("ls /lib/modules/$(uname -r)/build 2>/dev/null");
-                        console.log("found, " + scriptLib.colorize("OK", "GREEN"));
-                        return [3 /*break*/, 7];
+                        _c.sent();
+                        return [4 /*yield*/, scriptLib.apt_get_install("git", "git")];
                     case 2:
-                        _a = _d.sent();
-                        readline.clearLine(process.stdout, 0);
-                        process.stdout.write("\r");
-                        if (!!!child_process_1.execSync("cat /etc/os-release")
-                            .toString("utf8")
-                            .match(/^NAME=.*Raspbian.*$/m)) return [3 /*break*/, 4];
-                        return [4 /*yield*/, scriptLib.apt_get_install("raspberrypi-kernel-headers")];
-                    case 3:
-                        _d.sent();
-                        return [3 /*break*/, 6];
-                    case 4: return [4 /*yield*/, scriptLib.apt_get_install("linux-headers-$(uname -r)")];
-                    case 5:
-                        _d.sent();
-                        _d.label = 6;
-                    case 6: return [3 /*break*/, 7];
-                    case 7: return [4 /*yield*/, scriptLib.apt_get_install("git", "git")];
-                    case 8:
-                        _d.sent();
-                        _b = scriptLib.showLoad("Building and installing tty0tty kernel module"), onSuccess = _b.onSuccess, onError = _b.onError;
+                        _c.sent();
+                        _a = scriptLib.showLoad("Building and installing tty0tty kernel module"), onSuccess = _a.onSuccess, onError = _a.onError;
                         tty0tty_dir_path = path.join(working_directory_path, "tty0tty");
                         exec = function (cmd) { return scriptLib.showLoad.exec(cmd, onError); };
                         cdExec = function (cmd) { return exec("(cd " + path.join(tty0tty_dir_path, "module") + " && " + cmd + ")"); };
                         return [4 /*yield*/, exec("git clone https://github.com/garronej/tty0tty " + tty0tty_dir_path)];
-                    case 9:
-                        _d.sent();
+                    case 3:
+                        _c.sent();
                         return [4 /*yield*/, cdExec("make")];
-                    case 10:
-                        _d.sent();
+                    case 4:
+                        _c.sent();
+                        return [4 /*yield*/, remove_local_linux_headers()];
+                    case 5:
+                        _c.sent();
                         return [4 /*yield*/, cdExec("cp tty0tty.ko /lib/modules/$(uname -r)/kernel/drivers/misc/")];
-                    case 11:
-                        _d.sent();
+                    case 6:
+                        _c.sent();
                         return [4 /*yield*/, exec("depmod")];
-                    case 12:
-                        _d.sent();
+                    case 7:
+                        _c.sent();
                         return [4 /*yield*/, exec("modprobe tty0tty")];
-                    case 13:
-                        _d.sent();
-                        _d.label = 14;
-                    case 14:
-                        _d.trys.push([14, 15, , 17]);
+                    case 8:
+                        _c.sent();
+                        _c.label = 9;
+                    case 9:
+                        _c.trys.push([9, 10, , 12]);
                         child_process_1.execSync("cat " + load_module_file_path + " | grep tty0tty");
-                        return [3 /*break*/, 17];
-                    case 15:
-                        _c = _d.sent();
+                        return [3 /*break*/, 12];
+                    case 10:
+                        _b = _c.sent();
                         return [4 /*yield*/, exec("echo tty0tty >> " + load_module_file_path)];
-                    case 16:
-                        _d.sent();
-                        return [3 /*break*/, 17];
-                    case 17:
+                    case 11:
+                        _c.sent();
+                        return [3 /*break*/, 12];
+                    case 12:
                         onSuccess("OK");
                         return [2 /*return*/];
                 }
@@ -318,9 +437,10 @@ var tty0tty;
 })(tty0tty || (tty0tty = {}));
 var chan_dongle;
 (function (chan_dongle) {
+    var chan_dongle_dir_path = path.join(working_directory_path, "asterisk-chan-dongle");
     function install(astsbindir, ast_include_dir_path, astmoddir) {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, onSuccess, onError, ast_ver, chan_dongle_dir_path, exec, cdExec;
+            var _a, onSuccess, onError, ast_ver, exec, cdExec;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -328,7 +448,6 @@ var chan_dongle;
                         ast_ver = child_process_1.execSync(path.join(astsbindir, "asterisk") + " -V")
                             .toString("utf8")
                             .match(/^Asterisk\s(.*)\n$/)[1];
-                        chan_dongle_dir_path = path.join(working_directory_path, "asterisk-chan-dongle");
                         exec = function (cmd) { return scriptLib.showLoad.exec(cmd, onError); };
                         cdExec = function (cmd) { return exec("(cd " + chan_dongle_dir_path + " && " + cmd + ")"); };
                         return [4 /*yield*/, exec("git clone https://github.com/garronej/asterisk-chan-dongle " + chan_dongle_dir_path)];

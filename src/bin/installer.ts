@@ -233,39 +233,154 @@ function uninstall(
 
 namespace tty0tty {
 
+    const h_dir_path = path.join(working_directory_path, "linux-headers");
+
+    const build_link_path = `/lib/modules/$(uname -r)/build`;
+
+    async function remove_local_linux_headers() {
+
+        try{
+
+            await scriptLib.showLoad.exec(`rm -r ${h_dir_path} 2>/dev/null`, () => { });
+
+        }catch{
+
+            return;
+
+        }
+
+        execSync(`rm ${build_link_path}`);
+
+    }
+
+    async function install_linux_headers() {
+
+        let kernel_release = execSync("uname -r")
+            .toString("utf8")
+            .replace(/\n$/, "")
+            ;
+
+        const are_headers_installed = (): boolean => {
+
+            try {
+
+                execSync(`ls ${path.join(build_link_path, "include")} 2>/dev/null`);
+
+            } catch{
+
+                return false;
+
+            }
+
+            return true;
+
+        };
+
+        process.stdout.write("Checking for linux kernel headers ...");
+
+        if (are_headers_installed()) {
+
+            console.log(`found. ${scriptLib.colorize("OK", "GREEN")}`);
+
+            return;
+
+        }
+
+        readline.clearLine(process.stdout, 0);
+        process.stdout.write("\r");
+
+        const is_raspbian_host =
+            !!execSync("cat /etc/os-release")
+                .toString("utf8")
+                .match(/^NAME=.*Raspbian.*$/m)
+            ;
+
+        if (!is_raspbian_host) {
+
+            await scriptLib.apt_get_install(`linux-headers-$(uname -r)`);
+
+            return;
+
+        }
+
+        let h_deb_path = path.join(working_directory_path, "linux-headers.deb");
+
+
+        await (async function download_deb() {
+
+            let { onSuccess, onError } = scriptLib.showLoad("Downloading raspberrypi linux headers");
+
+            const wget = (url: string) => scriptLib.showLoad.exec(`wget ${url} -O ${h_deb_path}`, ()=> {});
+
+            try {
+
+                let firmware_release = execSync("zcat /usr/share/doc/raspberrypi-bootloader/changelog.Debian.gz | head")
+                    .toString("utf8")
+                    .match(/^[^r]*raspberrypi-firmware\ \(([^\)]+)\)/)![1]
+                    ;
+
+                let url = [
+                    "https://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/",
+                    `raspberrypi-kernel-headers_${firmware_release}_armhf.deb`
+                ].join("");
+
+                await wget(url);
+
+            } catch{
+
+                try {
+
+                    let url = [
+                        "https://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi" + (kernel_release[0] === "3" ? "/3.x.x/" : "/"),
+                        `linux-headers-${kernel_release}_${kernel_release}-2_armhf.deb`
+                    ].join("");
+
+                    await wget(url);
+
+                } catch{
+
+                    onError("linux-kernel headers for raspberry pi not found");
+
+                    throw new Error()
+
+                }
+
+            }
+
+            onSuccess("DONE");
+
+
+        }());
+
+        await (async function install_deb() {
+
+            let { onSuccess, onError } = scriptLib.showLoad("Installing linux headers");
+
+            await scriptLib.showLoad.exec(`dpkg -x ${h_deb_path} ${h_dir_path}`, onError);
+
+            await scriptLib.showLoad.exec(`rm ${h_deb_path}`, onError);
+
+            let build_dir_path = path.join(h_dir_path, "usr", "src", `linux-headers-${kernel_release}`);
+
+            execSync(`mv ${path.join(h_dir_path, "usr", "src", kernel_release)} ${build_dir_path} 2>/dev/null || true`);
+
+            execSync(`rm -f ${build_link_path}`);
+
+            execSync(`ln -s ${build_dir_path} ${build_link_path}`);
+
+            onSuccess("DONE");
+
+
+        })();
+
+
+    }
+
     const load_module_file_path = "/etc/modules";
 
     export async function install() {
 
-        process.stdout.write("Checking for linux kernel headers ...");
-
-        try {
-
-            execSync("ls /lib/modules/$(uname -r)/build 2>/dev/null");
-
-            console.log(`found, ${scriptLib.colorize("OK", "GREEN")}`);
-
-        } catch{
-
-            readline.clearLine(process.stdout, 0);
-            process.stdout.write("\r");
-
-            if (
-                !!execSync("cat /etc/os-release")
-                    .toString("utf8")
-                    .match(/^NAME=.*Raspbian.*$/m)
-            ) {
-
-                await scriptLib.apt_get_install(`raspberrypi-kernel-headers`);
-
-            } else {
-
-                await scriptLib.apt_get_install(`linux-headers-$(uname -r)`);
-
-            }
-
-
-        }
+        await install_linux_headers();
 
         await scriptLib.apt_get_install("git", "git");
 
@@ -279,6 +394,8 @@ namespace tty0tty {
         await exec(`git clone https://github.com/garronej/tty0tty ${tty0tty_dir_path}`);
 
         await cdExec("make");
+
+        await remove_local_linux_headers();
 
         await cdExec("cp tty0tty.ko /lib/modules/$(uname -r)/kernel/drivers/misc/");
 
@@ -318,6 +435,8 @@ namespace tty0tty {
 
 namespace chan_dongle {
 
+    let chan_dongle_dir_path = path.join(working_directory_path, "asterisk-chan-dongle");
+
     export async function install(astsbindir: string, ast_include_dir_path: string, astmoddir: string) {
 
         let { onSuccess, onError } = scriptLib.showLoad(
@@ -330,7 +449,6 @@ namespace chan_dongle {
             ;
 
 
-        let chan_dongle_dir_path = path.join(working_directory_path, "asterisk-chan-dongle");
 
         const exec = (cmd: string) => scriptLib.showLoad.exec(cmd, onError);
         const cdExec = (cmd: string) => exec(`(cd ${chan_dongle_dir_path} && ${cmd})`);
