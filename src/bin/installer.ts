@@ -3,7 +3,8 @@
 require("rejection-tracker").main(__dirname, "..", "..");
 
 import * as program from "commander";
-import { execSync } from "child_process";
+import { execSync as execSyncNoisy } from "child_process";
+const execSync= (cmd: string)=> execSyncNoisy(cmd,{stdio: []}).toString("utf8");
 import * as fs from "fs";
 import * as path from "path";
 import * as scriptLib from "../tools/scriptLib";
@@ -217,7 +218,7 @@ function uninstall(
 
     }
 
-    runRecover("Removing cli tool symbolic link ... ", () => execSync(`rm $(which ${locals.service_name})`));
+    runRecover("Removing cli tool symbolic link ... ", () => execSync(`rm ${path.join(astdirs.astsbindir, locals.service_name)}`));
 
     runRecover("Removing systemd service ... ", () => systemd.remove(locals.service_name));
 
@@ -255,10 +256,7 @@ namespace tty0tty {
 
     async function install_linux_headers() {
 
-        let kernel_release = execSync("uname -r")
-            .toString("utf8")
-            .replace(/\n$/, "")
-            ;
+        let kernel_release = execSync("uname -r").replace(/\n$/, "");
 
         const are_headers_installed = (): boolean => {
 
@@ -289,11 +287,7 @@ namespace tty0tty {
         readline.clearLine(process.stdout, 0);
         process.stdout.write("\r");
 
-        const is_raspbian_host =
-            !!execSync("cat /etc/os-release")
-                .toString("utf8")
-                .match(/^NAME=.*Raspbian.*$/m)
-            ;
+        const is_raspbian_host = !!execSync("cat /etc/os-release") .match(/^NAME=.*Raspbian.*$/m) ;
 
         if (!is_raspbian_host) {
 
@@ -315,7 +309,6 @@ namespace tty0tty {
             try {
 
                 let firmware_release = execSync("zcat /usr/share/doc/raspberrypi-bootloader/changelog.Debian.gz | head")
-                    .toString("utf8")
                     .match(/^[^r]*raspberrypi-firmware\ \(([^\)]+)\)/)![1]
                     ;
 
@@ -444,11 +437,8 @@ namespace chan_dongle {
         );
 
         let ast_ver = execSync(`${path.join(astsbindir, "asterisk")} -V`)
-            .toString("utf8")
             .match(/^Asterisk\s(.*)\n$/)![1]
             ;
-
-
 
         const exec = (cmd: string) => scriptLib.showLoad.exec(cmd, onError);
         const cdExec = (cmd: string) => exec(`(cd ${chan_dongle_dir_path} && ${cmd})`);
