@@ -443,7 +443,7 @@ var chan_dongle;
                     case 0:
                         _a = scriptLib.showLoad("Building and installing asterisk chan_dongle ( may take several minutes )"), onSuccess = _a.onSuccess, onError = _a.onError;
                         ast_ver = execSync(path.join(astsbindir, "asterisk") + " -V")
-                            .match(/^Asterisk\s(.*)\n$/)[1];
+                            .match(/^Asterisk\s+([0-9\.]+)/)[1];
                         exec = function (cmd) { return scriptLib.showLoad.exec(cmd, onError); };
                         cdExec = function (cmd) { return exec("(cd " + chan_dongle_dir_path + " && " + cmd + ")"); };
                         return [4 /*yield*/, exec("git clone https://github.com/garronej/asterisk-chan-dongle " + chan_dongle_dir_path)];

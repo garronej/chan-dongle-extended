@@ -438,7 +438,7 @@ namespace chan_dongle {
         );
 
         let ast_ver = execSync(`${path.join(astsbindir, "asterisk")} -V`)
-            .match(/^Asterisk\s(.*)\n$/)![1]
+            .match(/^Asterisk\s+([0-9\.]+)/)![1]
             ;
 
         const exec = (cmd: string) => scriptLib.showLoad.exec(cmd, onError);
