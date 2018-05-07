@@ -44,7 +44,6 @@ _install.action(async options => {
 
     console.log("---Installing chan-dongle-extended---");
 
-
     let locals: localsManager.Locals = { ...localsManager.Locals.defaults };
 
     for (let key in localsManager.Locals.defaults) {
@@ -70,6 +69,8 @@ _install.action(async options => {
         return;
 
     }
+
+    execSync(`chmod u+r,g+r,o+r ${path.join(astdirs.astetcdir, "asterisk.conf")}`);
 
     if (fs.existsSync(working_directory_path)) {
 
@@ -160,9 +161,11 @@ async function install(locals: localsManager.Locals, astdirs: localsManager.Astd
 
         console.log(scriptLib.colorize("Assuming chan_dongle already installed.", "YELLOW"));
 
+        chan_dongle.chownConfFile(astetcdir, locals.service_name);
+
     } else {
 
-        await chan_dongle.install(astsbindir, locals.ast_include_dir_path, astmoddir);
+        await chan_dongle.install(astsbindir, locals.ast_include_dir_path, astmoddir, astetcdir, locals.service_name);
 
     }
 
@@ -172,7 +175,6 @@ async function install(locals: localsManager.Locals, astdirs: localsManager.Astd
 
     systemd.create(locals.service_name);
 
-    grantDongleConfigFileAccess(astetcdir, locals.service_name);
 
     await enableAsteriskManager(
         locals.service_name, astetcdir, locals.ami_port, astsbindir, astrundir
@@ -431,7 +433,25 @@ namespace chan_dongle {
 
     let chan_dongle_dir_path = path.join(working_directory_path, "asterisk-chan-dongle");
 
-    export async function install(astsbindir: string, ast_include_dir_path: string, astmoddir: string) {
+    export function chownConfFile(astetcdir: string, service_name: string): void {
+
+        let dongle_path = path.join(astetcdir, "dongle.conf");
+
+        execSync(`touch ${dongle_path}`);
+
+        execSync(`chown ${service_name}:${service_name} ${dongle_path}`);
+
+        execSync(`chmod u+rw,g+r,o+r ${dongle_path}`);
+
+    }
+
+    export async function install(
+        astsbindir: string, 
+        ast_include_dir_path: string, 
+        astmoddir: string,
+        astetcdir: string, 
+        service_name: string
+    ) {
 
         let { onSuccess, onError } = scriptLib.showLoad(
             `Building and installing asterisk chan_dongle ( may take several minutes )`
@@ -453,6 +473,8 @@ namespace chan_dongle {
         await cdExec("make");
 
         await cdExec(`cp chan_dongle.so ${astmoddir}`);
+
+        chownConfFile(astetcdir, service_name);
 
         onSuccess("OK");
 
@@ -513,21 +535,6 @@ namespace unixUser {
 
 }
 
-function grantDongleConfigFileAccess(astetcdir: string, service_name: string): void {
-
-    let dongle_path = path.join(astetcdir, "dongle.conf");
-
-    process.stdout.write(`Granting write access to ${service_name} on '${dongle_path}' ... `);
-
-    execSync(`touch ${dongle_path}`);
-
-    execSync(`chown ${service_name}:${service_name} ${dongle_path}`);
-
-    execSync(`chmod u+rw ${dongle_path}`);
-
-    console.log(scriptLib.colorize("OK", "GREEN"));
-
-}
 
 function createShellScripts(service_name: string, astsbindir: string): void {
 
@@ -734,11 +741,15 @@ async function enableAsteriskManager(
 
     }
 
-    execSync(`chmod +r ${manager_path}`);
+    execSync(`chmod u+r,g+r,o+r ${manager_path}`);
 
     if (fs.existsSync(path.join(astrundir, "asterisk.ctl"))) {
 
-        execSync(`${path.join(astsbindir, "asterisk")} -rx "core reload"`);
+        try{
+
+            execSyncSilent(`${path.join(astsbindir, "asterisk")} -rx "core reload"`);
+
+        }catch{ }
 
     }
 

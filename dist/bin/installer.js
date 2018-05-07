@@ -124,6 +124,7 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
                     process.exit(-1);
                     return [2 /*return*/];
                 }
+                execSync("chmod u+r,g+r,o+r " + path.join(astdirs.astetcdir, "asterisk.conf"));
                 if (!fs.existsSync(working_directory_path)) return [3 /*break*/, 2];
                 process.stdout.write(scriptLib.colorize("Already installed, erasing previous install... ", "YELLOW"));
                 return [4 /*yield*/, uninstall(locals, astdirs)];
@@ -192,8 +193,9 @@ function install(locals, astdirs) {
                     _a.sent();
                     if (!locals.assume_chan_dongle_installed) return [3 /*break*/, 2];
                     console.log(scriptLib.colorize("Assuming chan_dongle already installed.", "YELLOW"));
+                    chan_dongle.chownConfFile(astetcdir, locals.service_name);
                     return [3 /*break*/, 4];
-                case 2: return [4 /*yield*/, chan_dongle.install(astsbindir, locals.ast_include_dir_path, astmoddir)];
+                case 2: return [4 /*yield*/, chan_dongle.install(astsbindir, locals.ast_include_dir_path, astmoddir, astetcdir, locals.service_name)];
                 case 3:
                     _a.sent();
                     _a.label = 4;
@@ -202,7 +204,6 @@ function install(locals, astdirs) {
                     _a.sent();
                     createShellScripts(locals.service_name, astsbindir);
                     systemd.create(locals.service_name);
-                    grantDongleConfigFileAccess(astetcdir, locals.service_name);
                     return [4 /*yield*/, enableAsteriskManager(locals.service_name, astetcdir, locals.ami_port, astsbindir, astrundir)];
                 case 6:
                     _a.sent();
@@ -435,7 +436,14 @@ var tty0tty;
 var chan_dongle;
 (function (chan_dongle) {
     var chan_dongle_dir_path = path.join(working_directory_path, "asterisk-chan-dongle");
-    function install(astsbindir, ast_include_dir_path, astmoddir) {
+    function chownConfFile(astetcdir, service_name) {
+        var dongle_path = path.join(astetcdir, "dongle.conf");
+        execSync("touch " + dongle_path);
+        execSync("chown " + service_name + ":" + service_name + " " + dongle_path);
+        execSync("chmod u+rw,g+r,o+r " + dongle_path);
+    }
+    chan_dongle.chownConfFile = chownConfFile;
+    function install(astsbindir, ast_include_dir_path, astmoddir, astetcdir, service_name) {
         return __awaiter(this, void 0, void 0, function () {
             var _a, onSuccess, onError, ast_ver, exec, cdExec;
             return __generator(this, function (_b) {
@@ -461,6 +469,7 @@ var chan_dongle;
                         return [4 /*yield*/, cdExec("cp chan_dongle.so " + astmoddir)];
                     case 5:
                         _b.sent();
+                        chownConfFile(astetcdir, service_name);
                         onSuccess("OK");
                         return [2 /*return*/];
                 }
@@ -504,14 +513,6 @@ var unixUser;
     }
     unixUser.remove = remove;
 })(unixUser || (unixUser = {}));
-function grantDongleConfigFileAccess(astetcdir, service_name) {
-    var dongle_path = path.join(astetcdir, "dongle.conf");
-    process.stdout.write("Granting write access to " + service_name + " on '" + dongle_path + "' ... ");
-    execSync("touch " + dongle_path);
-    execSync("chown " + service_name + ":" + service_name + " " + dongle_path);
-    execSync("chmod u+rw " + dongle_path);
-    console.log(scriptLib.colorize("OK", "GREEN"));
-}
 function createShellScripts(service_name, astsbindir) {
     process.stdout.write("Creating launch scripts ... ");
     var writeAndSetPerms = function (script_path, script) {
@@ -647,9 +648,12 @@ function enableAsteriskManager(service_name, astetcdir, ami_port, astsbindir, as
                     if (!does_file_exist) {
                         execSync("chown " + service_name + ":" + service_name + " " + manager_path);
                     }
-                    execSync("chmod +r " + manager_path);
+                    execSync("chmod u+r,g+r,o+r " + manager_path);
                     if (fs.existsSync(path.join(astrundir, "asterisk.ctl"))) {
-                        execSync(path.join(astsbindir, "asterisk") + " -rx \"core reload\"");
+                        try {
+                            execSyncSilent(path.join(astsbindir, "asterisk") + " -rx \"core reload\"");
+                        }
+                        catch (_e) { }
                     }
                     console.log(scriptLib.colorize("OK", "GREEN"));
                     return [2 /*return*/];
