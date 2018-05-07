@@ -48,38 +48,46 @@ _install.action(async options => {
 
         let astetcdir: string | undefined = options["astetcdir"];
 
-        if (!astetcdir && !fs.existsSync(localsManager.Locals.defaults.astetcdir)) {
-
-            let pr_install_ast = scriptLib.apt_get_install("asterisk-dev");
-
-            let service_path = "/lib/systemd/system/asterisk.service";
-
-            let watcher = fs.watch(path.dirname(service_path), (event, filename) => {
-
-                if (
-                    event === 'rename' &&
-                    filename === path.basename(service_path) &&
-                    fs.existsSync(service_path)
-                ) {
-
-                    fs.writeFileSync(service_path,
-                        Buffer.from(
-                            fs.readFileSync(service_path).toString("utf8").replace(
-                                "\n[Service]\n", "\n[Service]\nTimeoutSec=infinity\n"
-                            ), "utf8")
-                    );
-
-                    execSync("systemctl daemon-reload");
-
-                }
-
-            });
-
-            await pr_install_ast;
-
-            watcher.close();
-
+        if (!!astetcdir) {
+            return;
         }
+
+        try {
+
+            execSyncSilent("which asterisk")
+
+            return;
+
+        } catch{ }
+
+        let pr_install_ast = scriptLib.apt_get_install("asterisk-dev");
+
+        let service_path = "/lib/systemd/system/asterisk.service";
+
+        let watcher = fs.watch(path.dirname(service_path), (event, filename) => {
+
+            if (
+                event === 'rename' &&
+                filename === path.basename(service_path) &&
+                fs.existsSync(service_path)
+            ) {
+
+                fs.writeFileSync(service_path,
+                    Buffer.from(
+                        fs.readFileSync(service_path).toString("utf8").replace(
+                            "\n[Service]\n", "\n[Service]\nTimeoutSec=infinity\n"
+                        ), "utf8")
+                );
+
+                execSync("systemctl daemon-reload");
+
+            }
+
+        });
+
+        await pr_install_ast;
+
+        watcher.close();
 
     })();
 

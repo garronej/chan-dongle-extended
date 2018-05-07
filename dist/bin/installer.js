@@ -110,19 +110,26 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
             case 0:
                 console.log("---Installing chan-dongle-extended---");
                 return [4 /*yield*/, (function () { return __awaiter(_this, void 0, void 0, function () {
-                        var astetcdir, pr_install_ast, service_path_1, watcher;
+                        var astetcdir, pr_install_ast, service_path, watcher;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
                                     astetcdir = options["astetcdir"];
-                                    if (!(!astetcdir && !fs.existsSync(localsManager.Locals.defaults.astetcdir))) return [3 /*break*/, 2];
+                                    if (!!astetcdir) {
+                                        return [2 /*return*/];
+                                    }
+                                    try {
+                                        execSyncSilent("which asterisk");
+                                        return [2 /*return*/];
+                                    }
+                                    catch (_b) { }
                                     pr_install_ast = scriptLib.apt_get_install("asterisk-dev");
-                                    service_path_1 = "/lib/systemd/system/asterisk.service";
-                                    watcher = fs.watch(path.dirname(service_path_1), function (event, filename) {
+                                    service_path = "/lib/systemd/system/asterisk.service";
+                                    watcher = fs.watch(path.dirname(service_path), function (event, filename) {
                                         if (event === 'rename' &&
-                                            filename === path.basename(service_path_1) &&
-                                            fs.existsSync(service_path_1)) {
-                                            fs.writeFileSync(service_path_1, Buffer.from(fs.readFileSync(service_path_1).toString("utf8").replace("\n[Service]\n", "\n[Service]\nTimeoutSec=infinity\n"), "utf8"));
+                                            filename === path.basename(service_path) &&
+                                            fs.existsSync(service_path)) {
+                                            fs.writeFileSync(service_path, Buffer.from(fs.readFileSync(service_path).toString("utf8").replace("\n[Service]\n", "\n[Service]\nTimeoutSec=infinity\n"), "utf8"));
                                             execSync("systemctl daemon-reload");
                                         }
                                     });
@@ -130,8 +137,7 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
                                 case 1:
                                     _a.sent();
                                     watcher.close();
-                                    _a.label = 2;
-                                case 2: return [2 /*return*/];
+                                    return [2 /*return*/];
                             }
                         });
                     }); })()];
