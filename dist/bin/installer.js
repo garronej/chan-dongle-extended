@@ -103,11 +103,32 @@ for (var key in localsManager.Locals.defaults) {
     }
 }
 _install.action(function (options) { return __awaiter(_this, void 0, void 0, function () {
+    var _this = this;
     var locals, key, astdirs, message, _a;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 console.log("---Installing chan-dongle-extended---");
+                return [4 /*yield*/, (function () { return __awaiter(_this, void 0, void 0, function () {
+                        var astetcdir;
+                        return __generator(this, function (_a) {
+                            switch (_a.label) {
+                                case 0:
+                                    astetcdir = options["astetcdir"];
+                                    if (!(!astetcdir && !fs.existsSync(localsManager.Locals.defaults.astetcdir))) return [3 /*break*/, 3];
+                                    return [4 /*yield*/, scriptLib.apt_get_install("asterisk")];
+                                case 1:
+                                    _a.sent();
+                                    return [4 /*yield*/, scriptLib.apt_get_install("asterisk-dev")];
+                                case 2:
+                                    _a.sent();
+                                    _a.label = 3;
+                                case 3: return [2 /*return*/];
+                            }
+                        });
+                    }); })()];
+            case 1:
+                _b.sent();
                 locals = __assign({}, localsManager.Locals.defaults);
                 for (key in localsManager.Locals.defaults) {
                     if (options[key] !== undefined) {
@@ -120,34 +141,34 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
                 }
                 catch (_c) {
                     message = _c.message;
-                    console.log(scriptLib.colorize("Asterisk is probably not installed: " + message, "RED"));
+                    console.log(scriptLib.colorize("Failed to parse asterisk.conf: " + message, "RED"));
                     process.exit(-1);
                     return [2 /*return*/];
                 }
                 execSync("chmod u+r,g+r,o+r " + path.join(astdirs.astetcdir, "asterisk.conf"));
-                if (!fs.existsSync(working_directory_path)) return [3 /*break*/, 2];
+                if (!fs.existsSync(working_directory_path)) return [3 /*break*/, 3];
                 process.stdout.write(scriptLib.colorize("Already installed, erasing previous install... ", "YELLOW"));
                 return [4 /*yield*/, uninstall(locals, astdirs)];
-            case 1:
+            case 2:
                 _b.sent();
                 console.log("DONE");
-                _b.label = 2;
-            case 2:
-                _b.trys.push([2, 4, , 6]);
-                return [4 /*yield*/, install(locals, astdirs)];
+                _b.label = 3;
             case 3:
-                _b.sent();
-                return [3 /*break*/, 6];
+                _b.trys.push([3, 5, , 7]);
+                return [4 /*yield*/, install(locals, astdirs)];
             case 4:
+                _b.sent();
+                return [3 /*break*/, 7];
+            case 5:
                 _a = _b.sent();
                 process.stdout.write(scriptLib.colorize("Rollback install ...", "YELLOW"));
                 return [4 /*yield*/, uninstall(locals, astdirs)];
-            case 5:
+            case 6:
                 _b.sent();
                 console.log("DONE");
                 process.exit(-1);
                 return [2 /*return*/];
-            case 6:
+            case 7:
                 console.log("---DONE---");
                 process.exit(0);
                 return [2 /*return*/];

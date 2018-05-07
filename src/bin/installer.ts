@@ -44,6 +44,20 @@ _install.action(async options => {
 
     console.log("---Installing chan-dongle-extended---");
 
+    await (async ()=>{
+
+        let astetcdir: string | undefined= options["astetcdir"];
+
+        if( !astetcdir && !fs.existsSync(localsManager.Locals.defaults.astetcdir) ){
+
+            await scriptLib.apt_get_install("asterisk");
+
+            await scriptLib.apt_get_install("asterisk-dev");
+
+        }
+
+    })();
+
     let locals: localsManager.Locals = { ...localsManager.Locals.defaults };
 
     for (let key in localsManager.Locals.defaults) {
@@ -62,7 +76,7 @@ _install.action(async options => {
 
     } catch ({ message }) {
 
-        console.log(scriptLib.colorize(`Asterisk is probably not installed: ${message}`, "RED"));
+        console.log(scriptLib.colorize(`Failed to parse asterisk.conf: ${message}`, "RED"));
 
         process.exit(-1);
 

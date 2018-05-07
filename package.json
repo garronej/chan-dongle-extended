@@ -27,6 +27,7 @@
     "debug": "^2.6.1",
     "ini-extended": "github:garronej/ini-extended",
     "node-persist": "^2.1.0",
+    "npm": "^6.0.0",
     "rejection-tracker": "github:garronej/rejection-tracker",
     "run-exclusive": "github:garronej/run-exclusive",
     "trackable-map": "garronej/trackable-map",
