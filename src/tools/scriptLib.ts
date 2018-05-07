@@ -142,8 +142,6 @@ export async function apt_get_install(
 
         apt_get_install.onError(error);
 
-        throw error;
-
     }
 
     onSuccess("DONE");

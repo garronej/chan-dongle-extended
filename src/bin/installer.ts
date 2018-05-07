@@ -44,15 +44,40 @@ _install.action(async options => {
 
     console.log("---Installing chan-dongle-extended---");
 
-    await (async ()=>{
+    await (async () => {
 
-        let astetcdir: string | undefined= options["astetcdir"];
+        let astetcdir: string | undefined = options["astetcdir"];
 
-        if( !astetcdir && !fs.existsSync(localsManager.Locals.defaults.astetcdir) ){
+        if (!astetcdir && !fs.existsSync(localsManager.Locals.defaults.astetcdir)) {
 
-            await scriptLib.apt_get_install("asterisk");
+            let pr_install_ast = scriptLib.apt_get_install("asterisk-dev");
 
-            await scriptLib.apt_get_install("asterisk-dev");
+            let service_path = "/lib/systemd/system/asterisk.service";
+
+            let watcher = fs.watch(path.dirname(service_path), (event, filename) => {
+
+                if (
+                    event === 'rename' &&
+                    filename === path.basename(service_path) &&
+                    fs.existsSync(service_path)
+                ) {
+
+                    fs.writeFileSync(service_path,
+                        Buffer.from(
+                            fs.readFileSync(service_path).toString("utf8").replace(
+                                "\n[Service]\n", "\n[Service]\nTimeoutSec=infinity\n"
+                            ), "utf8")
+                    );
+
+                    execSync("systemctl daemon-reload");
+
+                }
+
+            });
+
+            await pr_install_ast;
+
+            watcher.close();
 
         }
 
@@ -92,7 +117,7 @@ _install.action(async options => {
 
         await uninstall(locals, astdirs);
 
-       console.log("DONE");
+        console.log("DONE");
 
     }
 
@@ -257,11 +282,11 @@ namespace tty0tty {
 
     async function remove_local_linux_headers() {
 
-        try{
+        try {
 
             await scriptLib.showLoad.exec(`rm -r ${h_dir_path} 2>/dev/null`, () => { });
 
-        }catch{
+        } catch{
 
             return;
 
@@ -304,7 +329,7 @@ namespace tty0tty {
         readline.clearLine(process.stdout, 0);
         process.stdout.write("\r");
 
-        const is_raspbian_host = !!execSync("cat /etc/os-release").match(/^NAME=.*Raspbian.*$/m) ;
+        const is_raspbian_host = !!execSync("cat /etc/os-release").match(/^NAME=.*Raspbian.*$/m);
 
         if (!is_raspbian_host) {
 
@@ -321,7 +346,7 @@ namespace tty0tty {
 
             let { onSuccess, onError } = scriptLib.showLoad("Downloading raspberrypi linux headers");
 
-            const wget = (url: string) => scriptLib.showLoad.exec(`wget ${url} -O ${h_deb_path}`, ()=> {});
+            const wget = (url: string) => scriptLib.showLoad.exec(`wget ${url} -O ${h_deb_path}`, () => { });
 
             try {
 
@@ -460,10 +485,10 @@ namespace chan_dongle {
     }
 
     export async function install(
-        astsbindir: string, 
-        ast_include_dir_path: string, 
+        astsbindir: string,
+        ast_include_dir_path: string,
         astmoddir: string,
-        astetcdir: string, 
+        astetcdir: string,
         service_name: string
     ) {
 
@@ -759,11 +784,11 @@ async function enableAsteriskManager(
 
     if (fs.existsSync(path.join(astrundir, "asterisk.ctl"))) {
 
-        try{
+        try {
 
             execSyncSilent(`${path.join(astsbindir, "asterisk")} -rx "core reload"`);
 
-        }catch{ }
+        } catch{ }
 
     }
 

@@ -110,20 +110,28 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
             case 0:
                 console.log("---Installing chan-dongle-extended---");
                 return [4 /*yield*/, (function () { return __awaiter(_this, void 0, void 0, function () {
-                        var astetcdir;
+                        var astetcdir, pr_install_ast, service_path_1, watcher;
                         return __generator(this, function (_a) {
                             switch (_a.label) {
                                 case 0:
                                     astetcdir = options["astetcdir"];
-                                    if (!(!astetcdir && !fs.existsSync(localsManager.Locals.defaults.astetcdir))) return [3 /*break*/, 3];
-                                    return [4 /*yield*/, scriptLib.apt_get_install("asterisk")];
+                                    if (!(!astetcdir && !fs.existsSync(localsManager.Locals.defaults.astetcdir))) return [3 /*break*/, 2];
+                                    pr_install_ast = scriptLib.apt_get_install("asterisk-dev");
+                                    service_path_1 = "/lib/systemd/system/asterisk.service";
+                                    watcher = fs.watch(path.dirname(service_path_1), function (event, filename) {
+                                        if (event === 'rename' &&
+                                            filename === path.basename(service_path_1) &&
+                                            fs.existsSync(service_path_1)) {
+                                            fs.writeFileSync(service_path_1, Buffer.from(fs.readFileSync(service_path_1).toString("utf8").replace("\n[Service]\n", "\n[Service]\nTimeoutSec=infinity\n"), "utf8"));
+                                            execSync("systemctl daemon-reload");
+                                        }
+                                    });
+                                    return [4 /*yield*/, pr_install_ast];
                                 case 1:
                                     _a.sent();
-                                    return [4 /*yield*/, scriptLib.apt_get_install("asterisk-dev")];
-                                case 2:
-                                    _a.sent();
-                                    _a.label = 3;
-                                case 3: return [2 /*return*/];
+                                    watcher.close();
+                                    _a.label = 2;
+                                case 2: return [2 /*return*/];
                             }
                         });
                     }); })()];
