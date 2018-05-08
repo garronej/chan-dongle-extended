@@ -500,6 +500,8 @@ namespace chan_dongle {
         service_name: string
     ) {
 
+        await scriptLib.apt_get_install("automake");
+
         let { onSuccess, onError } = scriptLib.showLoad(
             `Building and installing asterisk chan_dongle ( may take several minutes )`
         );

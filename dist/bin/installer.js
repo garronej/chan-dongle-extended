@@ -483,26 +483,28 @@ var chan_dongle;
             var _a, onSuccess, onError, ast_ver, exec, cdExec;
             return __generator(this, function (_b) {
                 switch (_b.label) {
-                    case 0:
+                    case 0: return [4 /*yield*/, scriptLib.apt_get_install("automake")];
+                    case 1:
+                        _b.sent();
                         _a = scriptLib.showLoad("Building and installing asterisk chan_dongle ( may take several minutes )"), onSuccess = _a.onSuccess, onError = _a.onError;
                         ast_ver = execSync(path.join(astsbindir, "asterisk") + " -V")
                             .match(/^Asterisk\s+([0-9\.]+)/)[1];
                         exec = function (cmd) { return scriptLib.showLoad.exec(cmd, onError); };
                         cdExec = function (cmd) { return exec("(cd " + chan_dongle_dir_path + " && " + cmd + ")"); };
                         return [4 /*yield*/, exec("git clone https://github.com/garronej/asterisk-chan-dongle " + chan_dongle_dir_path)];
-                    case 1:
-                        _b.sent();
-                        return [4 /*yield*/, cdExec("./bootstrap")];
                     case 2:
                         _b.sent();
-                        return [4 /*yield*/, cdExec("./configure --with-astversion=" + ast_ver + " --with-asterisk=" + ast_include_dir_path)];
+                        return [4 /*yield*/, cdExec("./bootstrap")];
                     case 3:
                         _b.sent();
-                        return [4 /*yield*/, cdExec("make")];
+                        return [4 /*yield*/, cdExec("./configure --with-astversion=" + ast_ver + " --with-asterisk=" + ast_include_dir_path)];
                     case 4:
                         _b.sent();
-                        return [4 /*yield*/, cdExec("cp chan_dongle.so " + astmoddir)];
+                        return [4 /*yield*/, cdExec("make")];
                     case 5:
+                        _b.sent();
+                        return [4 /*yield*/, cdExec("cp chan_dongle.so " + astmoddir)];
+                    case 6:
                         _b.sent();
                         chownConfFile(astetcdir, service_name);
                         onSuccess("OK");
