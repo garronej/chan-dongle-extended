@@ -56,35 +56,35 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var Tty0tty_1 = require("./Tty0tty");
 var logger_1 = require("./logger");
-var _debug = require("debug");
-var debug = _debug("bridge");
+var debugFactory = require("debug");
+var debug = debugFactory("atBridge");
 debug.enabled = true;
 debug.log = logger_1.log;
-var fileOnlyDebug = _debug("bridge");
+var fileOnlyDebug = debugFactory("bridge");
 fileOnlyDebug.enabled = true;
 fileOnlyDebug.log = logger_1.fileOnlyLog;
 var types = require("./types");
 function init(modems, chanDongleConfManagerApi) {
-    bridge.chanDongleConfManagerApi = chanDongleConfManagerApi;
+    atBridge.confManagerApi = chanDongleConfManagerApi;
     var tty0ttyFactory = Tty0tty_1.Tty0tty.makeFactory();
     modems.evtCreate.attach(function (_a) {
         var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];
         if (types.LockedModem.match(modem)) {
             return;
         }
-        bridge(accessPoint, modem, tty0ttyFactory());
+        atBridge(accessPoint, modem, tty0ttyFactory());
     });
 }
 exports.init = init;
 var ok = "\r\nOK\r\n";
-function bridge(accessPoint, modem, tty0tty) {
+function atBridge(accessPoint, modem, tty0tty) {
     return __awaiter(this, void 0, void 0, function () {
         var _this = this;
         var portVirtual, serviceProviderShort, forwardResp;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    bridge.chanDongleConfManagerApi.addDongle({
+                    atBridge.confManagerApi.addDongle({
                         "dongleName": accessPoint.friendlyId,
                         "data": tty0tty.rightEnd,
                         "audio": accessPoint.audioIfPath
@@ -98,15 +98,13 @@ function bridge(accessPoint, modem, tty0tty) {
                             switch (_a.label) {
                                 case 0:
                                     debug("Modem terminate => closing bridge");
-                                    return [4 /*yield*/, bridge.chanDongleConfManagerApi.removeDongle(accessPoint.friendlyId)];
+                                    return [4 /*yield*/, atBridge.confManagerApi.removeDongle(accessPoint.friendlyId)];
                                 case 1:
                                     _a.sent();
-                                    debug("Dongle removed from chan dongle config");
                                     if (!portVirtual.isOpen()) return [3 /*break*/, 3];
                                     return [4 /*yield*/, new Promise(function (resolve) { return portVirtual.close(function () { return resolve(); }); })];
                                 case 2:
                                     _a.sent();
-                                    debug("Virtual port closed");
                                     _a.label = 3;
                                 case 3:
                                     tty0tty.release();
@@ -173,5 +171,5 @@ function bridge(accessPoint, modem, tty0tty) {
     });
 }
 ;
-(function (bridge) {
-})(bridge || (bridge = {}));
+(function (atBridge) {
+})(atBridge || (atBridge = {}));

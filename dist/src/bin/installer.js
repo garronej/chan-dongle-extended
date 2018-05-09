@@ -74,8 +74,14 @@ Object.defineProperty(exports, "__esModule", { value: true });
 require("rejection-tracker").main(__dirname, "..", "..");
 var program = require("commander");
 var child_process = require("child_process");
-var execSync = function (cmd) { return child_process.execSync(cmd).toString("utf8"); };
-var execSyncSilent = function (cmd) { return child_process.execSync(cmd, { "stdio": [] }).toString("utf8"); };
+var execSync = function (cmd) {
+    console.log(cmd);
+    return child_process.execSync(cmd).toString("utf8");
+};
+var execSyncSilent = function (cmd) {
+    console.log(cmd);
+    return child_process.execSync(cmd, { "stdio": [] }).toString("utf8");
+};
 var fs = require("fs");
 var path = require("path");
 var scriptLib = require("../tools/scriptLib");
@@ -636,7 +642,6 @@ var systemd;
         fs.writeFileSync(service_path, Buffer.from(service, "utf8"));
         execSync("systemctl daemon-reload");
         execSync("systemctl enable " + service_name + " --quiet");
-        execSync("systemctl start " + service_name);
         console.log(scriptLib.colorize("OK", "GREEN"));
     }
     systemd.create = create;

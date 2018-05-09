@@ -95,7 +95,7 @@ function apt_get_install(package_name, prog) {
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    process.stdout.write("Looking for " + package_name + " ... ");
+                    process.stdout.write("Looking for " + package_name + " package ... ");
                     if (!!prog && apt_get_install.doesHaveProg(prog)) {
                         console.log(prog + " executable found. " + colorize("OK", "GREEN"));
                         return [2 /*return*/];

@@ -1,9 +1,6 @@
 import * as child_process from "child_process";
 import * as readline from "readline";
 
-
-
-
 export function colorize(str: string, color: "GREEN" | "RED" | "YELLOW"): string {
 
     let color_code = (() => {
@@ -103,7 +100,7 @@ export async function apt_get_install(
     prog?: string
 ) {
 
-    process.stdout.write(`Looking for ${package_name} package ... `);
+    process.stdout.write(`Looking for ${package_name} ... `);
 
     if (!!prog && apt_get_install.doesHaveProg(prog)) {
 

@@ -4,8 +4,9 @@ require("rejection-tracker").main(__dirname, "..", "..");
 
 import * as program from "commander";
 import * as child_process from "child_process";
-const execSync= (cmd: string)=> child_process.execSync(cmd).toString("utf8");
-const execSyncSilent= (cmd: string)=> child_process.execSync(cmd,{stdio: []}).toString("utf8");
+const execSync = (cmd: string) => child_process.execSync(cmd).toString("utf8");
+const execSyncSilent = (cmd: string) => child_process.execSync(cmd, { "stdio": [] }).toString("utf8");
+
 import * as fs from "fs";
 import * as path from "path";
 import * as scriptLib from "../tools/scriptLib";
@@ -13,12 +14,12 @@ import * as readline from "readline";
 
 import * as localsManager from "../lib/localsManager";
 
-const node_path = process.argv[0];
 const module_path = path.join(__dirname, "..", "..");
 const [cli_js_path, main_js_path] = ["cli.js", "main.js"].map(f => path.join(module_path, "dist", "bin", f));
 const working_directory_path = path.join(module_path, "working_directory");
 const stop_sh_path = path.join(working_directory_path, "stop.sh");
 const wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
+const node_path = path.join(working_directory_path, "node");
 
 let _install = program.command("install");
 
@@ -127,6 +128,10 @@ _install.action(async options => {
 
         console.log("DONE");
 
+    } else {
+
+        execSyncSilent(`pkill -u ${locals.service_name} -SIGUSR2 || true`);
+
     }
 
     try {
@@ -188,6 +193,8 @@ async function install(locals: localsManager.Locals, astdirs: localsManager.Astd
     unixUser.create(locals.service_name);
 
     workingDirectory.create(locals.service_name);
+
+    execSync(`cp $(readlink -e ${process.argv[0]}) ${node_path}`);
 
     (() => {
 
@@ -255,6 +262,7 @@ function uninstall(
         }
 
     }
+
 
     runRecover("Stopping running instance ... ", () => execSyncSilent(stop_sh_path));
 
@@ -570,6 +578,10 @@ namespace unixUser {
 
         process.stdout.write(`Creating unix user '${service_name}' ... `);
 
+        execSyncSilent(`pkill -u ${service_name} -SIGUSR2 || true`);
+
+        execSyncSilent(`userdel ${service_name} || true`);
+
         execSync(`useradd -M ${service_name} -s /bin/false -d ${working_directory_path}`);
 
         console.log(scriptLib.colorize("OK", "GREEN"));
@@ -702,6 +714,8 @@ namespace systemd {
         execSync("systemctl daemon-reload");
 
         execSync(`systemctl enable ${service_name} --quiet`);
+
+        execSync(`systemctl start ${service_name}`);
 
         console.log(scriptLib.colorize("OK", "GREEN"));
 
