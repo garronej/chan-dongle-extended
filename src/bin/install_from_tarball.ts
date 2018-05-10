@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 import * as path from "path";
-import { module_dir_path, execSyncInherit, find_module_path} from "./build_dist_tarball";
+import { module_dir_path, execSyncInherit, find_module_path} from "./build_tarball";
 import * as fs from "fs";
 
 const node_path = path.join(module_dir_path, "node");

@@ -708,7 +708,7 @@ function enableAsteriskManager(service_name, astetcdir, ami_port, astsbindir, as
 var udevRules;
 (function (udevRules) {
     function make_rules_path(service_name) {
-        return path.join("/etc/udev/rules.d", "98-" + service_name + ".rules");
+        return path.join("/etc/udev/rules.d", "98-" + service_name + "_disable_net_and_grant_access.rules");
     }
     function create(service_name) {
         return __awaiter(this, void 0, void 0, function () {

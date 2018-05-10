@@ -2,7 +2,6 @@ import { execSync } from "child_process";
 import * as readline from "readline";
 import * as scriptLib from "../tools/scriptLib";
 
-
 (async function main() {
 
     console.log("---Installing required package for npm install---");

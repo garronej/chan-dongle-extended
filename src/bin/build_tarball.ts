@@ -109,8 +109,5 @@ if (require.main === module) {
 
     console.log("---DONE---");
 
-    //mkdir foo
-    //tar -xzf bar.tar.gz -C foo
-    // /usr/share
 }
 

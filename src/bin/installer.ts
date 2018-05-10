@@ -823,7 +823,7 @@ async function enableAsteriskManager(
 namespace udevRules {
 
     function make_rules_path(service_name): string {
-        return path.join("/etc/udev/rules.d", `98-${service_name}.rules`);
+        return path.join("/etc/udev/rules.d", `98-${service_name}_disable_net_and_grant_access.rules`);
     }
 
     export async function create(
