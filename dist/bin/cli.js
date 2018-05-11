@@ -42,8 +42,10 @@ var program = require("commander");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
 var storage = require("node-persist");
 var localsManager = require("../lib/localsManager");
+var path = require("path");
+var os = require("os");
 require("colors");
-var storage_path = "./cli";
+exports.storage_path = "./cli";
 program
     .command("list")
     .description("List dongles")
@@ -88,11 +90,8 @@ program
                     console.log("Error: no such dongle connected".red);
                     process.exit(-1);
                 }
-                return [4 /*yield*/, storage.init({ "dir": storage_path })];
+                return [4 /*yield*/, selected_dongle.set(imei)];
             case 2:
-                _a.sent();
-                return [4 /*yield*/, storage.setItem("cli_imei", imei)];
-            case 3:
                 _a.sent();
                 console.log("Dongle " + imei + " selected");
                 process.exit(0);
@@ -110,7 +109,7 @@ program
     var imei, dc, unlockResult, match, puk, newPin, error_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
-            case 0: return [4 /*yield*/, getImei(options)];
+            case 0: return [4 /*yield*/, selected_dongle.get(options)];
             case 1:
                 imei = _a.sent();
                 if (!options.pin && !options.puk) {
@@ -174,7 +173,7 @@ program
                     console.log(options.optionHelp());
                     process.exit(-1);
                 }
-                return [4 /*yield*/, getImei(options)];
+                return [4 /*yield*/, selected_dongle.get(options)];
             case 1:
                 imei = _a.sent();
                 return [4 /*yield*/, getDcInstance()];
@@ -243,30 +242,50 @@ program
         }
     });
 }); });
-program.parse(process.argv);
-function getImei(options) {
-    return __awaiter(this, void 0, void 0, function () {
-        var imei;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0:
-                    if (options.imei)
+var selected_dongle;
+(function (selected_dongle) {
+    var get_storage_user_path = function () { return path.join(exports.storage_path, os.userInfo().username); };
+    function get(options) {
+        return __awaiter(this, void 0, void 0, function () {
+            var imei;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!options.imei) return [3 /*break*/, 1];
                         return [2 /*return*/, options.imei];
-                    return [4 /*yield*/, storage.init({ "dir": storage_path })];
-                case 1:
-                    _a.sent();
-                    return [4 /*yield*/, storage.getItem("cli_imei")];
-                case 2:
-                    imei = _a.sent();
-                    if (!imei) {
-                        console.log("Error: No dongle selected");
-                        process.exit(-1);
-                    }
-                    return [2 /*return*/, imei];
-            }
+                    case 1: return [4 /*yield*/, storage.init({ "dir": get_storage_user_path() })];
+                    case 2:
+                        _a.sent();
+                        return [4 /*yield*/, storage.getItem("cli_imei")];
+                    case 3:
+                        imei = _a.sent();
+                        if (!imei) {
+                            console.log("Error: No dongle selected");
+                            process.exit(-1);
+                        }
+                        return [2 /*return*/, imei];
+                }
+            });
         });
-    });
-}
+    }
+    selected_dongle.get = get;
+    function set(imei) {
+        return __awaiter(this, void 0, void 0, function () {
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0: return [4 /*yield*/, storage.init({ "dir": get_storage_user_path() })];
+                    case 1:
+                        _a.sent();
+                        return [4 /*yield*/, storage.setItem("cli_imei", imei)];
+                    case 2:
+                        _a.sent();
+                        return [2 /*return*/];
+                }
+            });
+        });
+    }
+    selected_dongle.set = set;
+})(selected_dongle || (selected_dongle = {}));
 function getDcInstance() {
     return __awaiter(this, void 0, void 0, function () {
         var locals, dc, _a;
@@ -291,6 +310,9 @@ function getDcInstance() {
             }
         });
     });
+}
+if (require.main === module) {
+    program.parse(process.argv);
 }
 /*
 program

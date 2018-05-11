@@ -8,8 +8,11 @@ export declare namespace showLoad {
 }
 export declare function apt_get_install(package_name: string, prog?: string): Promise<void>;
 export declare namespace apt_get_install {
+    function record_installed_package(file_json_path: string, package_name: string): void;
     let onError: (error: Error) => never;
+    let onInstallSuccess: (package_name: string) => void;
     let isFirst: boolean;
     function isPkgInstalled(package_name: string): boolean;
     function doesHaveProg(prog: string): boolean;
 }
+export declare function exit_if_not_root(): void;

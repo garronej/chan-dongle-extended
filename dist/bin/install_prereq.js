@@ -1,3 +1,4 @@
+#!/usr/bin/env node
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
@@ -38,17 +39,28 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var child_process_1 = require("child_process");
 var readline = require("readline");
 var scriptLib = require("../tools/scriptLib");
-(function main() {
+var path = require("path");
+scriptLib.exit_if_not_root();
+exports.module_dir_path = path.join(__dirname, "..", "..");
+exports.pkg_list_path = path.join(exports.module_dir_path, "pkg_installed.json");
+function main() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     console.log("---Installing required package for npm install---");
                     scriptLib.apt_get_install.onError = function () { return process.exit(-1); };
+                    scriptLib.apt_get_install.onInstallSuccess = function (package_name) {
+                        return scriptLib.apt_get_install.record_installed_package(exports.pkg_list_path, package_name);
+                    };
                     return [4 /*yield*/, scriptLib.apt_get_install("python", "python")];
                 case 1:
                     _a.sent();
                     //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
+                    return [4 /*yield*/, scriptLib.apt_get_install("python-pip", "pip")];
+                case 2:
+                    //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
+                    _a.sent();
                     return [4 /*yield*/, (function installVirtualenv() {
                             return __awaiter(this, void 0, void 0, function () {
                                 var _a, _b, onSuccess, onError, _c;
@@ -87,18 +99,21 @@ var scriptLib = require("../tools/scriptLib");
                                 });
                             });
                         })()];
-                case 2:
-                    //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
-                    _a.sent();
-                    return [4 /*yield*/, scriptLib.apt_get_install("build-essential")];
                 case 3:
                     _a.sent();
-                    return [4 /*yield*/, scriptLib.apt_get_install("libudev-dev")];
+                    return [4 /*yield*/, scriptLib.apt_get_install("build-essential")];
                 case 4:
+                    _a.sent();
+                    return [4 /*yield*/, scriptLib.apt_get_install("libudev-dev")];
+                case 5:
                     _a.sent();
                     console.log("---DONE---");
                     return [2 /*return*/];
             }
         });
     });
-})();
+}
+;
+if (require.main === module) {
+    main();
+}

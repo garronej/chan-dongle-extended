@@ -37,6 +37,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var child_process = require("child_process");
 var readline = require("readline");
+var child_process_1 = require("child_process");
+var fs = require("fs");
 function colorize(str, color) {
     var color_code = (function () {
         switch (color) {
@@ -125,6 +127,7 @@ function apt_get_install(package_name, prog) {
                     apt_get_install.onError(error_1);
                     return [3 /*break*/, 6];
                 case 6:
+                    apt_get_install.onInstallSuccess(package_name);
                     onSuccess("DONE");
                     return [2 /*return*/];
             }
@@ -133,7 +136,18 @@ function apt_get_install(package_name, prog) {
 }
 exports.apt_get_install = apt_get_install;
 (function (apt_get_install) {
+    function record_installed_package(file_json_path, package_name) {
+        child_process_1.execSync("touch " + file_json_path);
+        var raw = fs.readFileSync(file_json_path).toString("utf8");
+        var list = raw === "" ? [] : JSON.parse(raw);
+        if (!list.find(function (p) { return p === package_name; })) {
+            list.push(package_name);
+            fs.writeFileSync(file_json_path, Buffer.from(JSON.stringify(list, null, 2), "utf8"));
+        }
+    }
+    apt_get_install.record_installed_package = record_installed_package;
     apt_get_install.onError = function (error) { throw error; };
+    apt_get_install.onInstallSuccess = function (package_name) { };
     apt_get_install.isFirst = true;
     function isPkgInstalled(package_name) {
         try {
@@ -158,3 +172,10 @@ exports.apt_get_install = apt_get_install;
     }
     apt_get_install.doesHaveProg = doesHaveProg;
 })(apt_get_install = exports.apt_get_install || (exports.apt_get_install = {}));
+function exit_if_not_root() {
+    if (process.getuid() !== 0) {
+        console.log("Error: This script require root privilege");
+        process.exit(1);
+    }
+}
+exports.exit_if_not_root = exit_if_not_root;

@@ -9,7 +9,7 @@
     "remove-bold-color": "sed -i '/bold: string;/d' ./node_modules/@types/colors/index.d.ts || true",
     "tsc": "node ./node_modules/typescript/bin/tsc -p ./tsconfig.json",
     "tsc-w": "node ./node_modules/typescript/bin/tsc -w -p ./tsconfig.json",
-    "start": "sudo ./working_directory/main.sh",
+    "start": "sudo ./working_directory/start.sh",
     "log": "tail -f -n 1000 ./working_directory/current.log",
     "tarball": "sudo node dist/bin/build_dist_tarball"
   },

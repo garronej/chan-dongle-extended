@@ -2,11 +2,12 @@
 
 require("rejection-tracker").main(__dirname, "..", "..");
 
-import * as child_process from "child_process";
 import * as scriptLib from "../tools/scriptLib";
+import * as child_process from "child_process";
 import * as path from "path";
+import { module_dir_path } from "./install_prereq";
 
-export const module_dir_path = path.join(__dirname, "..", "..");
+scriptLib.exit_if_not_root();
 
 export function execSyncInherit(cmd: string, options: any= {}): void {
 

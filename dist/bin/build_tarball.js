@@ -20,10 +20,11 @@ var __values = (this && this.__values) || function (o) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 require("rejection-tracker").main(__dirname, "..", "..");
-var child_process = require("child_process");
 var scriptLib = require("../tools/scriptLib");
+var child_process = require("child_process");
 var path = require("path");
-exports.module_dir_path = path.join(__dirname, "..", "..");
+var install_prereq_1 = require("./install_prereq");
+scriptLib.exit_if_not_root();
 function execSyncInherit(cmd, options) {
     if (options === void 0) { options = {}; }
     console.log(scriptLib.colorize("$ " + cmd, "YELLOW") + "\n");
@@ -50,11 +51,11 @@ function find_module_path(module_name, root_module_path) {
     }
 }
 exports.find_module_path = find_module_path;
-var working_directory_path = path.join(exports.module_dir_path, "working_directory");
+var working_directory_path = path.join(install_prereq_1.module_dir_path, "working_directory");
 if (require.main === module) {
     var dist_dir_name_1 = [
         "dongle",
-        "v" + require(path.join(exports.module_dir_path, "package.json"))["version"],
+        "v" + require(path.join(install_prereq_1.module_dir_path, "package.json"))["version"],
         child_process.execSync("uname -m").toString("utf8").replace("\n", "")
     ].join("_");
     console.log({ dist_dir_name: dist_dir_name_1 });
@@ -62,7 +63,7 @@ if (require.main === module) {
     (function () {
         var tmp_dir_path = path.join("/tmp", dist_dir_name_1);
         execSyncInherit("rm -rf " + tmp_dir_path);
-        execSyncInherit("cp -r " + exports.module_dir_path + " " + tmp_dir_path);
+        execSyncInherit("cp -r " + install_prereq_1.module_dir_path + " " + tmp_dir_path);
         execSyncInherit("rm -rf " + dist_dir_path_1);
         execSyncInherit("mv " + tmp_dir_path + " " + dist_dir_path_1);
     })();

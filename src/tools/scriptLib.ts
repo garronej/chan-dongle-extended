@@ -1,5 +1,7 @@
 import * as child_process from "child_process";
 import * as readline from "readline";
+import { execSync } from "child_process";
+import * as fs from "fs";
 
 export function colorize(str: string, color: "GREEN" | "RED" | "YELLOW"): string {
 
@@ -141,13 +143,41 @@ export async function apt_get_install(
 
     }
 
+    apt_get_install.onInstallSuccess(package_name);
+
     onSuccess("DONE");
 
 }
 
 export namespace apt_get_install {
 
-    export let onError= (error: Error) => { throw error };
+    export function record_installed_package(
+        file_json_path: string,
+        package_name: string
+    ): void {
+
+        execSync(`touch ${file_json_path}`);
+
+        const raw = fs.readFileSync(file_json_path).toString("utf8");
+
+        const list: string[] = raw === "" ? [] : JSON.parse(raw);
+
+        if( !list.find( p => p === package_name) ){
+
+            list.push(package_name);
+
+            fs.writeFileSync(
+                file_json_path,
+                Buffer.from(JSON.stringify(list, null, 2), "utf8")
+            );
+
+        }
+
+    }
+
+    export let onError = (error: Error) => { throw error };
+
+    export let onInstallSuccess = (package_name: string): void => { };
 
     export let isFirst = true;
 
@@ -187,5 +217,15 @@ export namespace apt_get_install {
 
     }
 
+}
+
+export function exit_if_not_root(): void {
+    if( process.getuid() !== 0 ){
+
+        console.log("Error: This script require root privilege");
+
+        process.exit(1);
+
+    }
 }
 

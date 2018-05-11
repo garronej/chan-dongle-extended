@@ -1,8 +1,12 @@
 #!/usr/bin/env node
 
 import * as path from "path";
-import { module_dir_path, execSyncInherit, find_module_path} from "./build_tarball";
+import { module_dir_path } from "./install_prereq";
+import { execSyncInherit, find_module_path} from "./build_tarball";
+import { exit_if_not_root } from "../tools/scriptLib";
 import * as fs from "fs";
+
+exit_if_not_root();
 
 const node_path = path.join(module_dir_path, "node");
 const bin_dir_path= path.join(module_dir_path, "dist", "bin");

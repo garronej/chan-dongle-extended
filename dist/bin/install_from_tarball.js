@@ -32,10 +32,13 @@ var __values = (this && this.__values) || function (o) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var path = require("path");
+var install_prereq_1 = require("./install_prereq");
 var build_tarball_1 = require("./build_tarball");
+var scriptLib_1 = require("../tools/scriptLib");
 var fs = require("fs");
-var node_path = path.join(build_tarball_1.module_dir_path, "node");
-var bin_dir_path = path.join(build_tarball_1.module_dir_path, "dist", "bin");
+scriptLib_1.exit_if_not_root();
+var node_path = path.join(install_prereq_1.module_dir_path, "node");
+var bin_dir_path = path.join(install_prereq_1.module_dir_path, "dist", "bin");
 var args = (function () {
     var out = __spread(process.argv);
     out.shift();
@@ -49,13 +52,13 @@ if (!!args.match(/\-\-help/) || !!args.match(/\-h/)) {
 }
 build_tarball_1.execSyncInherit(node_path + " " + path.join(bin_dir_path, "install_prereq"));
 (function build_udev() {
-    var udev_dir_path = build_tarball_1.find_module_path("udev", build_tarball_1.module_dir_path);
+    var udev_dir_path = build_tarball_1.find_module_path("udev", install_prereq_1.module_dir_path);
     if (fs.existsSync(path.join(udev_dir_path, "build"))) {
         return;
     }
     var pre_gyp_dir_path = "";
     try {
-        for (var _a = __values([udev_dir_path, build_tarball_1.module_dir_path]), _b = _a.next(); !_b.done; _b = _a.next()) {
+        for (var _a = __values([udev_dir_path, install_prereq_1.module_dir_path]), _b = _a.next(); !_b.done; _b = _a.next()) {
             var root_module_path = _b.value;
             try {
                 pre_gyp_dir_path = build_tarball_1.find_module_path("node-pre-gyp", root_module_path);
@@ -72,14 +75,14 @@ build_tarball_1.execSyncInherit(node_path + " " + path.join(bin_dir_path, "insta
         finally { if (e_1) throw e_1.error; }
     }
     build_tarball_1.execSyncInherit([
-        "PATH=" + path.join(build_tarball_1.module_dir_path) + ":$PATH",
+        "PATH=" + path.join(install_prereq_1.module_dir_path) + ":$PATH",
         "node " + path.join(pre_gyp_dir_path, "bin", "node-pre-gyp") + " install",
         "--fallback-to-build"
     ].join(" "), { "cwd": udev_dir_path });
     var e_1, _d;
 })();
 (function postinstall_node_python_messaging() {
-    var node_python_messaging_dir_path = build_tarball_1.find_module_path("node-python-messaging", build_tarball_1.module_dir_path);
+    var node_python_messaging_dir_path = build_tarball_1.find_module_path("node-python-messaging", install_prereq_1.module_dir_path);
     if (fs.existsSync(path.join(node_python_messaging_dir_path, "dist", "virtual"))) {
         return;
     }

@@ -40,3 +40,4 @@ dist/test
 .vscode
 .node-persist
 working_directory
+pkg_installed.json

@@ -5,9 +5,11 @@ import * as program from "commander";
 import { DongleController as Dc } from "../chan-dongle-extended-client";
 import * as storage from "node-persist";
 import * as localsManager from "../lib/localsManager";
+import * as path from "path";
+import * as os from "os";
 import "colors";
 
-let storage_path = "./cli";
+export const storage_path = "./cli";
 
 program
     .command("list")
@@ -52,9 +54,7 @@ program
             process.exit(-1);
         }
 
-        await storage.init({ "dir": storage_path });
-
-        await storage.setItem("cli_imei", imei);
+        await selected_dongle.set(imei);
 
         console.log(`Dongle ${imei} selected`);
 
@@ -71,7 +71,7 @@ program
     .option("--puk [puk-newPin]", "PUK ( 8 digits ) and new PIN eg. --puk 12345678-0000")
     .action(async options => {
 
-        let imei = await getImei(options);
+        let imei = await selected_dongle.get(options);
 
         if (!options.pin && !options.puk) {
             console.log("Error: command malformed".red);
@@ -137,7 +137,7 @@ program
             process.exit(-1);
         }
 
-        let imei = await getImei(options);
+        let imei = await selected_dongle.get(options);
 
         let dc = await getDcInstance();
 
@@ -204,24 +204,43 @@ program
 
     });
 
-program.parse(process.argv);
+namespace selected_dongle {
 
-async function getImei(options: { imei: string | undefined }): Promise<string> {
+    const get_storage_user_path = () => path.join(storage_path, os.userInfo().username);
 
-    if (options.imei) return options.imei;
+    export async function get(options: { imei: string | undefined }): Promise<string> {
 
-    await storage.init({ "dir": storage_path });
+        if (options.imei) {
+            return options.imei;
+        } else {
 
-    let imei = await storage.getItem("cli_imei");
+            await storage.init({ "dir": get_storage_user_path() });
 
-    if (!imei) {
-        console.log("Error: No dongle selected");
-        process.exit(-1);
+            let imei = await storage.getItem("cli_imei");
+
+            if (!imei) {
+                console.log("Error: No dongle selected");
+                process.exit(-1);
+            }
+
+            return imei;
+
+        }
+
     }
 
-    return imei;
+    export async function set(imei: string) {
+
+        await storage.init({ "dir": get_storage_user_path() });
+
+        await storage.setItem("cli_imei", imei);
+
+    }
+
 
 }
+
+
 
 async function getDcInstance(): Promise<Dc> {
 
@@ -243,6 +262,11 @@ async function getDcInstance(): Promise<Dc> {
     return dc;
 
 }
+
+if (require.main === module) {
+    program.parse(process.argv);
+}
+
 
 
 /*

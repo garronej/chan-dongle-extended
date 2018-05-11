@@ -81,9 +81,13 @@ var path = require("path");
 var scriptLib = require("../tools/scriptLib");
 var readline = require("readline");
 var localsManager = require("../lib/localsManager");
-var module_path = path.join(__dirname, "..", "..");
-var _a = __read(["cli.js", "main.js"].map(function (f) { return path.join(module_path, "dist", "bin", f); }), 2), cli_js_path = _a[0], main_js_path = _a[1];
-var working_directory_path = path.join(module_path, "working_directory");
+var cli = require("./cli");
+var install_prereq_1 = require("./install_prereq");
+scriptLib.exit_if_not_root();
+var _a = __read([
+    "cli.js", "main.js"
+].map(function (f) { return path.join(install_prereq_1.module_dir_path, "dist", "bin", f); }), 2), cli_js_path = _a[0], main_js_path = _a[1];
+var working_directory_path = path.join(install_prereq_1.module_dir_path, "working_directory");
 var stop_sh_path = path.join(working_directory_path, "stop.sh");
 var wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
 var node_path = path.join(working_directory_path, "node");
@@ -103,46 +107,20 @@ for (var key in localsManager.Locals.defaults) {
     }
 }
 _install.action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var _this = this;
     var locals, key, astdirs, message, _a;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 console.log("---Installing chan-dongle-extended---");
-                return [4 /*yield*/, (function () { return __awaiter(_this, void 0, void 0, function () {
-                        var astetcdir, pr_install_ast, service_path, watcher;
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    astetcdir = options["astetcdir"];
-                                    if (!!astetcdir) {
-                                        return [2 /*return*/];
-                                    }
-                                    try {
-                                        execSyncSilent("which asterisk");
-                                        return [2 /*return*/];
-                                    }
-                                    catch (_b) { }
-                                    pr_install_ast = scriptLib.apt_get_install("asterisk-dev");
-                                    service_path = "/lib/systemd/system/asterisk.service";
-                                    watcher = fs.watch(path.dirname(service_path), function (event, filename) {
-                                        if (event === 'rename' &&
-                                            filename === path.basename(service_path) &&
-                                            fs.existsSync(service_path)) {
-                                            fs.writeFileSync(service_path, Buffer.from(fs.readFileSync(service_path).toString("utf8").replace("\n[Service]\n", "\n[Service]\nTimeoutSec=infinity\n"), "utf8"));
-                                            execSync("systemctl daemon-reload");
-                                        }
-                                    });
-                                    return [4 /*yield*/, pr_install_ast];
-                                case 1:
-                                    _a.sent();
-                                    watcher.close();
-                                    return [2 /*return*/];
-                            }
-                        });
-                    }); })()];
+                scriptLib.apt_get_install.onInstallSuccess = function (package_name) {
+                    return scriptLib.apt_get_install.record_installed_package(install_prereq_1.pkg_list_path, package_name);
+                };
+                if (!(options["astetcdir"] === undefined)) return [3 /*break*/, 2];
+                return [4 /*yield*/, apt_get_install_asterisk()];
             case 1:
                 _b.sent();
+                _b.label = 2;
+            case 2:
                 locals = __assign({}, localsManager.Locals.defaults);
                 for (key in localsManager.Locals.defaults) {
                     if (options[key] !== undefined) {
@@ -160,32 +138,32 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
                     return [2 /*return*/];
                 }
                 execSync("chmod u+r,g+r,o+r " + path.join(astdirs.astetcdir, "asterisk.conf"));
-                if (!fs.existsSync(working_directory_path)) return [3 /*break*/, 3];
+                if (!fs.existsSync(working_directory_path)) return [3 /*break*/, 4];
                 process.stdout.write(scriptLib.colorize("Already installed, erasing previous install... ", "YELLOW"));
                 return [4 /*yield*/, uninstall(locals, astdirs)];
-            case 2:
+            case 3:
                 _b.sent();
                 console.log("DONE");
-                return [3 /*break*/, 4];
-            case 3:
-                execSyncSilent("pkill -u " + locals.service_name + " -SIGUSR2 || true");
-                _b.label = 4;
+                return [3 /*break*/, 5];
             case 4:
-                _b.trys.push([4, 6, , 8]);
-                return [4 /*yield*/, install(locals, astdirs)];
+                execSyncSilent("pkill -u " + locals.service_name + " -SIGUSR2 || true");
+                _b.label = 5;
             case 5:
-                _b.sent();
-                return [3 /*break*/, 8];
+                _b.trys.push([5, 7, , 9]);
+                return [4 /*yield*/, install(locals, astdirs)];
             case 6:
+                _b.sent();
+                return [3 /*break*/, 9];
+            case 7:
                 _a = _b.sent();
                 process.stdout.write(scriptLib.colorize("Rollback install ...", "YELLOW"));
                 return [4 /*yield*/, uninstall(locals, astdirs)];
-            case 7:
+            case 8:
                 _b.sent();
                 console.log("DONE");
                 process.exit(-1);
                 return [2 /*return*/];
-            case 8:
+            case 9:
                 console.log("---DONE---");
                 process.exit(0);
                 return [2 /*return*/];
@@ -195,19 +173,31 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
 program
     .command("uninstall")
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
-    var _a, locals, astdirs;
+    var _a, locals, astdirs, pkg_list;
     return __generator(this, function (_b) {
         console.log("---Uninstalling chan-dongle-extended---");
         try {
             _a = localsManager.get(working_directory_path), locals = _a.locals, astdirs = _a.astdirs;
         }
-        catch (_c) {
+        catch (error) {
+            console.log(error.message);
             console.log(scriptLib.colorize("Not installed", "YELLOW"));
             process.exit(0);
             return [2 /*return*/];
         }
         uninstall(locals, astdirs, "VERBOSE");
         console.log("---DONE---");
+        if (fs.existsSync(install_prereq_1.pkg_list_path)) {
+            pkg_list = require(install_prereq_1.pkg_list_path);
+            console.log([
+                "NOTE: Some packages have been installed automatically, ",
+                "you can remove them if you no longer need them.",
+                "\n",
+                "$ sudo apt-get purge " + pkg_list.join(" "),
+                "\n",
+                "$ sudo apt-get --purge autoremove"
+            ].join(""));
+        }
         process.exit(0);
         return [2 /*return*/];
     });
@@ -219,6 +209,10 @@ function install(locals, astdirs) {
             switch (_a.label) {
                 case 0:
                     astetcdir = astdirs.astetcdir, astsbindir = astdirs.astsbindir, astmoddir = astdirs.astmoddir, astrundir = astdirs.astrundir;
+                    modemManager.disable_and_stop();
+                    return [4 /*yield*/, scriptLib.apt_get_install("usb-modeswitch", "usb_modeswitch")];
+                case 1:
+                    _a.sent();
                     unixUser.create(locals.service_name);
                     workingDirectory.create(locals.service_name);
                     execSync("cp $(readlink -e " + process.argv[0] + ") " + node_path);
@@ -228,23 +222,23 @@ function install(locals, astdirs) {
                         execSync("chown " + locals.service_name + ":" + locals.service_name + " " + local_path);
                     })();
                     return [4 /*yield*/, tty0tty.install()];
-                case 1:
+                case 2:
                     _a.sent();
-                    if (!locals.assume_chan_dongle_installed) return [3 /*break*/, 2];
+                    if (!locals.assume_chan_dongle_installed) return [3 /*break*/, 3];
                     console.log(scriptLib.colorize("Assuming chan_dongle already installed.", "YELLOW"));
                     chan_dongle.chownConfFile(astetcdir, locals.service_name);
-                    return [3 /*break*/, 4];
-                case 2: return [4 /*yield*/, chan_dongle.install(astsbindir, locals.ast_include_dir_path, astmoddir, astetcdir, locals.service_name)];
-                case 3:
+                    return [3 /*break*/, 5];
+                case 3: return [4 /*yield*/, chan_dongle.install(astsbindir, locals.ast_include_dir_path, astmoddir, astetcdir, locals.service_name)];
+                case 4:
                     _a.sent();
-                    _a.label = 4;
-                case 4: return [4 /*yield*/, udevRules.create(locals.service_name)];
-                case 5:
+                    _a.label = 5;
+                case 5: return [4 /*yield*/, udevRules.create(locals.service_name)];
+                case 6:
                     _a.sent();
-                    createShellScripts(locals.service_name, astsbindir);
+                    shellScripts.create(locals.service_name, astsbindir);
                     systemd.create(locals.service_name);
                     return [4 /*yield*/, enableAsteriskManager(locals.service_name, astetcdir, locals.ami_port, astsbindir, astrundir)];
-                case 6:
+                case 7:
                     _a.sent();
                     return [2 /*return*/];
             }
@@ -272,12 +266,13 @@ function uninstall(locals, astdirs, verbose) {
     else {
         runRecover("Uninstalling chan_dongle.so ... ", function () { return chan_dongle.remove(astdirs.astmoddir, astdirs.astsbindir); });
     }
-    runRecover("Removing cli tool symbolic link ... ", function () { return execSyncSilent("rm " + path.join(astdirs.astsbindir, locals.service_name)); });
+    runRecover("Removing binary symbolic links ... ", function () { return shellScripts.remove_symbolic_links(locals.service_name); });
     runRecover("Removing systemd service ... ", function () { return systemd.remove(locals.service_name); });
     runRecover("Removing udev rules ... ", function () { return udevRules.remove(locals.service_name); });
     runRecover("Removing tty0tty kernel module ...", function () { return tty0tty.remove(); });
     runRecover("Removing app working directory ... ", function () { return workingDirectory.remove(); });
     runRecover("Deleting unix user ... ", function () { return unixUser.remove(locals.service_name); });
+    runRecover("Re enabling ModemManager if present...", function () { return modemManager.enable_and_start(); });
 }
 var tty0tty;
 (function (tty0tty) {
@@ -532,7 +527,12 @@ var workingDirectory;
     function create(service_name) {
         process.stdout.write("Creating app working directory '" + working_directory_path + "' ... ");
         execSync("mkdir " + working_directory_path);
-        execSync("chown " + service_name + ":" + service_name + " " + working_directory_path);
+        (function () {
+            var cli_storage_path = path.join(working_directory_path, cli.storage_path);
+            execSync("mkdir " + cli_storage_path);
+            execSync("chmod 777 " + cli_storage_path);
+        })();
+        execSync("chown -R " + service_name + ":" + service_name + " " + working_directory_path);
         console.log(scriptLib.colorize("OK", "GREEN"));
     }
     workingDirectory.create = create;
@@ -548,6 +548,13 @@ var unixUser;
         execSyncSilent("pkill -u " + service_name + " -SIGUSR2 || true");
         execSyncSilent("userdel " + service_name + " || true");
         execSync("useradd -M " + service_name + " -s /bin/false -d " + working_directory_path);
+        /*
+        try{
+
+            execSyncSilent(`usermod -G ${service_name} asterisk`);
+
+        }catch{}
+        */
         console.log(scriptLib.colorize("OK", "GREEN"));
     }
     unixUser.create = create;
@@ -556,53 +563,86 @@ var unixUser;
     }
     unixUser.remove = remove;
 })(unixUser || (unixUser = {}));
-function createShellScripts(service_name, astsbindir) {
-    process.stdout.write("Creating launch scripts ... ");
-    var writeAndSetPerms = function (script_path, script) {
-        fs.writeFileSync(script_path, Buffer.from(script, "utf8"));
-        execSync("chown " + service_name + ":" + service_name + " " + script_path);
-        execSync("chmod +x " + script_path);
-    };
-    writeAndSetPerms(stop_sh_path, [
-        "#!/usr/bin/env bash",
-        "",
-        "pkill -u " + service_name + " -SIGUSR2 || true",
-        ""
-    ].join("\n"));
-    writeAndSetPerms(wait_ast_sh_path, [
-        "#!/usr/bin/env bash",
-        "",
-        "until " + path.join(astsbindir, "asterisk") + " -rx \"core waitfullybooted\"",
-        "do",
-        "   sleep 3",
-        "done",
-        ""
-    ].join("\n"));
-    var cli_sh_path = path.join(working_directory_path, "cli.sh");
-    writeAndSetPerms(cli_sh_path, [
-        "#!/usr/bin/env bash",
-        "",
-        "cd " + working_directory_path,
-        "args=\"\"",
-        "for param in \"$@\"",
-        "do",
-        "   args=\"$args \\\"$param\\\"\"",
-        "done",
-        "sudo su -s $(which bash) -c \"" + node_path + " " + cli_js_path + " $args\" " + service_name,
-        ""
-    ].join("\n"));
-    execSync("ln -s " + cli_sh_path + " " + path.join(astsbindir, service_name));
-    writeAndSetPerms(path.join(working_directory_path, "main.sh"), [
-        "#!/usr/bin/env bash",
-        "",
-        "" + stop_sh_path,
-        "" + wait_ast_sh_path,
-        "cd " + working_directory_path,
-        "su -s $(which bash) -c \"" + node_path + " " + main_js_path + "\" " + service_name,
-        ""
-    ].join("\n"));
-    console.log(scriptLib.colorize("OK", "GREEN"));
-}
+var shellScripts;
+(function (shellScripts) {
+    var get_cli_link_path = function (service_name) { return path.join("/usr/bin", service_name); };
+    var get_uninstaller_link_path = function (service_name) { return path.join("/usr/sbin", service_name + "_uninstaller"); };
+    function create(service_name, astsbindir) {
+        process.stdout.write("Creating launch scripts ... ");
+        var writeAndSetPerms = function (script_path, script) {
+            fs.writeFileSync(script_path, Buffer.from(script, "utf8"));
+            execSync("chown " + service_name + ":" + service_name + " " + script_path);
+            execSync("chmod +x " + script_path);
+        };
+        writeAndSetPerms(stop_sh_path, [
+            "#!/usr/bin/env bash",
+            "",
+            "# Calling this script will cause any running instance of the service",
+            "# to end without error, the systemd service will not be restarted",
+            "",
+            "pkill -u " + service_name + " -SIGUSR2 || true",
+            ""
+        ].join("\n"));
+        writeAndSetPerms(wait_ast_sh_path, [
+            "#!/usr/bin/env bash",
+            "",
+            "# This script does not return until asterisk if fully booted",
+            "",
+            "until " + path.join(astsbindir, "asterisk") + " -rx \"core waitfullybooted\"",
+            "do",
+            "   sleep 3",
+            "done",
+            ""
+        ].join("\n"));
+        var cli_sh_path = path.join(working_directory_path, "cli.sh");
+        writeAndSetPerms(cli_sh_path, [
+            "#!/usr/bin/env bash",
+            "",
+            "# This script is a proxy to the cli interface of the service ( run $ dongle --help )",
+            "# It is in charge of calling the cli.js with the right $HOME, via the bundled",
+            "# version of node.js",
+            "",
+            "cd " + working_directory_path,
+            "args=\"\"",
+            "for param in \"$@\"",
+            "do",
+            "   args=\"$args \\\"$param\\\"\"",
+            "done",
+            node_path + " " + cli_js_path + " $args",
+            ""
+        ].join("\n"));
+        execSync("ln -s " + cli_sh_path + " " + get_cli_link_path(service_name));
+        var uninstaller_sh_path = path.join(working_directory_path, "uninstaller.sh");
+        writeAndSetPerms(uninstaller_sh_path, [
+            "#!/usr/bin/env bash",
+            "",
+            "# Will uninstall the service and remove source if installed from tarball",
+            "",
+            node_path + " " + __filename + " uninstall",
+            fs.existsSync(path.join(install_prereq_1.module_dir_path, ".git")) ? "" : "rm -r " + install_prereq_1.module_dir_path,
+            ""
+        ].join("\n"));
+        execSync("ln -s " + uninstaller_sh_path + " " + get_uninstaller_link_path(service_name));
+        writeAndSetPerms(path.join(working_directory_path, "start.sh"), [
+            "#!/usr/bin/env bash",
+            "",
+            "# In charge of launching the service in interactive mode (via $ nmp start)",
+            "# It will gracefully terminate any running instance before.",
+            "",
+            "" + stop_sh_path,
+            "" + wait_ast_sh_path,
+            "cd " + working_directory_path,
+            "su -s $(which bash) -c \"" + node_path + " " + main_js_path + "\" " + service_name,
+            ""
+        ].join("\n"));
+        console.log(scriptLib.colorize("OK", "GREEN"));
+    }
+    shellScripts.create = create;
+    function remove_symbolic_links(service_name) {
+        execSyncSilent("rm -f " + get_cli_link_path(service_name) + " " + get_uninstaller_link_path(service_name));
+    }
+    shellScripts.remove_symbolic_links = remove_symbolic_links;
+})(shellScripts || (shellScripts = {}));
 var systemd;
 (function (systemd) {
     function get_service_path(service_name) {
@@ -755,7 +795,7 @@ var udevRules;
                         rules += [
                             "ACTION==\"add\"",
                             "ENV{DEVPATH}==\"/devices/virtual/tty/tnt[0-9]*\"",
-                            "MODE=\"0660\"",
+                            "MODE=\"0666\"",
                             "GROUP=\"" + service_name + "\""
                         ].join(", ") + "\n";
                         fs.writeFileSync(rules_path, rules);
@@ -763,7 +803,7 @@ var udevRules;
                         console.log(scriptLib.colorize("OK", "GREEN"));
                         execSync("chown " + service_name + ":" + service_name + " " + rules_path);
                         execSync("chown root:" + service_name + " /dev/tnt*");
-                        execSync("chmod u+rw,g+rw /dev/tnt*");
+                        execSync("chmod u+rw,g+rw,o+rw /dev/tnt*");
                         return [4 /*yield*/, (function () { return __awaiter(_this, void 0, void 0, function () {
                                 var monitor, _a, _b, accessPoint, _c, _d, device_path, e_2, _e, e_3, _f;
                                 return __generator(this, function (_g) {
@@ -822,4 +862,59 @@ var udevRules;
     }
     udevRules.remove = remove;
 })(udevRules || (udevRules = {}));
+function apt_get_install_asterisk() {
+    return __awaiter(this, void 0, void 0, function () {
+        var pr_install_ast, service_path, watcher;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (!scriptLib.apt_get_install.isPkgInstalled("asterisk")) {
+                        execSyncSilent("dpkg -P asterisk-config");
+                    }
+                    pr_install_ast = scriptLib.apt_get_install("asterisk-dev", "asterisk");
+                    service_path = "/lib/systemd/system/asterisk.service";
+                    watcher = fs.watch(path.dirname(service_path), function (event, filename) {
+                        if (event === 'rename' &&
+                            filename === path.basename(service_path) &&
+                            fs.existsSync(service_path)) {
+                            fs.writeFileSync(service_path, Buffer.from(fs.readFileSync(service_path).toString("utf8").replace("\n[Service]\n", "\n[Service]\nTimeoutSec=infinity\n"), "utf8"));
+                            execSync("systemctl daemon-reload");
+                        }
+                    });
+                    return [4 /*yield*/, pr_install_ast];
+                case 1:
+                    _a.sent();
+                    watcher.close();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+var modemManager;
+(function (modemManager) {
+    function disable_and_stop() {
+        try {
+            execSyncSilent("systemctl stop ModemManager");
+            console.log("ModemManager.service stopped");
+        }
+        catch (_a) { }
+        try {
+            execSyncSilent("systemctl disable ModemManager");
+            console.log("ModemManager.service disabled");
+        }
+        catch (_b) { }
+    }
+    modemManager.disable_and_stop = disable_and_stop;
+    function enable_and_start() {
+        try {
+            execSyncSilent("systemctl enable ModemManager");
+        }
+        catch (_a) { }
+        try {
+            execSyncSilent("systemctl start ModemManager");
+        }
+        catch (_b) { }
+    }
+    modemManager.enable_and_start = enable_and_start;
+})(modemManager || (modemManager = {}));
 program.parse(process.argv);

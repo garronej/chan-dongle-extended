@@ -13,10 +13,18 @@ import * as scriptLib from "../tools/scriptLib";
 import * as readline from "readline";
 
 import * as localsManager from "../lib/localsManager";
+import * as cli from "./cli";
 
-const module_path = path.join(__dirname, "..", "..");
-const [cli_js_path, main_js_path] = ["cli.js", "main.js"].map(f => path.join(module_path, "dist", "bin", f));
-const working_directory_path = path.join(module_path, "working_directory");
+import { 
+    module_dir_path, pkg_list_path
+} from "./install_prereq";
+
+scriptLib.exit_if_not_root();
+
+const [cli_js_path, main_js_path] = [
+    "cli.js", "main.js"
+].map(f => path.join(module_dir_path, "dist", "bin", f));
+const working_directory_path = path.join(module_dir_path, "working_directory");
 const stop_sh_path = path.join(working_directory_path, "stop.sh");
 const wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
 const node_path = path.join(working_directory_path, "node");
@@ -45,52 +53,14 @@ _install.action(async options => {
 
     console.log("---Installing chan-dongle-extended---");
 
-    await (async () => {
+    scriptLib.apt_get_install.onInstallSuccess = package_name => 
+        scriptLib.apt_get_install.record_installed_package(pkg_list_path, package_name);
 
-        let astetcdir: string | undefined = options["astetcdir"];
+    if( options["astetcdir"] === undefined ){
 
-        if (!!astetcdir) {
-            return;
-        }
+        await apt_get_install_asterisk();
 
-        try {
-
-            execSyncSilent("which asterisk")
-
-            return;
-
-        } catch{ }
-
-        let pr_install_ast = scriptLib.apt_get_install("asterisk-dev");
-
-        let service_path = "/lib/systemd/system/asterisk.service";
-
-        let watcher = fs.watch(path.dirname(service_path), (event, filename) => {
-
-            if (
-                event === 'rename' &&
-                filename === path.basename(service_path) &&
-                fs.existsSync(service_path)
-            ) {
-
-                fs.writeFileSync(service_path,
-                    Buffer.from(
-                        fs.readFileSync(service_path).toString("utf8").replace(
-                            "\n[Service]\n", "\n[Service]\nTimeoutSec=infinity\n"
-                        ), "utf8")
-                );
-
-                execSync("systemctl daemon-reload");
-
-            }
-
-        });
-
-        await pr_install_ast;
-
-        watcher.close();
-
-    })();
+    }
 
     let locals: localsManager.Locals = { ...localsManager.Locals.defaults };
 
@@ -168,7 +138,9 @@ program
 
             var { locals, astdirs } = localsManager.get(working_directory_path);
 
-        } catch{
+        } catch(error){
+
+            console.log(error.message);
 
             console.log(scriptLib.colorize("Not installed", "YELLOW"));
 
@@ -182,13 +154,35 @@ program
 
         console.log("---DONE---");
 
+        if( fs.existsSync(pkg_list_path) ){
+
+            let pkg_list = require(pkg_list_path);
+
+            console.log([
+                "NOTE: Some packages have been installed automatically, ",
+                "you can remove them if you no longer need them.",
+                "\n",
+                `$ sudo apt-get purge ${pkg_list.join(" ")}`,
+                "\n",
+                `$ sudo apt-get --purge autoremove`
+            ].join(""));
+
+        }
+
         process.exit(0);
 
     });
 
-async function install(locals: localsManager.Locals, astdirs: localsManager.Astdirs) {
+async function install(
+    locals: localsManager.Locals, 
+    astdirs: localsManager.Astdirs
+) {
 
     const { astetcdir, astsbindir, astmoddir, astrundir } = astdirs;
+
+    modemManager.disable_and_stop();
+
+    await scriptLib.apt_get_install("usb-modeswitch", "usb_modeswitch");
 
     unixUser.create(locals.service_name);
 
@@ -225,10 +219,9 @@ async function install(locals: localsManager.Locals, astdirs: localsManager.Astd
 
     await udevRules.create(locals.service_name);
 
-    createShellScripts(locals.service_name, astsbindir);
+    shellScripts.create(locals.service_name, astsbindir);
 
     systemd.create(locals.service_name);
-
 
     await enableAsteriskManager(
         locals.service_name, astetcdir, locals.ami_port, astsbindir, astrundir
@@ -263,7 +256,6 @@ function uninstall(
 
     }
 
-
     runRecover("Stopping running instance ... ", () => execSyncSilent(stop_sh_path));
 
     if (locals.assume_chan_dongle_installed) {
@@ -276,7 +268,7 @@ function uninstall(
 
     }
 
-    runRecover("Removing cli tool symbolic link ... ", () => execSyncSilent(`rm ${path.join(astdirs.astsbindir, locals.service_name)}`));
+    runRecover("Removing binary symbolic links ... ", ()=> shellScripts.remove_symbolic_links(locals.service_name));
 
     runRecover("Removing systemd service ... ", () => systemd.remove(locals.service_name));
 
@@ -287,6 +279,8 @@ function uninstall(
     runRecover("Removing app working directory ... ", () => workingDirectory.remove());
 
     runRecover("Deleting unix user ... ", () => unixUser.remove(locals.service_name));
+
+    runRecover("Re enabling ModemManager if present...", ()=> modemManager.enable_and_start());
 
 }
 
@@ -559,7 +553,17 @@ namespace workingDirectory {
 
         execSync(`mkdir ${working_directory_path}`);
 
-        execSync(`chown ${service_name}:${service_name} ${working_directory_path}`);
+        (()=>{
+
+            const cli_storage_path = path.join(working_directory_path, cli.storage_path);
+
+            execSync(`mkdir ${cli_storage_path}`);
+
+            execSync(`chmod 777 ${cli_storage_path}`);
+
+        })();
+
+        execSync(`chown -R ${service_name}:${service_name} ${working_directory_path}`);
 
         console.log(scriptLib.colorize("OK", "GREEN"));
     }
@@ -584,6 +588,14 @@ namespace unixUser {
 
         execSync(`useradd -M ${service_name} -s /bin/false -d ${working_directory_path}`);
 
+        /*
+        try{
+
+            execSyncSilent(`usermod -G ${service_name} asterisk`);
+
+        }catch{}
+        */
+
         console.log(scriptLib.colorize("OK", "GREEN"));
 
     }
@@ -596,8 +608,12 @@ namespace unixUser {
 
 }
 
+namespace shellScripts {
+    
+    const get_cli_link_path= (service_name: string)=> path.join("/usr/bin", service_name);
+    const get_uninstaller_link_path= (service_name: string)=> path.join("/usr/sbin", `${service_name}_uninstaller`);
 
-function createShellScripts(service_name: string, astsbindir: string): void {
+    export function create(service_name: string, astsbindir: string): void {
 
     process.stdout.write(`Creating launch scripts ... `);
 
@@ -616,6 +632,9 @@ function createShellScripts(service_name: string, astsbindir: string): void {
         [
             `#!/usr/bin/env bash`,
             ``,
+            `# Calling this script will cause any running instance of the service`,
+            `# to end without error, the systemd service will not be restarted`,
+            ``,
             `pkill -u ${service_name} -SIGUSR2 || true`,
             ``
         ].join("\n")
@@ -625,6 +644,8 @@ function createShellScripts(service_name: string, astsbindir: string): void {
         wait_ast_sh_path,
         [
             `#!/usr/bin/env bash`,
+            ``,
+            `# This script does not return until asterisk if fully booted`,
             ``,
             `until ${path.join(astsbindir, "asterisk")} -rx "core waitfullybooted"`,
             `do`,
@@ -641,23 +662,47 @@ function createShellScripts(service_name: string, astsbindir: string): void {
         [
             `#!/usr/bin/env bash`,
             ``,
+            `# This script is a proxy to the cli interface of the service ( run $ dongle --help )`,
+            `# It is in charge of calling the cli.js with the right $HOME, via the bundled`,
+            `# version of node.js`,
+            ``,
             `cd ${working_directory_path}`,
             `args=""`,
             `for param in "$@"`,
             `do`,
             `   args="$args \\"$param\\""`,
             `done`,
-            `sudo su -s $(which bash) -c "${node_path} ${cli_js_path} $args" ${service_name}`,
+            `${node_path} ${cli_js_path} $args`,
             ``
         ].join("\n")
     );
 
-    execSync(`ln -s ${cli_sh_path} ${path.join(astsbindir, service_name)}`);
+    execSync(`ln -s ${cli_sh_path} ${get_cli_link_path(service_name)}`);
+
+    let uninstaller_sh_path = path.join(working_directory_path, "uninstaller.sh");
 
     writeAndSetPerms(
-        path.join(working_directory_path, "main.sh"),
+        uninstaller_sh_path,
         [
             `#!/usr/bin/env bash`,
+            ``,
+            `# Will uninstall the service and remove source if installed from tarball`,
+            ``,
+            `${node_path} ${__filename} uninstall`,
+            fs.existsSync(path.join(module_dir_path, ".git"))?``:`rm -r ${module_dir_path}`,
+            ``
+        ].join("\n")
+    );
+
+    execSync(`ln -s ${uninstaller_sh_path} ${get_uninstaller_link_path(service_name)}`);
+
+    writeAndSetPerms(
+        path.join(working_directory_path, "start.sh"),
+        [
+            `#!/usr/bin/env bash`,
+            ``,
+            `# In charge of launching the service in interactive mode (via $ nmp start)`,
+            `# It will gracefully terminate any running instance before.`,
             ``,
             `${stop_sh_path}`,
             `${wait_ast_sh_path}`,
@@ -669,9 +714,18 @@ function createShellScripts(service_name: string, astsbindir: string): void {
 
     console.log(scriptLib.colorize("OK", "GREEN"));
 
+
+    }
+
+    export function remove_symbolic_links(service_name: string){
+
+        execSyncSilent(
+            `rm -f ${get_cli_link_path(service_name)} ${get_uninstaller_link_path(service_name)}`
+        );
+
+    }
+
 }
-
-
 
 
 namespace systemd {
@@ -830,6 +884,8 @@ namespace udevRules {
         service_name: string
     ) {
 
+        //NOTE: we could grant access only to "dongle" group as asterisk is added to this group but need restart ast...
+
         let rules_path = make_rules_path(service_name);
 
         process.stdout.write(`Creating udev rules ${rules_path} ... `);
@@ -865,7 +921,7 @@ namespace udevRules {
         rules += [
             `ACTION=="add"`,
             `ENV{DEVPATH}=="/devices/virtual/tty/tnt[0-9]*"`,
-            `MODE="0660"`,
+            `MODE="0666"`,
             `GROUP="${service_name}"`
         ].join(", ") + `\n`;
 
@@ -879,7 +935,7 @@ namespace udevRules {
 
         execSync(`chown root:${service_name} /dev/tnt*`);
 
-        execSync("chmod u+rw,g+rw /dev/tnt*");
+        execSync("chmod u+rw,g+rw,o+rw /dev/tnt*");
 
         await (async () => {
 
@@ -919,6 +975,85 @@ namespace udevRules {
         execSyncSilent(`rm -rf ${rules_path}`);
 
         execSyncSilent("systemctl restart udev.service");
+
+    }
+
+}
+
+async function apt_get_install_asterisk() {
+
+    if( !scriptLib.apt_get_install.isPkgInstalled("asterisk") ){
+
+        execSyncSilent("dpkg -P asterisk-config");
+
+    }
+
+    let pr_install_ast = scriptLib.apt_get_install("asterisk-dev", "asterisk");
+
+    let service_path = "/lib/systemd/system/asterisk.service";
+
+    let watcher = fs.watch(path.dirname(service_path), (event, filename) => {
+
+        if (
+            event === 'rename' &&
+            filename === path.basename(service_path) &&
+            fs.existsSync(service_path)
+        ) {
+
+            fs.writeFileSync(service_path,
+                Buffer.from(
+                    fs.readFileSync(service_path).toString("utf8").replace(
+                        "\n[Service]\n", "\n[Service]\nTimeoutSec=infinity\n"
+                    ), "utf8")
+            );
+
+            execSync("systemctl daemon-reload");
+
+        }
+
+    });
+
+    await pr_install_ast;
+
+    watcher.close();
+
+}
+
+namespace modemManager {
+
+    export function disable_and_stop(){
+
+        try{
+
+            execSyncSilent("systemctl stop ModemManager");
+
+            console.log("ModemManager.service stopped");
+
+        }catch{}
+
+        try{
+
+            execSyncSilent("systemctl disable ModemManager");
+
+            console.log("ModemManager.service disabled");
+
+        }catch{}
+
+    }
+
+    export function enable_and_start(){
+
+        try{
+
+            execSyncSilent("systemctl enable ModemManager");
+
+        }catch{}
+
+        try{
+
+            execSyncSilent("systemctl start ModemManager");
+
+        }catch{}
 
     }
 
