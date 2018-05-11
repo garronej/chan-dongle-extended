@@ -409,9 +409,7 @@ namespace tty0tty {
 
             execSync(`mv ${path.join(h_dir_path, "usr", "src", kernel_release)} ${build_dir_path} 2>/dev/null || true`);
 
-            execSync(`rm -f ${build_link_path}`);
-
-            execSync(`ln -s ${build_dir_path} ${build_link_path}`);
+            execSync(`ln -sf ${build_dir_path} ${build_link_path}`);
 
             onSuccess("DONE");
 
@@ -677,7 +675,7 @@ namespace shellScripts {
         ].join("\n")
     );
 
-    execSync(`ln -s ${cli_sh_path} ${get_cli_link_path(service_name)}`);
+    execSync(`ln -sf ${cli_sh_path} ${get_cli_link_path(service_name)}`);
 
     let uninstaller_sh_path = path.join(working_directory_path, "uninstaller.sh");
 
@@ -694,7 +692,7 @@ namespace shellScripts {
         ].join("\n")
     );
 
-    execSync(`ln -s ${uninstaller_sh_path} ${get_uninstaller_link_path(service_name)}`);
+    execSync(`ln -sf ${uninstaller_sh_path} ${get_uninstaller_link_path(service_name)}`);
 
     writeAndSetPerms(
         path.join(working_directory_path, "start.sh"),

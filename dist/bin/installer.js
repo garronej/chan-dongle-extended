@@ -393,8 +393,7 @@ var tty0tty;
                                                 _b.sent();
                                                 build_dir_path = path.join(h_dir_path, "usr", "src", "linux-headers-" + kernel_release);
                                                 execSync("mv " + path.join(h_dir_path, "usr", "src", kernel_release) + " " + build_dir_path + " 2>/dev/null || true");
-                                                execSync("rm -f " + build_link_path);
-                                                execSync("ln -s " + build_dir_path + " " + build_link_path);
+                                                execSync("ln -sf " + build_dir_path + " " + build_link_path);
                                                 onSuccess("DONE");
                                                 return [2 /*return*/];
                                         }
@@ -611,7 +610,7 @@ var shellScripts;
             "eval \"" + node_path + " " + cli_js_path + " $args\"",
             ""
         ].join("\n"));
-        execSync("ln -s " + cli_sh_path + " " + get_cli_link_path(service_name));
+        execSync("ln -sf " + cli_sh_path + " " + get_cli_link_path(service_name));
         var uninstaller_sh_path = path.join(working_directory_path, "uninstaller.sh");
         writeAndSetPerms(uninstaller_sh_path, [
             "#!/usr/bin/env bash",
@@ -622,7 +621,7 @@ var shellScripts;
             fs.existsSync(path.join(install_prereq_1.module_dir_path, ".git")) ? "" : "rm -r " + install_prereq_1.module_dir_path,
             ""
         ].join("\n"));
-        execSync("ln -s " + uninstaller_sh_path + " " + get_uninstaller_link_path(service_name));
+        execSync("ln -sf " + uninstaller_sh_path + " " + get_uninstaller_link_path(service_name));
         writeAndSetPerms(path.join(working_directory_path, "start.sh"), [
             "#!/usr/bin/env bash",
             "",
