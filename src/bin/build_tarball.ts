@@ -92,7 +92,7 @@ if (require.main === module) {
 
     })();
 
-    for (let name of [".git", ".gitignore", "src", "tsconfig.json", "pkg-installed.json", "auto_install.sh" ]) {
+    for (let name of [".git", ".gitignore", "src", "tsconfig.json", "pkg-installed.json" ]) {
         execSyncInherit(`rm -rf ${path.join(dist_dir_path, name)}`);
     }
 
