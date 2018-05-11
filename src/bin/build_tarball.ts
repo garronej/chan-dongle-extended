@@ -92,8 +92,8 @@ if (require.main === module) {
 
     })();
 
-    for (let name of [".git", ".gitignore", "src", "tsconfig.json" ]) {
-        execSyncInherit(`rm -r ${path.join(dist_dir_path, name)}`);
+    for (let name of [".git", ".gitignore", "src", "tsconfig.json", "pkg-installed.json", "auto_install.sh" ]) {
+        execSyncInherit(`rm -rf ${path.join(dist_dir_path, name)}`);
     }
 
     for (let name of ["@types", "typescript"]) {

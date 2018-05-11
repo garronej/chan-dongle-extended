@@ -608,7 +608,7 @@ var shellScripts;
             "do",
             "   args=\"$args \\\"$param\\\"\"",
             "done",
-            node_path + " " + cli_js_path + " $args",
+            "eval \"" + node_path + " " + cli_js_path + " $args\"",
             ""
         ].join("\n"));
         execSync("ln -s " + cli_sh_path + " " + get_cli_link_path(service_name));
@@ -895,7 +895,7 @@ var modemManager;
     function disable_and_stop() {
         try {
             execSyncSilent("systemctl stop ModemManager");
-            console.log("ModemManager.service stopped");
+            console.log("ModemManager.service stopped, you will need to unplug and reconnect your dongle");
         }
         catch (_a) { }
         try {

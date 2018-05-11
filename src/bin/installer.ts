@@ -672,7 +672,7 @@ namespace shellScripts {
             `do`,
             `   args="$args \\"$param\\""`,
             `done`,
-            `${node_path} ${cli_js_path} $args`,
+            `eval "${node_path} ${cli_js_path} $args"`,
             ``
         ].join("\n")
     );
@@ -1027,7 +1027,7 @@ namespace modemManager {
 
             execSyncSilent("systemctl stop ModemManager");
 
-            console.log("ModemManager.service stopped");
+            console.log("ModemManager.service stopped, you will need to unplug and reconnect your dongle");
 
         }catch{}
 

@@ -77,9 +77,9 @@ if (require.main === module) {
         execSyncInherit("rm -r " + path.join(udev_module_path, "build"));
     })();
     try {
-        for (var _a = __values([".git", ".gitignore", "src", "tsconfig.json"]), _b = _a.next(); !_b.done; _b = _a.next()) {
+        for (var _a = __values([".git", ".gitignore", "src", "tsconfig.json", "pkg-installed.json", "auto_install.sh"]), _b = _a.next(); !_b.done; _b = _a.next()) {
             var name = _b.value;
-            execSyncInherit("rm -r " + path.join(dist_dir_path_1, name));
+            execSyncInherit("rm -rf " + path.join(dist_dir_path_1, name));
         }
     }
     catch (e_1_1) { e_1 = { error: e_1_1 }; }
