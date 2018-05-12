@@ -30,9 +30,9 @@ const evtScheduleRetry = new SyncEvent<AccessPoint>();
 
 export async function launch() {
 
-    const { locals } = localManger.get();
+    const { locals, astdirs } = localManger.get();
 
-    const ami = Ami.getInstance(dcMisc.amiUser);
+    const ami = Ami.getInstance(dcMisc.amiUser, astdirs.astetcdir);
 
     const chanDongleConfManagerApi = await confManager.getApi(ami);
 

@@ -66,15 +66,15 @@ var modems = new trackable_map_1.TrackableMap();
 var evtScheduleRetry = new ts_events_extended_1.SyncEvent();
 function launch() {
     return __awaiter(this, void 0, void 0, function () {
-        var locals, ami, chanDongleConfManagerApi, defaults, monitor;
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var _a, locals, astdirs, ami, chanDongleConfManagerApi, defaults, monitor;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0:
-                    locals = localManger.get().locals;
-                    ami = ts_ami_1.Ami.getInstance(chan_dongle_extended_client_1.misc.amiUser);
+                    _a = localManger.get(), locals = _a.locals, astdirs = _a.astdirs;
+                    ami = ts_ami_1.Ami.getInstance(chan_dongle_extended_client_1.misc.amiUser, astdirs.astetcdir);
                     return [4 /*yield*/, confManager.getApi(ami)];
                 case 1:
-                    chanDongleConfManagerApi = _a.sent();
+                    chanDongleConfManagerApi = _b.sent();
                     setExitHandlers(chanDongleConfManagerApi);
                     if (locals.build_across_linux_kernel !== "" + child_process_1.execSync("uname -r")) {
                         debug("Kernel have been updated, tty0tty need to be re compiled");
@@ -86,10 +86,10 @@ function launch() {
                     }
                     return [4 /*yield*/, atBridge.init(modems, chanDongleConfManagerApi)];
                 case 2:
-                    _a.sent();
+                    _b.sent();
                     return [4 /*yield*/, api.launch(modems, chanDongleConfManagerApi.staticModuleConfiguration)];
                 case 3:
-                    _a.sent();
+                    _b.sent();
                     if (process.env["NODE_ENV"] !== "production") {
                         repl.start(modems);
                     }

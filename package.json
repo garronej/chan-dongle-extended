@@ -1,6 +1,6 @@
 {
   "name": "chan-dongle-extended",
-  "version": "4.0.0",
+  "version": "4.0.1",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
@@ -11,7 +11,7 @@
     "tsc-w": "node ./node_modules/typescript/bin/tsc -w -p ./tsconfig.json",
     "start": "sudo ./working_directory/start.sh",
     "log": "tail -f -n 1000 ./working_directory/current.log",
-    "tarball": "sudo node dist/bin/build_dist_tarball"
+    "tarball": "sudo node dist/bin/build_tarball"
   },
   "repository": {
     "type": "git",
