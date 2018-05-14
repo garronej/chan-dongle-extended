@@ -14,9 +14,9 @@ import { SyncEvent } from "ts-events-extended";
 import * as confManager from "./confManager";
 import * as types from "./types";
 import { log, backupCurrentLog, createCrashReport } from "./logger";
-import { execSync } from "child_process";
 
-import * as localManger from "./localsManager";
+import {InstallOptions} from "./InstallOptions";
+import {Astdirs} from "./Astdirs";
 
 import "colors";
 
@@ -30,7 +30,8 @@ const evtScheduleRetry = new SyncEvent<AccessPoint>();
 
 export async function launch() {
 
-    const { locals, astdirs } = localManger.get();
+    const installOptions= InstallOptions.get();
+    const astdirs= Astdirs.get();
 
     const ami = Ami.getInstance(dcMisc.amiUser, astdirs.astetcdir);
 
@@ -38,15 +39,7 @@ export async function launch() {
 
     setExitHandlers(chanDongleConfManagerApi);
 
-    if (locals.build_across_linux_kernel !== `${execSync("uname -r")}`) {
-
-        debug("Kernel have been updated, tty0tty need to be re compiled");
-
-        process.emit("beforeExit", 0);
-
-    }
-
-    if (!locals.disable_sms_dialplan) {
+    if (!installOptions.disable_sms_dialplan) {
 
         let { defaults } = chanDongleConfManagerApi.staticModuleConfiguration;
 

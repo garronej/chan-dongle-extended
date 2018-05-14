@@ -136,8 +136,6 @@ In order to reassemble the message you must decode each part then concatenate.
 ``` bash
 $ git clone https://github.com/garronej/chan-dongle-extended
 $ cd chan-dongle-extended
-$ sudo node dist/bin/install_prereq
-$ npm install
 #To see install option run: node dist/bin/installer install --help
 $ sudo node dist/bin/installer install
 ```

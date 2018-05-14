@@ -1,6 +1,6 @@
 import { Modem } from "ts-gsm-modem";
 import * as types from "./types";
-import * as localsManager from "./localsManager";
+import { InstallOptions } from "./InstallOptions";
 
 import { 
     apiDeclaration, types as dcTypes, misc
@@ -25,7 +25,7 @@ export function launch(
     staticModuleConfiguration: dcTypes.StaticModuleConfiguration
 ): Promise<void> {
 
-    let { locals }= localsManager.get();
+    const { bind_addr, port } = InstallOptions.get();
 
     let server = new sipLibrary.api.Server(
         makeApiHandlers(modems),
@@ -70,7 +70,7 @@ export function launch(
 
         })
         .once("listening", ()=> evtListening.post())
-        .listen(locals.port, locals.bind_addr)
+        .listen(port, bind_addr)
         ;
 
     modems.evt.attach(
