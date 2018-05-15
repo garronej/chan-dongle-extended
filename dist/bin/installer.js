@@ -247,6 +247,29 @@ program
         }
         execSyncInherit("find " + path.join(dir_path, "node_modules") + " -type f -name \"*.ts\" -exec rm -rf {} \\;");
         execSyncInherit("rm -rf " + path.join(dir_path, path.basename(working_directory_path)));
+        (function hide_auth_token() {
+            var files = child_process.execSync("find . -name \"package-lock.json\" -o -name \"package.json\"", { "cwd": dir_path })
+                .toString("utf8")
+                .slice(0, -1)
+                .split("\n")
+                .map(function (rp) { return path.join(dir_path, rp); });
+            try {
+                for (var files_1 = __values(files), files_1_1 = files_1.next(); !files_1_1.done; files_1_1 = files_1.next()) {
+                    var file = files_1_1.value;
+                    fs.writeFileSync(file, Buffer.from(fs.readFileSync(file)
+                        .toString("utf8")
+                        .replace(/[0-9a-f]+:x-oauth-basic/g, "xxxxxxxxxxxxxxxx"), "utf8"));
+                }
+            }
+            catch (e_3_1) { e_3 = { error: e_3_1 }; }
+            finally {
+                try {
+                    if (files_1_1 && !files_1_1.done && (_a = files_1.return)) _a.call(files_1);
+                }
+                finally { if (e_3) throw e_3.error; }
+            }
+            var e_3, _a;
+        })();
         execSyncInherit("tar -czf " + path.join(module_dir_path, v_name + ".tar.gz") + " -C " + dir_path + " .");
         execSyncInherit("rm -r " + dir_path);
         console.log("---DONE---");
@@ -818,7 +841,7 @@ var udevRules;
     var rules_path = path.join("/etc/udev/rules.d", "98-" + srv_name + ".rules");
     function create() {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, recordIfNum, ConnectionMonitor, vendorIds, rules, vendorIds_1, vendorIds_1_1, vendorId, e_3, _b;
+            var _a, recordIfNum, ConnectionMonitor, vendorIds, rules, vendorIds_1, vendorIds_1_1, vendorId, e_4, _b;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, scriptLib.apt_get_install("usb-modeswitch", "usb_modeswitch")];
@@ -852,12 +875,12 @@ var udevRules;
                                 ].join(", ") + "\n";
                             }
                         }
-                        catch (e_3_1) { e_3 = { error: e_3_1 }; }
+                        catch (e_4_1) { e_4 = { error: e_4_1 }; }
                         finally {
                             try {
                                 if (vendorIds_1_1 && !vendorIds_1_1.done && (_b = vendorIds_1.return)) _b.call(vendorIds_1);
                             }
-                            finally { if (e_3) throw e_3.error; }
+                            finally { if (e_4) throw e_4.error; }
                         }
                         rules += [
                             "ACTION==\"add\"",
@@ -871,7 +894,7 @@ var udevRules;
                         execSync("chown " + unix_user + ":" + unix_user + " " + rules_path);
                         return [4 /*yield*/, (function applying_rules() {
                                 return __awaiter(this, void 0, void 0, function () {
-                                    var monitor, _a, _b, accessPoint, _c, _d, device_path, e_4, _e, e_5, _f;
+                                    var monitor, _a, _b, accessPoint, _c, _d, device_path, e_5, _e, e_6, _f;
                                     return __generator(this, function (_g) {
                                         switch (_g.label) {
                                             case 0:
@@ -895,21 +918,21 @@ var udevRules;
                                                                 execSync("chmod u+rw,g+rw,o+rw " + device_path);
                                                             }
                                                         }
-                                                        catch (e_5_1) { e_5 = { error: e_5_1 }; }
+                                                        catch (e_6_1) { e_6 = { error: e_6_1 }; }
                                                         finally {
                                                             try {
                                                                 if (_d && !_d.done && (_f = _c.return)) _f.call(_c);
                                                             }
-                                                            finally { if (e_5) throw e_5.error; }
+                                                            finally { if (e_6) throw e_6.error; }
                                                         }
                                                     }
                                                 }
-                                                catch (e_4_1) { e_4 = { error: e_4_1 }; }
+                                                catch (e_5_1) { e_5 = { error: e_5_1 }; }
                                                 finally {
                                                     try {
                                                         if (_b && !_b.done && (_e = _a.return)) _e.call(_a);
                                                     }
-                                                    finally { if (e_4) throw e_4.error; }
+                                                    finally { if (e_5) throw e_5.error; }
                                                 }
                                                 return [2 /*return*/];
                                         }
@@ -1082,7 +1105,7 @@ function rebuild_node_modules() {
                     };
                     return [4 /*yield*/, (function build_udev() {
                             return __awaiter(this, void 0, void 0, function () {
-                                var udev_dir_path, pre_gyp_dir_path, _a, _b, root_module_path, e_6, _c;
+                                var udev_dir_path, pre_gyp_dir_path, _a, _b, root_module_path, e_7, _c;
                                 return __generator(this, function (_d) {
                                     switch (_d.label) {
                                         case 0:
@@ -1101,12 +1124,12 @@ function rebuild_node_modules() {
                                                     catch (_e) { }
                                                 }
                                             }
-                                            catch (e_6_1) { e_6 = { error: e_6_1 }; }
+                                            catch (e_7_1) { e_7 = { error: e_7_1 }; }
                                             finally {
                                                 try {
                                                     if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
                                                 }
-                                                finally { if (e_6) throw e_6.error; }
+                                                finally { if (e_7) throw e_7.error; }
                                             }
                                             return [4 /*yield*/, cdExec([
                                                     "PATH=" + path.join(module_dir_path) + ":$PATH",

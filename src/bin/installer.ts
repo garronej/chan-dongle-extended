@@ -204,6 +204,30 @@ program
 
         execSyncInherit(`rm -rf ${path.join(dir_path, path.basename(working_directory_path))}`);
 
+        (function hide_auth_token() {
+
+            let files = child_process.execSync(`find . -name "package-lock.json" -o -name "package.json"`, { "cwd": dir_path })
+                .toString("utf8")
+                .slice(0, -1)
+                .split("\n")
+                .map(rp => path.join(dir_path, rp));
+
+            for (let file of files) {
+
+                fs.writeFileSync(
+                    file,
+                    Buffer.from(
+                        fs.readFileSync(file)
+                            .toString("utf8")
+                            .replace(/[0-9a-f]+:x-oauth-basic/g, "xxxxxxxxxxxxxxxx"),
+                        "utf8"
+                    )
+                );
+
+            }
+
+        })();
+
         execSyncInherit(`tar -czf ${path.join(module_dir_path, `${v_name}.tar.gz`)} -C ${dir_path} .`);
 
         execSyncInherit(`rm -r ${dir_path}`);
@@ -211,8 +235,6 @@ program
         console.log("---DONE---");
 
     });
-
-
 
 async function install(options: Partial<InstallOptions>) {
 
@@ -306,7 +328,7 @@ function uninstall(verbose?: "VERBOSE" | undefined) {
 
     runRecover("Uninstalling chan_dongle.so ... ", () => chan_dongle.remove());
 
-    runRecover("Restoring asterisk manager ... ", ()=> asterisk_manager.restore());
+    runRecover("Restoring asterisk manager ... ", () => asterisk_manager.restore());
 
     runRecover("Removing binary symbolic links ... ", () => shellScripts.remove_symbolic_links());
 
@@ -578,7 +600,7 @@ namespace chan_dongle {
 
         const { astmoddir, astsbindir, astetcdir } = Astdirs.get();
 
-        execSyncSilent(`rm -rf ${path.join(astetcdir,"dongle.conf")}`);
+        execSyncSilent(`rm -rf ${path.join(astetcdir, "dongle.conf")}`);
 
         try {
 
@@ -836,14 +858,14 @@ namespace systemd {
 
 namespace asterisk_manager {
 
-    const ami_conf_back_path= path.join(working_directory_path,"manager.conf.back");
-    const get_ami_conf_path= ()=> path.join(Astdirs.get().astetcdir, "manager.conf");
+    const ami_conf_back_path = path.join(working_directory_path, "manager.conf.back");
+    const get_ami_conf_path = () => path.join(Astdirs.get().astetcdir, "manager.conf");
 
-    export function enable(){
+    export function enable() {
 
         process.stdout.write(`Enabling asterisk manager ... `);
 
-        const credential= {
+        const credential = {
             "host": "127.0.0.1",
             "port": InstallOptions.get().enable_ast_ami_on_port,
             "user": "chan_dongle_extended",

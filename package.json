@@ -1,6 +1,6 @@
 {
   "name": "chan-dongle-extended",
-  "version": "4.1.0",
+  "version": "4.2.0",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
@@ -20,23 +20,23 @@
   "author": "Joseph Garrone",
   "license": "SEE LICENSE IN LICENSE",
   "dependencies": {
-    "chan-dongle-extended-client": "git+https://206e4c24cb9a1e4a8d42b7ac86e4a026b02cee42:x-oauth-basic@github.com/garronej/chan-dongle-extended-client.git",
+    "chan-dongle-extended-client": "github:garronej/chan-dongle-extended-client",
     "colors": "^1.1.2",
-    "commander": "2.11.0",
+    "commander": "^2.11.0",
     "debug": "^2.6.1",
     "ini-extended": "github:garronej/ini-extended",
     "node-persist": "^2.1.0",
     "npm": "^6.0.0",
     "rejection-tracker": "github:garronej/rejection-tracker",
     "run-exclusive": "github:garronej/run-exclusive",
+    "scripting-tools": "github:garronej/scripting-tools",
     "trackable-map": "garronej/trackable-map",
     "transfer-tools": "garronej/transfer-tools",
     "ts-ami": "github:garronej/ts-ami",
     "ts-events-extended": "garronej/ts-events-extended",
     "ts-gsm-modem": "git+https://206e4c24cb9a1e4a8d42b7ac86e4a026b02cee42:x-oauth-basic@github.com/garronej/ts-gsm-modem.git",
     "ts-sip": "github:garronej/ts-sip",
-    "winston": "^3.0.0-rc4",
-    "scripting-tools": "github:garronej/scripting-tools"
+    "winston": "^3.0.0-rc4"
   },
   "devDependencies": {
     "@types/chai": "^3.4.34",
