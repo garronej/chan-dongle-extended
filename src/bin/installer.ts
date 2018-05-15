@@ -23,7 +23,7 @@ const working_directory_path = path.join(module_dir_path, "working_directory");
 const stop_sh_path = path.join(working_directory_path, "stop.sh");
 const wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
 const node_path = path.join(working_directory_path, "node");
-const pkg_list_path = path.join(working_directory_path, "installed_pkg.json");
+const pkg_list_path = path.join(module_dir_path, "pkg_installed.json");
 
 const unix_user = "chan_dongle";
 const srv_name = "chan_dongle";
