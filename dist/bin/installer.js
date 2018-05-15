@@ -136,7 +136,7 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
                 (function () {
                     var previous_working_directory_path;
                     try {
-                        previous_working_directory_path = execSyncSilent("dirname $(readlink -e $(which dongle))");
+                        previous_working_directory_path = execSyncSilent("dirname $(readlink -e $(which dongle))").replace("\n", "");
                     }
                     catch (_a) {
                         return;
@@ -204,17 +204,12 @@ program
         };
         v_name = [
             "dongle",
-            "v" + require(path.join(module_dir_path, "package.json"))["version"],
+            //`v${require(path.join(module_dir_path, "package.json"))["version"]}`,
             child_process.execSync("uname -m").toString("utf8").replace("\n", "")
         ].join("_");
-        dir_path = path.join(module_dir_path, v_name);
-        (function () {
-            var tmp_dir_path = path.join("/tmp", v_name);
-            execSyncInherit("rm -rf " + tmp_dir_path);
-            execSyncInherit("cp -r " + module_dir_path + " " + tmp_dir_path);
-            execSyncInherit("rm -rf " + dir_path);
-            execSyncInherit("mv " + tmp_dir_path + " " + dir_path);
-        })();
+        dir_path = path.join("/tmp", v_name);
+        execSyncInherit("rm -rf " + dir_path);
+        execSyncInherit("cp -r " + module_dir_path + " " + dir_path);
         execSync("cp $(readlink -e " + process.argv[0] + ") " + dir_path);
         (function () {
             var node_python_messaging_path = find_module_path("node-python-messaging", dir_path);
@@ -251,7 +246,7 @@ program
             finally { if (e_2) throw e_2.error; }
         }
         execSyncInherit("find " + path.join(dir_path, "node_modules") + " -type f -name \"*.ts\" -exec rm -rf {} \\;");
-        execSyncInherit("rm -r " + path.join(dir_path, path.basename(working_directory_path)));
+        execSyncInherit("rm -rf " + path.join(dir_path, path.basename(working_directory_path)));
         execSyncInherit("tar -czf " + path.join(module_dir_path, v_name + ".tar.gz") + " -C " + dir_path + " .");
         execSyncInherit("rm -r " + dir_path);
         console.log("---DONE---");

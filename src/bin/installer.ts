@@ -81,7 +81,7 @@ _install.action(async options => {
 
         try {
 
-            previous_working_directory_path = execSyncSilent(`dirname $(readlink -e $(which dongle))`);
+            previous_working_directory_path = execSyncSilent(`dirname $(readlink -e $(which dongle))`).replace("\n","");
 
         } catch{
 
@@ -164,25 +164,15 @@ program
 
         const v_name = [
             "dongle",
-            `v${require(path.join(module_dir_path, "package.json"))["version"]}`,
+            //`v${require(path.join(module_dir_path, "package.json"))["version"]}`,
             child_process.execSync("uname -m").toString("utf8").replace("\n", "")
         ].join("_");
 
-        const dir_path = path.join(module_dir_path, v_name);
+        const dir_path = path.join("/tmp", v_name);
 
-        (() => {
+        execSyncInherit(`rm -rf ${dir_path}`);
 
-            const tmp_dir_path = path.join("/tmp", v_name);
-
-            execSyncInherit(`rm -rf ${tmp_dir_path}`);
-
-            execSyncInherit(`cp -r ${module_dir_path} ${tmp_dir_path}`);
-
-            execSyncInherit(`rm -rf ${dir_path}`);
-
-            execSyncInherit(`mv ${tmp_dir_path} ${dir_path}`);
-
-        })();
+        execSyncInherit(`cp -r ${module_dir_path} ${dir_path}`);
 
         execSync(`cp $(readlink -e ${process.argv[0]}) ${dir_path}`);
 
@@ -212,7 +202,7 @@ program
 
         execSyncInherit(`find ${path.join(dir_path, "node_modules")} -type f -name "*.ts" -exec rm -rf {} \\;`);
 
-        execSyncInherit(`rm -r ${path.join(dir_path, path.basename(working_directory_path))}`);
+        execSyncInherit(`rm -rf ${path.join(dir_path, path.basename(working_directory_path))}`);
 
         execSyncInherit(`tar -czf ${path.join(module_dir_path, `${v_name}.tar.gz`)} -C ${dir_path} .`);
 
