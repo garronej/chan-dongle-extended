@@ -93,8 +93,8 @@ var stop_sh_path = path.join(working_directory_path, "stop.sh");
 var wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
 var node_path = path.join(working_directory_path, "node");
 var pkg_list_path = path.join(working_directory_path, "installed_pkg.json");
-var unix_user = "chan_dongle_extended";
-var srv_name = "chan_dongle_extended";
+var unix_user = "chan_dongle";
+var srv_name = "chan_dongle";
 Astdirs_1.Astdirs.dir_path = working_directory_path;
 InstallOptions_1.InstallOptions.dir_path = working_directory_path;
 AmiCredential_1.AmiCredential.dir_path = working_directory_path;
@@ -117,14 +117,11 @@ for (var key in InstallOptions_1.InstallOptions.defaults) {
     }
 }
 _install.action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var _a;
+    var _a, message;
     return __generator(this, function (_b) {
         switch (_b.label) {
             case 0:
                 console.log("---Installing chan-dongle-extended---");
-                unixUser.create();
-                workingDirectory.create();
-                InstallOptions_1.InstallOptions.set(options);
                 if (!fs.existsSync(working_directory_path)) return [3 /*break*/, 2];
                 process.stdout.write(scriptLib.colorize("Already installed, uninstalling previous install... ", "YELLOW"));
                 return [4 /*yield*/, uninstall()];
@@ -151,13 +148,14 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
                 _b.label = 4;
             case 4:
                 _b.trys.push([4, 6, , 8]);
-                return [4 /*yield*/, install()];
+                return [4 /*yield*/, install(options)];
             case 5:
                 _b.sent();
                 return [3 /*break*/, 8];
             case 6:
                 _a = _b.sent();
-                process.stdout.write(scriptLib.colorize("An error occurred, rollback ...", "YELLOW"));
+                message = _a.message;
+                process.stdout.write(scriptLib.colorize("An error occurred: '" + message + "', rollback ...", "RED"));
                 return [4 /*yield*/, uninstall()];
             case 7:
                 _b.sent();
@@ -260,11 +258,15 @@ program
         return [2 /*return*/];
     });
 }); });
-function install() {
+function install(options) {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, install_prereq()];
+                case 0:
+                    unixUser.create();
+                    workingDirectory.create();
+                    InstallOptions_1.InstallOptions.set(options);
+                    return [4 /*yield*/, install_prereq()];
                 case 1:
                     _a.sent();
                     if (!fs.existsSync(path.join(module_dir_path, ".git"))) return [3 /*break*/, 2];
@@ -757,6 +759,7 @@ var asterisk_manager;
     var ami_conf_back_path = path.join(working_directory_path, "manager.conf.back");
     var get_ami_conf_path = function () { return path.join(Astdirs_1.Astdirs.get().astetcdir, "manager.conf"); };
     function enable() {
+        process.stdout.write("Enabling asterisk manager ... ");
         var credential = {
             "host": "127.0.0.1",
             "port": InstallOptions_1.InstallOptions.get().enable_ast_ami_on_port,
@@ -769,7 +772,8 @@ var asterisk_manager;
             "uid": stat.uid,
             "gid": stat.gid
         });
-        child_process.execFileSync("cp -p " + ami_conf_path + " " + ami_conf_back_path);
+        fs.chmodSync(ami_conf_path, stat.mode);
+        execSync("cp -p " + ami_conf_path + " " + ami_conf_back_path);
         var general = {
             "enabled": "yes",
             "port": credential.port,
@@ -962,12 +966,14 @@ var modemManager;
     function disable_and_stop() {
         try {
             execSyncSilent("systemctl stop ModemManager");
-            console.log("ModemManager.service stopped, you will need to unplug and reconnect your dongle");
+            console.log(scriptLib.colorize([
+                "ModemManager was previously managing dongles on this host, is has been disabled. ",
+                "You need to disconnect and reconnect your GSM dongles"
+            ].join("\n"), "YELLOW"));
         }
         catch (_a) { }
         try {
             execSyncSilent("systemctl disable ModemManager");
-            console.log("ModemManager.service disabled");
         }
         catch (_b) { }
     }
@@ -988,9 +994,7 @@ function install_prereq() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    console.log("---Installing required package for npm install---");
-                    return [4 /*yield*/, scriptLib.apt_get_install("python", "python")];
+                case 0: return [4 /*yield*/, scriptLib.apt_get_install("python", "python")];
                 case 1:
                     _a.sent();
                     //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
@@ -1044,7 +1048,6 @@ function install_prereq() {
                     return [4 /*yield*/, scriptLib.apt_get_install("libudev-dev")];
                 case 5:
                     _a.sent();
-                    console.log("---DONE---");
                     return [2 /*return*/];
             }
         });

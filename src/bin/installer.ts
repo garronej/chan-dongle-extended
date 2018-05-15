@@ -25,8 +25,8 @@ const wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
 const node_path = path.join(working_directory_path, "node");
 const pkg_list_path = path.join(working_directory_path, "installed_pkg.json");
 
-const unix_user = "chan_dongle_extended";
-const srv_name = "chan_dongle_extended";
+const unix_user = "chan_dongle";
+const srv_name = "chan_dongle";
 
 Astdirs.dir_path = working_directory_path;
 InstallOptions.dir_path = working_directory_path;
@@ -60,11 +60,6 @@ _install.action(async options => {
 
     console.log("---Installing chan-dongle-extended---");
 
-    unixUser.create();
-
-    workingDirectory.create();
-
-    InstallOptions.set(options);
 
     if (fs.existsSync(working_directory_path)) {
 
@@ -104,11 +99,11 @@ _install.action(async options => {
 
     try {
 
-        await install();
+        await install(options);
 
-    } catch{
+    } catch({ message }){
 
-        process.stdout.write(scriptLib.colorize("An error occurred, rollback ...", "YELLOW"));
+        process.stdout.write(scriptLib.colorize(`An error occurred: '${message}', rollback ...`, "RED"));
 
         await uninstall();
 
@@ -229,7 +224,13 @@ program
 
 
 
-async function install() {
+async function install(options: Partial<InstallOptions>) {
+
+    unixUser.create();
+
+    workingDirectory.create();
+
+    InstallOptions.set(options);
 
     await install_prereq();
 
@@ -850,6 +851,8 @@ namespace asterisk_manager {
 
     export function enable(){
 
+        process.stdout.write(`Enabling asterisk manager ... `);
+
         const credential= {
             "host": "127.0.0.1",
             "port": InstallOptions.get().enable_ast_ami_on_port,
@@ -857,16 +860,22 @@ namespace asterisk_manager {
             "secret": `${Date.now()}`
         };
 
-        const ami_conf_path= get_ami_conf_path();
+        const ami_conf_path = get_ami_conf_path();
 
-        let stat = fs.statSync(InstallOptions.get().asterisk_main_conf);
+        if (!fs.existsSync(ami_conf_path)) {
 
-        child_process.execSync(`touch ${ami_conf_path}`, {
-            "uid": stat.uid,
-            "gid": stat.gid
-        });
+            const stat = fs.statSync(InstallOptions.get().asterisk_main_conf);
 
-        child_process.execFileSync(`cp -p ${ami_conf_path} ${ami_conf_back_path}`);
+            child_process.execSync(`touch ${ami_conf_path}`, {
+                "uid": stat.uid,
+                "gid": stat.gid
+            });
+
+            fs.chmodSync(ami_conf_path, stat.mode);
+
+        }
+
+        execSync(`cp -p ${ami_conf_path} ${ami_conf_back_path}`);
 
         let general = {
             "enabled": "yes",
@@ -914,7 +923,7 @@ namespace asterisk_manager {
 
     }
 
-    export function restore(){
+    export function restore() {
 
         execSyncSilent(`mv ${ami_conf_back_path} ${get_ami_conf_path()}`);
 
@@ -1075,15 +1084,16 @@ namespace modemManager {
 
             execSyncSilent("systemctl stop ModemManager");
 
-            console.log("ModemManager.service stopped, you will need to unplug and reconnect your dongle");
+            console.log(scriptLib.colorize([
+                "ModemManager was previously managing dongles on this host, is has been disabled. ",
+                "You need to disconnect and reconnect your GSM dongles"
+            ].join("\n"), "YELLOW"));
 
         } catch{ }
 
         try {
 
             execSyncSilent("systemctl disable ModemManager");
-
-            console.log("ModemManager.service disabled");
 
         } catch{ }
 
@@ -1108,8 +1118,6 @@ namespace modemManager {
 }
 
 async function install_prereq() {
-
-    console.log("---Installing required package for npm install---");
 
     await scriptLib.apt_get_install("python", "python");
     //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
@@ -1153,8 +1161,6 @@ async function install_prereq() {
     await scriptLib.apt_get_install("build-essential");
 
     await scriptLib.apt_get_install("libudev-dev");
-
-    console.log("---DONE---");
 
 };
 
