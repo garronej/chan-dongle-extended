@@ -629,7 +629,7 @@ namespace unixUser {
 
     export function create() {
 
-        process.stdout.write(`Creating unix user 'chan_dongle_extended' ... `);
+        process.stdout.write(`Creating unix user '${unix_user}' ... `);
 
         gracefullyKillProcess();
 
@@ -643,7 +643,7 @@ namespace unixUser {
 
     export function remove() {
 
-        execSyncSilent(`userdel chan_dongle_extended`);
+        execSyncSilent(`userdel ${unix_user}`);
 
     }
 

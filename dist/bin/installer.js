@@ -606,7 +606,7 @@ var unixUser;
 (function (unixUser) {
     unixUser.gracefullyKillProcess = function () { return execSyncSilent("pkill -u " + unix_user + " -SIGUSR2 || true"); };
     function create() {
-        process.stdout.write("Creating unix user 'chan_dongle_extended' ... ");
+        process.stdout.write("Creating unix user '" + unix_user + "' ... ");
         unixUser.gracefullyKillProcess();
         execSyncSilent("userdel " + unix_user + " || true");
         execSync("useradd -M " + unix_user + " -s /bin/false -d " + working_directory_path);
@@ -614,7 +614,7 @@ var unixUser;
     }
     unixUser.create = create;
     function remove() {
-        execSyncSilent("userdel chan_dongle_extended");
+        execSyncSilent("userdel " + unix_user);
     }
     unixUser.remove = remove;
 })(unixUser || (unixUser = {}));
@@ -767,12 +767,14 @@ var asterisk_manager;
             "secret": "" + Date.now()
         };
         var ami_conf_path = get_ami_conf_path();
-        var stat = fs.statSync(InstallOptions_1.InstallOptions.get().asterisk_main_conf);
-        child_process.execSync("touch " + ami_conf_path, {
-            "uid": stat.uid,
-            "gid": stat.gid
-        });
-        fs.chmodSync(ami_conf_path, stat.mode);
+        if (!fs.existsSync(ami_conf_path)) {
+            var stat = fs.statSync(InstallOptions_1.InstallOptions.get().asterisk_main_conf);
+            child_process.execSync("touch " + ami_conf_path, {
+                "uid": stat.uid,
+                "gid": stat.gid
+            });
+            fs.chmodSync(ami_conf_path, stat.mode);
+        }
         execSync("cp -p " + ami_conf_path + " " + ami_conf_back_path);
         var general = {
             "enabled": "yes",
