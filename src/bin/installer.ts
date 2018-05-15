@@ -8,9 +8,10 @@ import * as fs from "fs";
 import * as path from "path";
 import * as scriptLib from "scripting-tools";
 import * as readline from "readline";
-import { InstallOptions } from "../lib/installOptions";
+import { InstallOptions } from "../lib/InstallOptions";
 import { Astdirs } from "../lib/Astdirs";
-import * as cli from "./cli";
+import { AmiCredential } from "../lib/AmiCredential";
+import { ini } from "ini-extended";
 const execSync = (cmd: string) => child_process.execSync(cmd).toString("utf8");
 const execSyncSilent = (cmd: string) => child_process.execSync(cmd, { "stdio": [] }).toString("utf8");
 
@@ -29,6 +30,7 @@ const srv_name = "chan_dongle_extended";
 
 Astdirs.dir_path = working_directory_path;
 InstallOptions.dir_path = working_directory_path;
+AmiCredential.dir_path= working_directory_path;
 
 scriptLib.apt_get_install.onInstallSuccess = package_name =>
     scriptLib.apt_get_install.record_installed_package(pkg_list_path, package_name);
@@ -74,9 +76,31 @@ _install.action(async options => {
 
     } else {
 
-        execSyncSilent(`pkill -u ${unix_user} -SIGUSR2 || true`);
+        unixUser.gracefullyKillProcess();
 
     }
+
+    (() => {
+
+        let previous_working_directory_path: string;
+
+        try {
+
+            previous_working_directory_path = execSyncSilent(`dirname $(readlink -e $(which dongle))`);
+
+        } catch{
+
+            return;
+
+        }
+
+        process.stdout.write(scriptLib.colorize("Previous install found, uninstalling... ", "YELLOW"));
+
+        execSyncSilent(`${path.join(previous_working_directory_path, "uninstaller.sh")} run`);
+
+        console.log("DONE");
+
+    })();
 
     try {
 
@@ -211,6 +235,7 @@ async function install() {
 
     if (fs.existsSync(path.join(module_dir_path, ".git"))) {
 
+        /*
         let stat = fs.statSync(module_dir_path);
 
         child_process.execSync("npm install", {
@@ -219,6 +244,7 @@ async function install() {
             "gid": stat.gid,
             "stdio": "inherit"
         });
+        */
 
     } else {
 
@@ -256,7 +282,7 @@ async function install() {
 
     shellScripts.create();
 
-    await enableAsteriskManager();
+    asterisk_manager.enable();
 
     systemd.create();
 
@@ -288,6 +314,8 @@ function uninstall(verbose?: "VERBOSE" | undefined) {
     runRecover("Stopping running instance ... ", () => execSyncSilent(stop_sh_path));
 
     runRecover("Uninstalling chan_dongle.so ... ", () => chan_dongle.remove());
+
+    runRecover("Restoring asterisk manager ... ", ()=> asterisk_manager.restore());
 
     runRecover("Removing binary symbolic links ... ", () => shellScripts.remove_symbolic_links());
 
@@ -557,7 +585,9 @@ namespace chan_dongle {
 
     export function remove() {
 
-        const { astmoddir, astsbindir } = Astdirs.get();
+        const { astmoddir, astsbindir, astetcdir } = Astdirs.get();
+
+        execSyncSilent(`rm -rf ${path.join(astetcdir,"dongle.conf")}`);
 
         try {
 
@@ -579,17 +609,7 @@ namespace workingDirectory {
 
         execSync(`mkdir ${working_directory_path}`);
 
-        (() => {
-
-            const cli_storage_path = path.join(working_directory_path, cli.storage_path);
-
-            execSync(`mkdir ${cli_storage_path}`);
-
-            execSync(`chmod 777 ${cli_storage_path}`);
-
-        })();
-
-        execSync(`chown -R chan_dongle_extended:chan_dongle_extended ${working_directory_path}`);
+        execSync(`chown ${unix_user}:${unix_user} ${working_directory_path}`);
 
         console.log(scriptLib.colorize("OK", "GREEN"));
     }
@@ -604,15 +624,17 @@ namespace workingDirectory {
 
 namespace unixUser {
 
+    export const gracefullyKillProcess = () => execSyncSilent(`pkill -u ${unix_user} -SIGUSR2 || true`);
+
     export function create() {
 
         process.stdout.write(`Creating unix user 'chan_dongle_extended' ... `);
 
-        execSyncSilent(`pkill -u chan_dongle_extended -SIGUSR2 || true`);
+        gracefullyKillProcess();
 
-        execSyncSilent(`userdel chan_dongle_extended || true`);
+        execSyncSilent(`userdel ${unix_user} || true`);
 
-        execSync(`useradd -M chan_dongle_extended -s /bin/false -d ${working_directory_path}`);
+        execSync(`useradd -M ${unix_user} -s /bin/false -d ${working_directory_path}`);
 
         console.log(scriptLib.colorize("OK", "GREEN"));
 
@@ -630,7 +652,7 @@ namespace shellScripts {
 
     const get_uninstaller_link_path = (astsbindir: string) => path.join(astsbindir, `${srv_name}_uninstaller`);
 
-    const cli_link_path = path.join("/usr/bin", srv_name);
+    const cli_link_path = "/usr/bin/dongle";
 
     export function create(): void {
 
@@ -821,82 +843,88 @@ namespace systemd {
 
 }
 
-async function enableAsteriskManager() {
+namespace asterisk_manager {
 
-    const { astetcdir, astsbindir, astrundir } = Astdirs.get();
-    const ami_port = InstallOptions.get().enable_ast_ami_on_port;
+    const ami_conf_back_path= path.join(working_directory_path,"manager.conf.back");
+    const get_ami_conf_path= ()=> path.join(Astdirs.get().astetcdir, "manager.conf");
 
-    process.stdout.write(`Enabling asterisk manager on port ${ami_port} ... `);
+    export function enable(){
 
-    const [
-        { ini }, { misc }
-    ] = await Promise.all([
-        import("ini-extended"),
-        import("../chan-dongle-extended-client"),
-    ]);
+        const credential= {
+            "host": "127.0.0.1",
+            "port": InstallOptions.get().enable_ast_ami_on_port,
+            "user": "chan_dongle_extended",
+            "secret": `${Date.now()}`
+        };
 
-    const manager_path = path.join(astetcdir, "manager.conf");
+        const ami_conf_path= get_ami_conf_path();
 
-    let general = {
-        "enabled": "yes",
-        "port": `${ami_port}`,
-        "bindaddr": "127.0.0.1",
-        "displayconnects": "yes"
-    };
+        let stat = fs.statSync(InstallOptions.get().asterisk_main_conf);
 
-    let does_file_exist = false;
+        child_process.execSync(`touch ${ami_conf_path}`, {
+            "uid": stat.uid,
+            "gid": stat.gid
+        });
 
-    if (fs.existsSync(manager_path)) {
+        child_process.execFileSync(`cp -p ${ami_conf_path} ${ami_conf_back_path}`);
 
-        does_file_exist = true;
+        let general = {
+            "enabled": "yes",
+            "port": credential.port,
+            "bindaddr": "127.0.0.1",
+            "displayconnects": "yes"
+        };
 
         try {
 
             general = ini.parseStripWhitespace(
-                fs.readFileSync(manager_path).toString("utf8")
+                fs.readFileSync(ami_conf_path).toString("utf8")
             ).general;
 
             general.enabled = "yes";
-
-            general.port = `${ami_port}`;
+            general.port = credential.port;
 
         } catch{ }
 
-    }
 
-    let ami_user_conf = {
-        "secret": `${Date.now()}`,
-        "deny": "0.0.0.0/0.0.0.0",
-        "permit": "0.0.0.0/0.0.0.0",
-        "read": "all",
-        "write": "all",
-        "writetimeout": "5000"
-    };
-
-    fs.writeFileSync(
-        manager_path,
-        Buffer.from(ini.stringify({ general, [misc.amiUser]: ami_user_conf }), "utf8")
-    );
-
-    if (!does_file_exist) {
-
-        execSync(`chown ${unix_user}:${unix_user} ${manager_path}`);
-
-    }
-
-    execSync(`chmod u+r,g+r,o+r ${manager_path}`);
-
-    if (fs.existsSync(path.join(astrundir, "asterisk.ctl"))) {
+        fs.writeFileSync(
+            ami_conf_path,
+            Buffer.from(ini.stringify({
+                general,
+                [credential.user]: {
+                    "secret": credential.secret,
+                    "deny": "0.0.0.0/0.0.0.0",
+                    "permit": "0.0.0.0/0.0.0.0",
+                    "read": "all",
+                    "write": "all",
+                    "writetimeout": "5000"
+                }
+            }), "utf8")
+        );
 
         try {
 
-            execSyncSilent(`${path.join(astsbindir, "asterisk")} -rx "core reload"`);
+            execSyncSilent(`${path.join(Astdirs.get().astsbindir, "asterisk")} -rx "core reload"`);
+
+        } catch{ }
+
+        AmiCredential.set(credential);
+
+        console.log(scriptLib.colorize("OK", "GREEN"));
+
+    }
+
+    export function restore(){
+
+        execSyncSilent(`mv ${ami_conf_back_path} ${get_ami_conf_path()}`);
+
+        try {
+
+            execSyncSilent(`${path.join(Astdirs.get().astsbindir, "asterisk")} -rx "core reload"`);
 
         } catch{ }
 
     }
-
-    console.log(scriptLib.colorize("OK", "GREEN"));
 
 }
 

@@ -46,7 +46,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var trackable_map_1 = require("trackable-map");
 var storage = require("./appStorage");
-var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
+var AmiCredential_1 = require("./AmiCredential");
 var ts_ami_1 = require("ts-ami");
 var repl = require("./repl");
 var dialplan = require("./dialplan");
@@ -55,8 +55,7 @@ var atBridge = require("./atBridge");
 var ts_events_extended_1 = require("ts-events-extended");
 var confManager = require("./confManager");
 var logger_1 = require("./logger");
-var child_process_1 = require("child_process");
-var localManger = require("./localsManager");
+var InstallOptions_1 = require("./InstallOptions");
 require("colors");
 var debugFactory = require("debug");
 var debug = debugFactory("main");
@@ -66,30 +65,26 @@ var modems = new trackable_map_1.TrackableMap();
 var evtScheduleRetry = new ts_events_extended_1.SyncEvent();
 function launch() {
     return __awaiter(this, void 0, void 0, function () {
-        var _a, locals, astdirs, ami, chanDongleConfManagerApi, defaults, monitor;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var installOptions, ami, chanDongleConfManagerApi, defaults, monitor;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
                 case 0:
-                    _a = localManger.get(), locals = _a.locals, astdirs = _a.astdirs;
-                    ami = ts_ami_1.Ami.getInstance(chan_dongle_extended_client_1.misc.amiUser, astdirs.astetcdir);
+                    installOptions = InstallOptions_1.InstallOptions.get();
+                    ami = ts_ami_1.Ami.getInstance(AmiCredential_1.AmiCredential.get());
                     return [4 /*yield*/, confManager.getApi(ami)];
                 case 1:
-                    chanDongleConfManagerApi = _b.sent();
+                    chanDongleConfManagerApi = _a.sent();
                     setExitHandlers(chanDongleConfManagerApi);
-                    if (locals.build_across_linux_kernel !== "" + child_process_1.execSync("uname -r")) {
-                        debug("Kernel have been updated, tty0tty need to be re compiled");
-                        process.emit("beforeExit", 0);
-                    }
-                    if (!locals.disable_sms_dialplan) {
+                    if (!installOptions.disable_sms_dialplan) {
                         defaults = chanDongleConfManagerApi.staticModuleConfiguration.defaults;
                         dialplan.init(modems, ami, defaults["context"], defaults["exten"]);
                     }
                     return [4 /*yield*/, atBridge.init(modems, chanDongleConfManagerApi)];
                 case 2:
-                    _b.sent();
+                    _a.sent();
                     return [4 /*yield*/, api.launch(modems, chanDongleConfManagerApi.staticModuleConfiguration)];
                 case 3:
-                    _b.sent();
+                    _a.sent();
                     if (process.env["NODE_ENV"] !== "production") {
                         repl.start(modems);
                     }

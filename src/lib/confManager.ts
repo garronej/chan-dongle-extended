@@ -2,7 +2,7 @@ import * as fs from "fs";
 import { ini } from "ini-extended";
 import * as runExclusive from "run-exclusive";
 import * as path from "path";
-import * as localsManager from "./localsManager";
+import { Astdirs } from "./Astdirs";
 
 import { types as dcTypes } from "../chan-dongle-extended-client";
 import { Ami } from "ts-ami";
@@ -95,7 +95,7 @@ export async function getApi(ami: Ami): Promise<Api> {
         ()=> loadChanDongleSo(ami)
     );
 
-    let dongle_conf_path = path.join(localsManager.get().astdirs.astetcdir, "dongle.conf");
+    let dongle_conf_path = path.join(Astdirs.get().astetcdir, "dongle.conf");
 
     const staticModuleConfiguration: dcTypes.StaticModuleConfiguration = (() => {
 

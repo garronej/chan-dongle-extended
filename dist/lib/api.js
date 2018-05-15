@@ -66,7 +66,7 @@ var __spread = (this && this.__spread) || function () {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 var types = require("./types");
-var localsManager = require("./localsManager");
+var InstallOptions_1 = require("./InstallOptions");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
 var localApiDeclaration = chan_dongle_extended_client_1.apiDeclaration.service;
 var remoteApiDeclaration = chan_dongle_extended_client_1.apiDeclaration.controller;
@@ -79,7 +79,7 @@ var net = require("net");
 var sockets = new Set();
 function launch(modems, staticModuleConfiguration) {
     var _this = this;
-    var locals = localsManager.get().locals;
+    var _a = InstallOptions_1.InstallOptions.get(), bind_addr = _a.bind_addr, port = _a.port;
     var server = new sipLibrary.api.Server(makeApiHandlers(modems), sipLibrary.api.Server.getDefaultLogger({
         log: logger_1.log,
         "displayOnlyErrors": false,
@@ -106,7 +106,7 @@ function launch(modems, staticModuleConfiguration) {
         });
     }); })
         .once("listening", function () { return evtListening.post(); })
-        .listen(locals.port, locals.bind_addr);
+        .listen(port, bind_addr);
     modems.evt.attach(function (_a) {
         var _b = __read(_a, 3), newModem = _b[0], _ = _b[1], oldModem = _b[2];
         var dongleImei = (function () {

@@ -4,7 +4,7 @@ import {
 } from "ts-gsm-modem";
 import { TrackableMap } from "trackable-map";
 import * as storage from "./appStorage";
-import { misc as dcMisc } from "../chan-dongle-extended-client";
+import { AmiCredential } from "./AmiCredential";
 import { Ami } from "ts-ami";
 import * as repl from "./repl";
 import * as dialplan from "./dialplan";
@@ -16,7 +16,6 @@ import * as types from "./types";
 import { log, backupCurrentLog, createCrashReport } from "./logger";
 
 import {InstallOptions} from "./InstallOptions";
-import {Astdirs} from "./Astdirs";
 
 import "colors";
 
@@ -31,9 +30,8 @@ const evtScheduleRetry = new SyncEvent<AccessPoint>();
 export async function launch() {
 
     const installOptions= InstallOptions.get();
-    const astdirs= Astdirs.get();
 
-    const ami = Ami.getInstance(dcMisc.amiUser, astdirs.astetcdir);
+    const ami = Ami.getInstance(AmiCredential.get());
 
     const chanDongleConfManagerApi = await confManager.getApi(ami);
 

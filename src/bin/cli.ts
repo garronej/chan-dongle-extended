@@ -4,12 +4,10 @@ require("rejection-tracker").main(__filename, "..", "..");
 import * as program from "commander";
 import { DongleController as Dc } from "../chan-dongle-extended-client";
 import * as storage from "node-persist";
-import * as localsManager from "../lib/localsManager";
+import { InstallOptions } from "../lib/InstallOptions";
 import * as path from "path";
 import * as os from "os";
 import "colors";
-
-export const storage_path = "./cli";
 
 program
     .command("list")
@@ -206,7 +204,7 @@ program
 
 namespace selected_dongle {
 
-    const get_storage_user_path = () => path.join(storage_path, os.userInfo().username);
+    const get_storage_user_path = () => path.join("/tmp", `${os.userInfo().username}_selected_dongle`);
 
     export async function get(options: { imei: string | undefined }): Promise<string> {
 
@@ -244,9 +242,9 @@ namespace selected_dongle {
 
 async function getDcInstance(): Promise<Dc> {
 
-    let { locals } = localsManager.get()
+    const { bind_addr, port }= InstallOptions.get();
 
-    let dc = Dc.getInstance(locals.bind_addr, locals.port);
+    let dc = Dc.getInstance(bind_addr, port);
 
     try {
 

@@ -57,7 +57,7 @@ var fs = require("fs");
 var ini_extended_1 = require("ini-extended");
 var runExclusive = require("run-exclusive");
 var path = require("path");
-var localsManager = require("./localsManager");
+var Astdirs_1 = require("./Astdirs");
 var logger_1 = require("./logger");
 var debugFactory = require("debug");
 var debug = debugFactory("confManager");
@@ -140,7 +140,7 @@ function getApi(ami) {
                         var event = _a.event;
                         return event === "FullyBooted";
                     }, function () { return loadChanDongleSo(ami); });
-                    dongle_conf_path = path.join(localsManager.get().astdirs.astetcdir, "dongle.conf");
+                    dongle_conf_path = path.join(Astdirs_1.Astdirs.get().astetcdir, "dongle.conf");
                     staticModuleConfiguration = (function () {
                         try {
                             var _a = ini_extended_1.ini.parseStripWhitespace(fs.readFileSync(dongle_conf_path).toString("utf8")), general = _a.general, defaults = _a.defaults;

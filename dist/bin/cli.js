@@ -41,11 +41,10 @@ require("rejection-tracker").main(__filename, "..", "..");
 var program = require("commander");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
 var storage = require("node-persist");
-var localsManager = require("../lib/localsManager");
+var InstallOptions_1 = require("../lib/InstallOptions");
 var path = require("path");
 var os = require("os");
 require("colors");
-exports.storage_path = "./cli";
 program
     .command("list")
     .description("List dongles")
@@ -244,7 +243,7 @@ program
 }); });
 var selected_dongle;
 (function (selected_dongle) {
-    var get_storage_user_path = function () { return path.join(exports.storage_path, os.userInfo().username); };
+    var get_storage_user_path = function () { return path.join("/tmp", os.userInfo().username + "_selected_dongle"); };
     function get(options) {
         return __awaiter(this, void 0, void 0, function () {
             var imei;
@@ -288,21 +287,21 @@ var selected_dongle;
 })(selected_dongle || (selected_dongle = {}));
 function getDcInstance() {
     return __awaiter(this, void 0, void 0, function () {
-        var locals, dc, _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
+        var _a, bind_addr, port, dc, _b;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
                 case 0:
-                    locals = localsManager.get().locals;
-                    dc = chan_dongle_extended_client_1.DongleController.getInstance(locals.bind_addr, locals.port);
-                    _b.label = 1;
+                    _a = InstallOptions_1.InstallOptions.get(), bind_addr = _a.bind_addr, port = _a.port;
+                    dc = chan_dongle_extended_client_1.DongleController.getInstance(bind_addr, port);
+                    _c.label = 1;
                 case 1:
-                    _b.trys.push([1, 3, , 4]);
+                    _c.trys.push([1, 3, , 4]);
                     return [4 /*yield*/, dc.prInitialization];
                 case 2:
-                    _b.sent();
+                    _c.sent();
                     return [3 /*break*/, 4];
                 case 3:
-                    _a = _b.sent();
+                    _b = _c.sent();
                     console.log("dongle-extended is not running".red);
                     process.exit(1);
                     return [3 /*break*/, 4];
