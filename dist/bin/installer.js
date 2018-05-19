@@ -1037,9 +1037,9 @@ function install_prereq() {
                                             process.stdout.write("Checking for python module virtualenv ... ");
                                             _d.label = 1;
                                         case 1:
-                                            _d.trys.push([1, 2, , 8]);
+                                            _d.trys.push([1, 2, , 9]);
                                             execSync("which virtualenv");
-                                            return [3 /*break*/, 8];
+                                            return [3 /*break*/, 9];
                                         case 2:
                                             _a = _d.sent();
                                             readline.clearLine(process.stdout, 0);
@@ -1047,22 +1047,24 @@ function install_prereq() {
                                             _b = scriptLib.start_long_running_process("Installing virtualenv"), exec = _b.exec, onSuccess = _b.onSuccess;
                                             _d.label = 3;
                                         case 3:
-                                            _d.trys.push([3, 4, , 7]);
-                                            scriptLib.exec("pip install virtualenv");
-                                            return [3 /*break*/, 7];
+                                            _d.trys.push([3, 5, , 8]);
+                                            return [4 /*yield*/, scriptLib.exec("pip install virtualenv")];
                                         case 4:
+                                            _d.sent();
+                                            return [3 /*break*/, 8];
+                                        case 5:
                                             _c = _d.sent();
                                             return [4 /*yield*/, exec("pip install -i https://pypi.python.org/simple/ --upgrade pip")];
-                                        case 5:
-                                            _d.sent();
-                                            return [4 /*yield*/, exec("pip install virtualenv")];
                                         case 6:
                                             _d.sent();
-                                            return [3 /*break*/, 7];
+                                            return [4 /*yield*/, exec("pip install virtualenv")];
                                         case 7:
+                                            _d.sent();
+                                            return [3 /*break*/, 8];
+                                        case 8:
                                             onSuccess("DONE");
                                             return [2 /*return*/];
-                                        case 8:
+                                        case 9:
                                             console.log("found. " + scriptLib.colorize("OK", "GREEN"));
                                             return [2 /*return*/];
                                     }
@@ -1085,18 +1087,16 @@ function install_prereq() {
 ;
 function find_module_path(module_name, root_module_path) {
     var cmd = [
-        "dirname $(",
-        "find " + path.join(root_module_path, "node_modules") + " ",
-        "-type f -path \\*/node_modules/" + module_name + "/package.json",
-        ")"
-    ].join("");
-    //TODO: only for debug
-    console.log(cmd);
+        "find " + path.join(root_module_path, "node_modules"),
+        "-type f",
+        "-path \\*/node_modules/" + module_name + "/package.json",
+        "-exec dirname {} \\;"
+    ].join(" ");
     var match = child_process
         .execSync(cmd, { "stdio": [] })
         .toString("utf8")
+        .slice(0, -1)
         .split("\n");
-    match.pop();
     if (!match.length) {
         throw new Error("Not found");
     }

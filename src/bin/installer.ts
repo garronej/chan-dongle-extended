@@ -1167,11 +1167,11 @@ async function install_prereq() {
             readline.clearLine(process.stdout, 0);
             process.stdout.write("\r");
 
-            let { exec, onSuccess } = scriptLib.start_long_running_process("Installing virtualenv");
+            const { exec, onSuccess } = scriptLib.start_long_running_process("Installing virtualenv");
 
             try {
 
-                scriptLib.exec(`pip install virtualenv`);
+                await scriptLib.exec(`pip install virtualenv`);
 
 
             } catch {
@@ -1204,21 +1204,17 @@ function find_module_path(
 ): string {
 
     let cmd = [
-        "dirname $(",
-        `find ${path.join(root_module_path, "node_modules")} `,
-        `-type f -path \\*/node_modules/${module_name}/package.json`,
-        ")"
-    ].join("");
-
-    //TODO: only for debug
-    console.log(cmd);
+        `find ${path.join(root_module_path, "node_modules")}`,
+        `-type f`,
+        `-path \\*/node_modules/${module_name}/package.json`,
+        `-exec dirname {} \\;`
+    ].join(" ");
 
     let match = child_process
         .execSync(cmd, { "stdio": [] })
         .toString("utf8")
+        .slice(0, -1)
         .split("\n");
-
-    match.pop();
 
     if (!match.length) {
         throw new Error("Not found");
