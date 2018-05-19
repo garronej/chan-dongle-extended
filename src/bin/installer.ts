@@ -12,8 +12,8 @@ import { InstallOptions } from "../lib/InstallOptions";
 import { Astdirs } from "../lib/Astdirs";
 import { AmiCredential } from "../lib/AmiCredential";
 import { ini } from "ini-extended";
-const execSync = (cmd: string) => child_process.execSync(cmd).toString("utf8");
-const execSyncSilent = (cmd: string) => child_process.execSync(cmd, { "stdio": [] }).toString("utf8");
+const execSync = (cmd: string) => scriptLib.execSync(cmd);
+const execSyncSilent = (cmd: string) => scriptLib.execSync(cmd, { "stdio": [] });
 
 const module_dir_path = path.join(__dirname, "..", "..");
 const [cli_js_path, main_js_path] = [
@@ -22,7 +22,7 @@ const [cli_js_path, main_js_path] = [
 const working_directory_path = path.join(module_dir_path, "working_directory");
 const stop_sh_path = path.join(working_directory_path, "stop.sh");
 const wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
-const node_path = path.join(working_directory_path, "node");
+const node_path = path.join(module_dir_path, "node");
 const pkg_list_path = path.join(module_dir_path, "pkg_installed.json");
 
 const unix_user = "chan_dongle";
@@ -154,14 +154,6 @@ program
     .command("tarball")
     .action(async () => {
 
-        const execSyncInherit = (cmd: string, options: any = {}): void => {
-
-            console.log(scriptLib.colorize(`$ ${cmd}`, "YELLOW") + "\n");
-
-            child_process.execSync(cmd, { "stdio": "inherit", ...options });
-
-        };
-
         const v_name = [
             "dongle",
             //`v${require(path.join(module_dir_path, "package.json"))["version"]}`,
@@ -170,17 +162,28 @@ program
 
         const dir_path = path.join("/tmp", v_name);
 
-        execSyncInherit(`rm -rf ${dir_path}`);
+        scriptLib.execSyncTrace(`rm -rf ${dir_path}`);
 
-        execSyncInherit(`cp -r ${module_dir_path} ${dir_path}`);
+        scriptLib.execSyncTrace(`cp -r ${module_dir_path} ${dir_path}`);
 
-        execSync(`cp $(readlink -e ${process.argv[0]}) ${dir_path}`);
+        (()=>{
+
+            const new_node_path= path.join(dir_path,"node");
+
+            if( !fs.existsSync(new_node_path) ){
+
+                scriptLib.execSyncTrace(`cp $(readlink -e ${process.argv[0]}) ${new_node_path}`);
+
+            }
+
+        })();
+
 
         (() => {
 
             let node_python_messaging_path = find_module_path("node-python-messaging", dir_path);
 
-            execSyncInherit(`rm -r ${path.join(node_python_messaging_path, "dist", "virtual")}`);
+            scriptLib.execSyncTrace(`rm -r ${path.join(node_python_messaging_path, "dist", "virtual")}`);
 
         })();
 
@@ -188,21 +191,21 @@ program
 
             let udev_module_path = find_module_path("udev", dir_path);
 
-            execSyncInherit(`rm -r ${path.join(udev_module_path, "build")}`);
+            scriptLib.execSyncTrace(`rm -r ${path.join(udev_module_path, "build")}`);
 
         })();
 
         for (let name of [".git", ".gitignore", "src", "tsconfig.json"]) {
-            execSyncInherit(`rm -rf ${path.join(dir_path, name)}`);
+            scriptLib.execSyncTrace(`rm -rf ${path.join(dir_path, name)}`);
         }
 
         for (let name of ["@types", "typescript"]) {
-            execSyncInherit(`rm -r ${path.join(dir_path, "node_modules", name)}`);
+            scriptLib.execSyncTrace(`rm -r ${path.join(dir_path, "node_modules", name)}`);
         }
 
-        execSyncInherit(`find ${path.join(dir_path, "node_modules")} -type f -name "*.ts" -exec rm -rf {} \\;`);
+        scriptLib.execSyncTrace(`find ${path.join(dir_path, "node_modules")} -type f -name "*.ts" -exec rm -rf {} \\;`);
 
-        execSyncInherit(`rm -rf ${path.join(dir_path, path.basename(working_directory_path))}`);
+        scriptLib.execSyncTrace(`rm -rf ${path.join(dir_path, path.basename(working_directory_path))}`);
 
         (function hide_auth_token() {
 
@@ -228,9 +231,9 @@ program
 
         })();
 
-        execSyncInherit(`tar -czf ${path.join(module_dir_path, `${v_name}.tar.gz`)} -C ${dir_path} .`);
+        scriptLib.execSyncTrace(`tar -czf ${path.join(module_dir_path, `${v_name}.tar.gz`)} -C ${dir_path} .`);
 
-        execSyncInherit(`rm -r ${dir_path}`);
+        scriptLib.execSyncTrace(`rm -r ${dir_path}`);
 
         console.log("---DONE---");
 
@@ -275,7 +278,11 @@ async function install(options: Partial<InstallOptions>) {
 
     modemManager.disable_and_stop();
 
-    execSync(`cp $(readlink -e ${process.argv[0]}) ${node_path}`);
+    if( !fs.existsSync(node_path) ){
+
+        execSync(`cp $(readlink -e ${process.argv[0]}) ${node_path}`);
+
+    }
 
     await tty0tty.install();
 
@@ -356,7 +363,7 @@ namespace tty0tty {
 
         try {
 
-            await scriptLib.showLoad.exec(`rm -r ${h_dir_path} 2>/dev/null`, () => { });
+            await scriptLib.exec(`rm -r ${h_dir_path} 2>/dev/null`);
 
         } catch{
 
@@ -405,7 +412,7 @@ namespace tty0tty {
 
         if (!is_raspbian_host) {
 
-            await scriptLib.apt_get_install(`linux-headers-$(uname -r)`);
+            await scriptLib.apt_get_install_if_missing(`linux-headers-$(uname -r)`);
 
             return;
 
@@ -416,9 +423,9 @@ namespace tty0tty {
 
         await (async function download_deb() {
 
-            let { onSuccess, onError } = scriptLib.showLoad("Downloading raspberrypi linux headers");
+            let { onError, onSuccess } = scriptLib.start_long_running_process("Downloading raspberrypi linux headers");
 
-            const wget = (url: string) => scriptLib.showLoad.exec(`wget ${url} -O ${h_deb_path}`, () => { });
+            const wget = (url: string) => scriptLib.exec(`wget ${url} -O ${h_deb_path}`);
 
             try {
 
@@ -461,11 +468,11 @@ namespace tty0tty {
 
         await (async function install_deb() {
 
-            let { onSuccess, onError } = scriptLib.showLoad("Installing linux headers");
+            let { exec, onSuccess } = scriptLib.start_long_running_process("Installing linux headers");
 
-            await scriptLib.showLoad.exec(`dpkg -x ${h_deb_path} ${h_dir_path}`, onError);
+            await exec(`dpkg -x ${h_deb_path} ${h_dir_path}`);
 
-            await scriptLib.showLoad.exec(`rm ${h_deb_path}`, onError);
+            await exec(`rm ${h_deb_path}`);
 
             let build_dir_path = path.join(h_dir_path, "usr", "src", `linux-headers-${kernel_release}`);
 
@@ -487,13 +494,12 @@ namespace tty0tty {
 
         await install_linux_headers();
 
-        await scriptLib.apt_get_install("git", "git");
+        await scriptLib.apt_get_install_if_missing("git", "git");
 
-        let { onSuccess, onError } = scriptLib.showLoad("Building and installing tty0tty kernel module");
+        let { exec, onSuccess } = scriptLib.start_long_running_process("Building and installing tty0tty kernel module");
 
         const tty0tty_dir_path = path.join(working_directory_path, "tty0tty");
 
-        const exec = (cmd: string) => scriptLib.showLoad.exec(cmd, onError);
         const cdExec = (cmd: string) => exec(`(cd ${path.join(tty0tty_dir_path, "module")} && ${cmd})`);
 
         await exec(`git clone https://github.com/garronej/tty0tty ${tty0tty_dir_path}`);
@@ -565,19 +571,18 @@ namespace chan_dongle {
 
         const { astsbindir, astmoddir } = Astdirs.get();
 
-        const { ast_include_dir_path } = InstallOptions.get();
+        const { ast_include_dir_path, ld_library_path_for_asterisk } = InstallOptions.get();
 
-        await scriptLib.apt_get_install("automake");
+        await scriptLib.apt_get_install_if_missing("automake");
 
-        let { onSuccess, onError } = scriptLib.showLoad(
+        let { exec, onSuccess } = scriptLib.start_long_running_process(
             `Building and installing asterisk chan_dongle ( may take several minutes )`
         );
 
-        let ast_ver = execSync(`${path.join(astsbindir, "asterisk")} -V`)
+        let ast_ver = execSync(`LD_LIBRARY_PATH=${ld_library_path_for_asterisk} ${path.join(astsbindir, "asterisk")} -V`)
             .match(/^Asterisk\s+([0-9\.]+)/)![1]
             ;
 
-        const exec = (cmd: string) => scriptLib.showLoad.exec(cmd, onError);
         const cdExec = (cmd: string) => exec(`(cd ${chan_dongle_dir_path} && ${cmd})`);
 
         await exec(`git clone https://github.com/garronej/asterisk-chan-dongle ${chan_dongle_dir_path}`);
@@ -604,7 +609,11 @@ namespace chan_dongle {
 
         try {
 
-            execSyncSilent(`${path.join(astsbindir, "asterisk")} -rx "module unload chan_dongle.so"`);
+            execSyncSilent([
+                `LD_LIBRARY_PATH=${InstallOptions.get().ld_library_path_for_asterisk}`,
+                `${path.join(astsbindir, "asterisk")}`,
+                `-rx "module unload chan_dongle.so"`
+            ].join(" "));
 
         } catch{ }
 
@@ -702,6 +711,8 @@ namespace shellScripts {
                 `#!/usr/bin/env bash`,
                 ``,
                 `# This script does not return until asterisk if fully booted`,
+                ``,
+                `LD_LIBRARY_PATH=${InstallOptions.get().ld_library_path_for_asterisk}`,
                 ``,
                 `until ${path.join(astsbindir, "asterisk")} -rx "core waitfullybooted"`,
                 `do`,
@@ -925,7 +936,11 @@ namespace asterisk_manager {
 
         try {
 
-            execSyncSilent(`${path.join(Astdirs.get().astsbindir, "asterisk")} -rx "core reload"`);
+            execSyncSilent([
+                `LD_LIBRARY_PATH=${InstallOptions.get().ld_library_path_for_asterisk}`,
+                `${path.join(Astdirs.get().astsbindir, "asterisk")}`,
+                `-rx "core reload"`
+            ].join(" "));
 
         } catch{ }
 
@@ -941,7 +956,11 @@ namespace asterisk_manager {
 
         try {
 
-            execSyncSilent(`${path.join(Astdirs.get().astsbindir, "asterisk")} -rx "core reload"`);
+            execSyncSilent([
+                `LD_LIBRARY_PATH=${InstallOptions.get().ld_library_path_for_asterisk}`,
+                `${path.join(Astdirs.get().astsbindir, "asterisk")}`,
+                `-rx "core reload"`
+            ].join(" "));
 
         } catch{ }
 
@@ -955,7 +974,7 @@ namespace udevRules {
 
     export async function create() {
 
-        await scriptLib.apt_get_install("usb-modeswitch", "usb_modeswitch");
+        await scriptLib.apt_get_install("usb-modeswitch");
 
         //NOTE: we could grant access only to "dongle" group as asterisk is added to this group but need restart ast...
 
@@ -1051,13 +1070,13 @@ namespace udevRules {
 
 async function apt_get_install_asterisk() {
 
-    if (!scriptLib.apt_get_install.isPkgInstalled("asterisk")) {
+    if (!scriptLib.apt_get_install_if_missing.isPkgInstalled("asterisk")) {
 
         execSyncSilent("dpkg -P asterisk-config");
 
     }
 
-    let pr_install_ast = scriptLib.apt_get_install("asterisk-dev", "asterisk");
+    let pr_install_ast = scriptLib.apt_get_install_if_missing("asterisk-dev", "asterisk");
 
     let service_path = "/lib/systemd/system/asterisk.service";
 
@@ -1131,9 +1150,9 @@ namespace modemManager {
 
 async function install_prereq() {
 
-    await scriptLib.apt_get_install("python", "python");
+    await scriptLib.apt_get_install_if_missing("python", "python");
     //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
-    await scriptLib.apt_get_install("python-pip", "pip");
+    await scriptLib.apt_get_install_if_missing("python-pip", "pip");
 
     await (async function installVirtualenv() {
 
@@ -1148,15 +1167,18 @@ async function install_prereq() {
             readline.clearLine(process.stdout, 0);
             process.stdout.write("\r");
 
-            let { onSuccess, onError } = scriptLib.showLoad("Installing virtualenv");
+            let { exec, onSuccess } = scriptLib.start_long_running_process("Installing virtualenv");
 
             try {
 
-                await scriptLib.showLoad.exec(`pip install virtualenv`, onError);
+                scriptLib.exec(`pip install virtualenv`);
+
 
             } catch {
 
-                process.exit(-1);
+                await exec(`pip install -i https://pypi.python.org/simple/ --upgrade pip`);
+
+                await exec(`pip install virtualenv`);
 
             }
 
@@ -1170,9 +1192,9 @@ async function install_prereq() {
 
     })();
 
-    await scriptLib.apt_get_install("build-essential");
+    await scriptLib.apt_get_install_if_missing("build-essential");
 
-    await scriptLib.apt_get_install("libudev-dev");
+    await scriptLib.apt_get_install_if_missing("libudev-dev");
 
 };
 
@@ -1187,6 +1209,9 @@ function find_module_path(
         `-type f -path \\*/node_modules/${module_name}/package.json`,
         ")"
     ].join("");
+
+    //TODO: only for debug
+    console.log(cmd);
 
     let match = child_process
         .execSync(cmd, { "stdio": [] })
@@ -1205,10 +1230,9 @@ function find_module_path(
 
 async function rebuild_node_modules() {
 
-    const { onError, onSuccess } = scriptLib.showLoad("Building node_modules dependencies");
+    const { exec, onSuccess } = scriptLib.start_long_running_process("Building node_modules dependencies");
 
-    const cdExec = (cmd: string, dir_path: string) =>
-        scriptLib.showLoad.exec(`(cd ${dir_path} && ${cmd})`, onError);
+    const cdExec = (cmd: string, dir_path: string) => exec(`(cd ${dir_path} && ${cmd})`);
 
     await (async function build_udev() {
 

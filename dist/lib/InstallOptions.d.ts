@@ -11,6 +11,7 @@ export declare namespace InstallOptions {
         "enable_ast_ami_on_port": number;
         "assume_asterisk_installed": boolean;
         "assume_chan_dongle_installed": boolean;
+        "ld_library_path_for_asterisk": string;
     };
     function set(options: Partial<InstallOptions>): void;
     function get(): InstallOptions;

@@ -1,13 +1,5 @@
 #!/usr/bin/env node
 "use strict";
-var __assign = (this && this.__assign) || Object.assign || function(t) {
-    for (var s, i = 1, n = arguments.length; i < n; i++) {
-        s = arguments[i];
-        for (var p in s) if (Object.prototype.hasOwnProperty.call(s, p))
-            t[p] = s[p];
-    }
-    return t;
-};
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
@@ -82,8 +74,8 @@ var InstallOptions_1 = require("../lib/InstallOptions");
 var Astdirs_1 = require("../lib/Astdirs");
 var AmiCredential_1 = require("../lib/AmiCredential");
 var ini_extended_1 = require("ini-extended");
-var execSync = function (cmd) { return child_process.execSync(cmd).toString("utf8"); };
-var execSyncSilent = function (cmd) { return child_process.execSync(cmd, { "stdio": [] }).toString("utf8"); };
+var execSync = function (cmd) { return scriptLib.execSync(cmd); };
+var execSyncSilent = function (cmd) { return scriptLib.execSync(cmd, { "stdio": [] }); };
 var module_dir_path = path.join(__dirname, "..", "..");
 var _a = __read([
     "cli.js", "main.js"
@@ -91,7 +83,7 @@ var _a = __read([
 var working_directory_path = path.join(module_dir_path, "working_directory");
 var stop_sh_path = path.join(working_directory_path, "stop.sh");
 var wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
-var node_path = path.join(working_directory_path, "node");
+var node_path = path.join(module_dir_path, "node");
 var pkg_list_path = path.join(module_dir_path, "pkg_installed.json");
 var unix_user = "chan_dongle";
 var srv_name = "chan_dongle";
@@ -195,34 +187,34 @@ program
 program
     .command("tarball")
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
-    var execSyncInherit, v_name, dir_path, _a, _b, name, _c, _d, name, e_1, _e, e_2, _f;
+    var v_name, dir_path, _a, _b, name, _c, _d, name, e_1, _e, e_2, _f;
     return __generator(this, function (_g) {
-        execSyncInherit = function (cmd, options) {
-            if (options === void 0) { options = {}; }
-            console.log(scriptLib.colorize("$ " + cmd, "YELLOW") + "\n");
-            child_process.execSync(cmd, __assign({ "stdio": "inherit" }, options));
-        };
         v_name = [
             "dongle",
             //`v${require(path.join(module_dir_path, "package.json"))["version"]}`,
             child_process.execSync("uname -m").toString("utf8").replace("\n", "")
         ].join("_");
         dir_path = path.join("/tmp", v_name);
-        execSyncInherit("rm -rf " + dir_path);
-        execSyncInherit("cp -r " + module_dir_path + " " + dir_path);
-        execSync("cp $(readlink -e " + process.argv[0] + ") " + dir_path);
+        scriptLib.execSyncTrace("rm -rf " + dir_path);
+        scriptLib.execSyncTrace("cp -r " + module_dir_path + " " + dir_path);
+        (function () {
+            var new_node_path = path.join(dir_path, "node");
+            if (!fs.existsSync(new_node_path)) {
+                scriptLib.execSyncTrace("cp $(readlink -e " + process.argv[0] + ") " + new_node_path);
+            }
+        })();
         (function () {
             var node_python_messaging_path = find_module_path("node-python-messaging", dir_path);
-            execSyncInherit("rm -r " + path.join(node_python_messaging_path, "dist", "virtual"));
+            scriptLib.execSyncTrace("rm -r " + path.join(node_python_messaging_path, "dist", "virtual"));
         })();
         (function () {
             var udev_module_path = find_module_path("udev", dir_path);
-            execSyncInherit("rm -r " + path.join(udev_module_path, "build"));
+            scriptLib.execSyncTrace("rm -r " + path.join(udev_module_path, "build"));
         })();
         try {
             for (_a = __values([".git", ".gitignore", "src", "tsconfig.json"]), _b = _a.next(); !_b.done; _b = _a.next()) {
                 name = _b.value;
-                execSyncInherit("rm -rf " + path.join(dir_path, name));
+                scriptLib.execSyncTrace("rm -rf " + path.join(dir_path, name));
             }
         }
         catch (e_1_1) { e_1 = { error: e_1_1 }; }
@@ -235,7 +227,7 @@ program
         try {
             for (_c = __values(["@types", "typescript"]), _d = _c.next(); !_d.done; _d = _c.next()) {
                 name = _d.value;
-                execSyncInherit("rm -r " + path.join(dir_path, "node_modules", name));
+                scriptLib.execSyncTrace("rm -r " + path.join(dir_path, "node_modules", name));
             }
         }
         catch (e_2_1) { e_2 = { error: e_2_1 }; }
@@ -245,8 +237,8 @@ program
             }
             finally { if (e_2) throw e_2.error; }
         }
-        execSyncInherit("find " + path.join(dir_path, "node_modules") + " -type f -name \"*.ts\" -exec rm -rf {} \\;");
-        execSyncInherit("rm -rf " + path.join(dir_path, path.basename(working_directory_path)));
+        scriptLib.execSyncTrace("find " + path.join(dir_path, "node_modules") + " -type f -name \"*.ts\" -exec rm -rf {} \\;");
+        scriptLib.execSyncTrace("rm -rf " + path.join(dir_path, path.basename(working_directory_path)));
         (function hide_auth_token() {
             var files = child_process.execSync("find . -name \"package-lock.json\" -o -name \"package.json\"", { "cwd": dir_path })
                 .toString("utf8")
@@ -270,8 +262,8 @@ program
             }
             var e_3, _a;
         })();
-        execSyncInherit("tar -czf " + path.join(module_dir_path, v_name + ".tar.gz") + " -C " + dir_path + " .");
-        execSyncInherit("rm -r " + dir_path);
+        scriptLib.execSyncTrace("tar -czf " + path.join(module_dir_path, v_name + ".tar.gz") + " -C " + dir_path + " .");
+        scriptLib.execSyncTrace("rm -r " + dir_path);
         console.log("---DONE---");
         return [2 /*return*/];
     });
@@ -302,7 +294,9 @@ function install(options) {
                 case 6:
                     Astdirs_1.Astdirs.set(InstallOptions_1.InstallOptions.get().asterisk_main_conf);
                     modemManager.disable_and_stop();
-                    execSync("cp $(readlink -e " + process.argv[0] + ") " + node_path);
+                    if (!fs.existsSync(node_path)) {
+                        execSync("cp $(readlink -e " + process.argv[0] + ") " + node_path);
+                    }
                     return [4 /*yield*/, tty0tty.install()];
                 case 7:
                     _a.sent();
@@ -361,7 +355,7 @@ var tty0tty;
                 switch (_b.label) {
                     case 0:
                         _b.trys.push([0, 2, , 3]);
-                        return [4 /*yield*/, scriptLib.showLoad.exec("rm -r " + h_dir_path + " 2>/dev/null", function () { })];
+                        return [4 /*yield*/, scriptLib.exec("rm -r " + h_dir_path + " 2>/dev/null")];
                     case 1:
                         _b.sent();
                         return [3 /*break*/, 3];
@@ -400,7 +394,7 @@ var tty0tty;
                         process.stdout.write("\r");
                         is_raspbian_host = !!execSync("cat /etc/os-release").match(/^NAME=.*Raspbian.*$/m);
                         if (!!is_raspbian_host) return [3 /*break*/, 2];
-                        return [4 /*yield*/, scriptLib.apt_get_install("linux-headers-$(uname -r)")];
+                        return [4 /*yield*/, scriptLib.apt_get_install_if_missing("linux-headers-$(uname -r)")];
                     case 1:
                         _a.sent();
                         return [2 /*return*/];
@@ -408,12 +402,12 @@ var tty0tty;
                         h_deb_path = path.join(working_directory_path, "linux-headers.deb");
                         return [4 /*yield*/, (function download_deb() {
                                 return __awaiter(this, void 0, void 0, function () {
-                                    var _a, onSuccess, onError, wget, firmware_release, url, _b, url, _c;
+                                    var _a, onError, onSuccess, wget, firmware_release, url, _b, url, _c;
                                     return __generator(this, function (_d) {
                                         switch (_d.label) {
                                             case 0:
-                                                _a = scriptLib.showLoad("Downloading raspberrypi linux headers"), onSuccess = _a.onSuccess, onError = _a.onError;
-                                                wget = function (url) { return scriptLib.showLoad.exec("wget " + url + " -O " + h_deb_path, function () { }); };
+                                                _a = scriptLib.start_long_running_process("Downloading raspberrypi linux headers"), onError = _a.onError, onSuccess = _a.onSuccess;
+                                                wget = function (url) { return scriptLib.exec("wget " + url + " -O " + h_deb_path); };
                                                 _d.label = 1;
                                             case 1:
                                                 _d.trys.push([1, 3, , 8]);
@@ -456,15 +450,15 @@ var tty0tty;
                         _a.sent();
                         return [4 /*yield*/, (function install_deb() {
                                 return __awaiter(this, void 0, void 0, function () {
-                                    var _a, onSuccess, onError, build_dir_path;
+                                    var _a, exec, onSuccess, build_dir_path;
                                     return __generator(this, function (_b) {
                                         switch (_b.label) {
                                             case 0:
-                                                _a = scriptLib.showLoad("Installing linux headers"), onSuccess = _a.onSuccess, onError = _a.onError;
-                                                return [4 /*yield*/, scriptLib.showLoad.exec("dpkg -x " + h_deb_path + " " + h_dir_path, onError)];
+                                                _a = scriptLib.start_long_running_process("Installing linux headers"), exec = _a.exec, onSuccess = _a.onSuccess;
+                                                return [4 /*yield*/, exec("dpkg -x " + h_deb_path + " " + h_dir_path)];
                                             case 1:
                                                 _b.sent();
-                                                return [4 /*yield*/, scriptLib.showLoad.exec("rm " + h_deb_path, onError)];
+                                                return [4 /*yield*/, exec("rm " + h_deb_path)];
                                             case 2:
                                                 _b.sent();
                                                 build_dir_path = path.join(h_dir_path, "usr", "src", "linux-headers-" + kernel_release);
@@ -486,18 +480,17 @@ var tty0tty;
     var load_module_file_path = "/etc/modules";
     function install() {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, onSuccess, onError, tty0tty_dir_path, exec, cdExec, _b;
+            var _a, exec, onSuccess, tty0tty_dir_path, cdExec, _b;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, install_linux_headers()];
                     case 1:
                         _c.sent();
-                        return [4 /*yield*/, scriptLib.apt_get_install("git", "git")];
+                        return [4 /*yield*/, scriptLib.apt_get_install_if_missing("git", "git")];
                     case 2:
                         _c.sent();
-                        _a = scriptLib.showLoad("Building and installing tty0tty kernel module"), onSuccess = _a.onSuccess, onError = _a.onError;
+                        _a = scriptLib.start_long_running_process("Building and installing tty0tty kernel module"), exec = _a.exec, onSuccess = _a.onSuccess;
                         tty0tty_dir_path = path.join(working_directory_path, "tty0tty");
-                        exec = function (cmd) { return scriptLib.showLoad.exec(cmd, onError); };
                         cdExec = function (cmd) { return exec("(cd " + path.join(tty0tty_dir_path, "module") + " && " + cmd + ")"); };
                         return [4 /*yield*/, exec("git clone https://github.com/garronej/tty0tty " + tty0tty_dir_path)];
                     case 3:
@@ -558,35 +551,34 @@ var chan_dongle;
     chan_dongle.linkDongleConfigFile = linkDongleConfigFile;
     function install() {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, astsbindir, astmoddir, ast_include_dir_path, _b, onSuccess, onError, ast_ver, exec, cdExec;
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var _a, astsbindir, astmoddir, _b, ast_include_dir_path, ld_library_path_for_asterisk, _c, exec, onSuccess, ast_ver, cdExec;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         _a = Astdirs_1.Astdirs.get(), astsbindir = _a.astsbindir, astmoddir = _a.astmoddir;
-                        ast_include_dir_path = InstallOptions_1.InstallOptions.get().ast_include_dir_path;
-                        return [4 /*yield*/, scriptLib.apt_get_install("automake")];
+                        _b = InstallOptions_1.InstallOptions.get(), ast_include_dir_path = _b.ast_include_dir_path, ld_library_path_for_asterisk = _b.ld_library_path_for_asterisk;
+                        return [4 /*yield*/, scriptLib.apt_get_install_if_missing("automake")];
                     case 1:
-                        _c.sent();
-                        _b = scriptLib.showLoad("Building and installing asterisk chan_dongle ( may take several minutes )"), onSuccess = _b.onSuccess, onError = _b.onError;
-                        ast_ver = execSync(path.join(astsbindir, "asterisk") + " -V")
+                        _d.sent();
+                        _c = scriptLib.start_long_running_process("Building and installing asterisk chan_dongle ( may take several minutes )"), exec = _c.exec, onSuccess = _c.onSuccess;
+                        ast_ver = execSync("LD_LIBRARY_PATH=" + ld_library_path_for_asterisk + " " + path.join(astsbindir, "asterisk") + " -V")
                             .match(/^Asterisk\s+([0-9\.]+)/)[1];
-                        exec = function (cmd) { return scriptLib.showLoad.exec(cmd, onError); };
                         cdExec = function (cmd) { return exec("(cd " + chan_dongle_dir_path + " && " + cmd + ")"); };
                         return [4 /*yield*/, exec("git clone https://github.com/garronej/asterisk-chan-dongle " + chan_dongle_dir_path)];
                     case 2:
-                        _c.sent();
+                        _d.sent();
                         return [4 /*yield*/, cdExec("./bootstrap")];
                     case 3:
-                        _c.sent();
+                        _d.sent();
                         return [4 /*yield*/, cdExec("./configure --with-astversion=" + ast_ver + " --with-asterisk=" + ast_include_dir_path)];
                     case 4:
-                        _c.sent();
+                        _d.sent();
                         return [4 /*yield*/, cdExec("make")];
                     case 5:
-                        _c.sent();
+                        _d.sent();
                         return [4 /*yield*/, cdExec("cp chan_dongle.so " + astmoddir)];
                     case 6:
-                        _c.sent();
+                        _d.sent();
                         linkDongleConfigFile();
                         onSuccess("OK");
                         return [2 /*return*/];
@@ -599,7 +591,11 @@ var chan_dongle;
         var _a = Astdirs_1.Astdirs.get(), astmoddir = _a.astmoddir, astsbindir = _a.astsbindir, astetcdir = _a.astetcdir;
         execSyncSilent("rm -rf " + path.join(astetcdir, "dongle.conf"));
         try {
-            execSyncSilent(path.join(astsbindir, "asterisk") + " -rx \"module unload chan_dongle.so\"");
+            execSyncSilent([
+                "LD_LIBRARY_PATH=" + InstallOptions_1.InstallOptions.get().ld_library_path_for_asterisk,
+                "" + path.join(astsbindir, "asterisk"),
+                "-rx \"module unload chan_dongle.so\""
+            ].join(" "));
         }
         catch (_b) { }
         execSyncSilent("rm -f " + path.join(astmoddir, "chan_dongle.so"));
@@ -661,6 +657,8 @@ var shellScripts;
             "#!/usr/bin/env bash",
             "",
             "# This script does not return until asterisk if fully booted",
+            "",
+            "LD_LIBRARY_PATH=" + InstallOptions_1.InstallOptions.get().ld_library_path_for_asterisk,
             "",
             "until " + path.join(astsbindir, "asterisk") + " -rx \"core waitfullybooted\"",
             "do",
@@ -819,7 +817,11 @@ var asterisk_manager;
             },
             _b)), "utf8"));
         try {
-            execSyncSilent(path.join(Astdirs_1.Astdirs.get().astsbindir, "asterisk") + " -rx \"core reload\"");
+            execSyncSilent([
+                "LD_LIBRARY_PATH=" + InstallOptions_1.InstallOptions.get().ld_library_path_for_asterisk,
+                "" + path.join(Astdirs_1.Astdirs.get().astsbindir, "asterisk"),
+                "-rx \"core reload\""
+            ].join(" "));
         }
         catch (_c) { }
         AmiCredential_1.AmiCredential.set(credential);
@@ -830,7 +832,11 @@ var asterisk_manager;
     function restore() {
         execSyncSilent("mv " + ami_conf_back_path + " " + get_ami_conf_path());
         try {
-            execSyncSilent(path.join(Astdirs_1.Astdirs.get().astsbindir, "asterisk") + " -rx \"core reload\"");
+            execSyncSilent([
+                "LD_LIBRARY_PATH=" + InstallOptions_1.InstallOptions.get().ld_library_path_for_asterisk,
+                "" + path.join(Astdirs_1.Astdirs.get().astsbindir, "asterisk"),
+                "-rx \"core reload\""
+            ].join(" "));
         }
         catch (_a) { }
     }
@@ -844,7 +850,7 @@ var udevRules;
             var _a, recordIfNum, ConnectionMonitor, vendorIds, rules, vendorIds_1, vendorIds_1_1, vendorId, e_4, _b;
             return __generator(this, function (_c) {
                 switch (_c.label) {
-                    case 0: return [4 /*yield*/, scriptLib.apt_get_install("usb-modeswitch", "usb_modeswitch")];
+                    case 0: return [4 /*yield*/, scriptLib.apt_get_install("usb-modeswitch")];
                     case 1:
                         _c.sent();
                         //NOTE: we could grant access only to "dongle" group as asterisk is added to this group but need restart ast...
@@ -959,10 +965,10 @@ function apt_get_install_asterisk() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!scriptLib.apt_get_install.isPkgInstalled("asterisk")) {
+                    if (!scriptLib.apt_get_install_if_missing.isPkgInstalled("asterisk")) {
                         execSyncSilent("dpkg -P asterisk-config");
                     }
-                    pr_install_ast = scriptLib.apt_get_install("asterisk-dev", "asterisk");
+                    pr_install_ast = scriptLib.apt_get_install_if_missing("asterisk-dev", "asterisk");
                     service_path = "/lib/systemd/system/asterisk.service";
                     watcher = fs.watch(path.dirname(service_path), function (event, filename) {
                         if (event === 'rename' &&
@@ -1014,46 +1020,49 @@ function install_prereq() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, scriptLib.apt_get_install("python", "python")];
+                case 0: return [4 /*yield*/, scriptLib.apt_get_install_if_missing("python", "python")];
                 case 1:
                     _a.sent();
                     //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
-                    return [4 /*yield*/, scriptLib.apt_get_install("python-pip", "pip")];
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("python-pip", "pip")];
                 case 2:
                     //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
                     _a.sent();
                     return [4 /*yield*/, (function installVirtualenv() {
                             return __awaiter(this, void 0, void 0, function () {
-                                var _a, _b, onSuccess, onError, _c;
+                                var _a, _b, exec, onSuccess, _c;
                                 return __generator(this, function (_d) {
                                     switch (_d.label) {
                                         case 0:
                                             process.stdout.write("Checking for python module virtualenv ... ");
                                             _d.label = 1;
                                         case 1:
-                                            _d.trys.push([1, 2, , 7]);
+                                            _d.trys.push([1, 2, , 8]);
                                             execSync("which virtualenv");
-                                            return [3 /*break*/, 7];
+                                            return [3 /*break*/, 8];
                                         case 2:
                                             _a = _d.sent();
                                             readline.clearLine(process.stdout, 0);
                                             process.stdout.write("\r");
-                                            _b = scriptLib.showLoad("Installing virtualenv"), onSuccess = _b.onSuccess, onError = _b.onError;
+                                            _b = scriptLib.start_long_running_process("Installing virtualenv"), exec = _b.exec, onSuccess = _b.onSuccess;
                                             _d.label = 3;
                                         case 3:
-                                            _d.trys.push([3, 5, , 6]);
-                                            return [4 /*yield*/, scriptLib.showLoad.exec("pip install virtualenv", onError)];
+                                            _d.trys.push([3, 4, , 7]);
+                                            scriptLib.exec("pip install virtualenv");
+                                            return [3 /*break*/, 7];
                                         case 4:
-                                            _d.sent();
-                                            return [3 /*break*/, 6];
-                                        case 5:
                                             _c = _d.sent();
-                                            process.exit(-1);
-                                            return [3 /*break*/, 6];
+                                            return [4 /*yield*/, exec("pip install -i https://pypi.python.org/simple/ --upgrade pip")];
+                                        case 5:
+                                            _d.sent();
+                                            return [4 /*yield*/, exec("pip install virtualenv")];
                                         case 6:
+                                            _d.sent();
+                                            return [3 /*break*/, 7];
+                                        case 7:
                                             onSuccess("DONE");
                                             return [2 /*return*/];
-                                        case 7:
+                                        case 8:
                                             console.log("found. " + scriptLib.colorize("OK", "GREEN"));
                                             return [2 /*return*/];
                                     }
@@ -1062,10 +1071,10 @@ function install_prereq() {
                         })()];
                 case 3:
                     _a.sent();
-                    return [4 /*yield*/, scriptLib.apt_get_install("build-essential")];
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("build-essential")];
                 case 4:
                     _a.sent();
-                    return [4 /*yield*/, scriptLib.apt_get_install("libudev-dev")];
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("libudev-dev")];
                 case 5:
                     _a.sent();
                     return [2 /*return*/];
@@ -1081,6 +1090,8 @@ function find_module_path(module_name, root_module_path) {
         "-type f -path \\*/node_modules/" + module_name + "/package.json",
         ")"
     ].join("");
+    //TODO: only for debug
+    console.log(cmd);
     var match = child_process
         .execSync(cmd, { "stdio": [] })
         .toString("utf8")
@@ -1095,14 +1106,12 @@ function find_module_path(module_name, root_module_path) {
 }
 function rebuild_node_modules() {
     return __awaiter(this, void 0, void 0, function () {
-        var _a, onError, onSuccess, cdExec;
+        var _a, exec, onSuccess, cdExec;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    _a = scriptLib.showLoad("Building node_modules dependencies"), onError = _a.onError, onSuccess = _a.onSuccess;
-                    cdExec = function (cmd, dir_path) {
-                        return scriptLib.showLoad.exec("(cd " + dir_path + " && " + cmd + ")", onError);
-                    };
+                    _a = scriptLib.start_long_running_process("Building node_modules dependencies"), exec = _a.exec, onSuccess = _a.onSuccess;
+                    cdExec = function (cmd, dir_path) { return exec("(cd " + dir_path + " && " + cmd + ")"); };
                     return [4 /*yield*/, (function build_udev() {
                             return __awaiter(this, void 0, void 0, function () {
                                 var udev_dir_path, pre_gyp_dir_path, _a, _b, root_module_path, e_7, _c;

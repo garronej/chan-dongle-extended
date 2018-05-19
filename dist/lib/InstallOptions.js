@@ -23,7 +23,8 @@ var InstallOptions;
         "ast_include_dir_path": "/usr/include",
         "enable_ast_ami_on_port": 5038,
         "assume_asterisk_installed": false,
-        "assume_chan_dongle_installed": false
+        "assume_chan_dongle_installed": false,
+        "ld_library_path_for_asterisk": ""
     };
     var instance = undefined;
     function set(options) {

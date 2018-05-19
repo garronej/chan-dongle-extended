@@ -41,3 +41,4 @@ dist/test
 .node-persist
 working_directory
 pkg_installed.json
+node
