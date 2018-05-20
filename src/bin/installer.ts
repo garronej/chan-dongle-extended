@@ -420,6 +420,7 @@ namespace tty0tty {
 
         let h_deb_path = path.join(working_directory_path, "linux-headers.deb");
 
+        let downloaded_from: "OFFICIAL" | "MHIIENKA";
 
         await (async function download_deb() {
 
@@ -440,6 +441,8 @@ namespace tty0tty {
 
                 await wget(url);
 
+                downloaded_from= "OFFICIAL";
+
             } catch{
 
                 try {
@@ -450,6 +453,8 @@ namespace tty0tty {
                     ].join("");
 
                     await wget(url);
+
+                    downloaded_from= "MHIIENKA";
 
                 } catch{
 
@@ -468,23 +473,43 @@ namespace tty0tty {
 
         await (async function install_deb() {
 
+            if( downloaded_from! === "MHIIENKA" ){
+
+                for( const pkg_name of [ "gcc-4.7", "bc", "dkms" ] ){
+
+                    await scriptLib.apt_get_install(pkg_name);
+
+                }
+
+            }
+
             let { exec, onSuccess } = scriptLib.start_long_running_process("Installing linux headers");
 
-            await exec(`dpkg -x ${h_deb_path} ${h_dir_path}`);
+            if (downloaded_from! === "OFFICIAL") {
 
-            await exec(`rm ${h_deb_path}`);
+                await exec(`dpkg -x ${h_deb_path} ${h_dir_path}`);
 
-            let build_dir_path = path.join(h_dir_path, "usr", "src", `linux-headers-${kernel_release}`);
+                await exec(`rm ${h_deb_path}`);
 
-            execSync(`mv ${path.join(h_dir_path, "usr", "src", kernel_release)} ${build_dir_path} 2>/dev/null || true`);
+                let build_dir_path = path.join(h_dir_path, "usr", "src", `linux-headers-${kernel_release}`);
 
-            execSync(`ln -sf ${build_dir_path} ${build_link_path}`);
+                execSync(`mv ${path.join(h_dir_path, "usr", "src", kernel_release)} ${build_dir_path} 2>/dev/null || true`);
+
+                execSync(`ln -sf ${build_dir_path} ${build_link_path}`);
+
+            } else {
+
+                await exec(`dpkg -i ${h_deb_path}`);
+
+                await exec(`rm ${h_deb_path}`);
+
+                //TODO: for uninstalling:  dpkg -r linux-headers-$(uname -r)
+
+            }
 
             onSuccess("DONE");
 
-
         })();
-
 
     }
 

@@ -371,7 +371,7 @@ var tty0tty;
     }
     function install_linux_headers() {
         return __awaiter(this, void 0, void 0, function () {
-            var kernel_release, are_headers_installed, is_raspbian_host, h_deb_path;
+            var kernel_release, are_headers_installed, is_raspbian_host, h_deb_path, downloaded_from;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
@@ -420,6 +420,7 @@ var tty0tty;
                                                 return [4 /*yield*/, wget(url)];
                                             case 2:
                                                 _d.sent();
+                                                downloaded_from = "OFFICIAL";
                                                 return [3 /*break*/, 8];
                                             case 3:
                                                 _b = _d.sent();
@@ -433,6 +434,7 @@ var tty0tty;
                                                 return [4 /*yield*/, wget(url)];
                                             case 5:
                                                 _d.sent();
+                                                downloaded_from = "MHIIENKA";
                                                 return [3 /*break*/, 7];
                                             case 6:
                                                 _c = _d.sent();
@@ -450,20 +452,58 @@ var tty0tty;
                         _a.sent();
                         return [4 /*yield*/, (function install_deb() {
                                 return __awaiter(this, void 0, void 0, function () {
-                                    var _a, exec, onSuccess, build_dir_path;
-                                    return __generator(this, function (_b) {
-                                        switch (_b.label) {
+                                    var _a, _b, pkg_name, e_4_1, _c, exec, onSuccess, build_dir_path, e_4, _d;
+                                    return __generator(this, function (_e) {
+                                        switch (_e.label) {
                                             case 0:
-                                                _a = scriptLib.start_long_running_process("Installing linux headers"), exec = _a.exec, onSuccess = _a.onSuccess;
-                                                return [4 /*yield*/, exec("dpkg -x " + h_deb_path + " " + h_dir_path)];
+                                                if (!(downloaded_from === "MHIIENKA")) return [3 /*break*/, 8];
+                                                _e.label = 1;
                                             case 1:
-                                                _b.sent();
-                                                return [4 /*yield*/, exec("rm " + h_deb_path)];
+                                                _e.trys.push([1, 6, 7, 8]);
+                                                _a = __values(["gcc-4.7", "bc", "dkms"]), _b = _a.next();
+                                                _e.label = 2;
                                             case 2:
-                                                _b.sent();
+                                                if (!!_b.done) return [3 /*break*/, 5];
+                                                pkg_name = _b.value;
+                                                return [4 /*yield*/, scriptLib.apt_get_install(pkg_name)];
+                                            case 3:
+                                                _e.sent();
+                                                _e.label = 4;
+                                            case 4:
+                                                _b = _a.next();
+                                                return [3 /*break*/, 2];
+                                            case 5: return [3 /*break*/, 8];
+                                            case 6:
+                                                e_4_1 = _e.sent();
+                                                e_4 = { error: e_4_1 };
+                                                return [3 /*break*/, 8];
+                                            case 7:
+                                                try {
+                                                    if (_b && !_b.done && (_d = _a.return)) _d.call(_a);
+                                                }
+                                                finally { if (e_4) throw e_4.error; }
+                                                return [7 /*endfinally*/];
+                                            case 8:
+                                                _c = scriptLib.start_long_running_process("Installing linux headers"), exec = _c.exec, onSuccess = _c.onSuccess;
+                                                if (!(downloaded_from === "OFFICIAL")) return [3 /*break*/, 11];
+                                                return [4 /*yield*/, exec("dpkg -x " + h_deb_path + " " + h_dir_path)];
+                                            case 9:
+                                                _e.sent();
+                                                return [4 /*yield*/, exec("rm " + h_deb_path)];
+                                            case 10:
+                                                _e.sent();
                                                 build_dir_path = path.join(h_dir_path, "usr", "src", "linux-headers-" + kernel_release);
                                                 execSync("mv " + path.join(h_dir_path, "usr", "src", kernel_release) + " " + build_dir_path + " 2>/dev/null || true");
                                                 execSync("ln -sf " + build_dir_path + " " + build_link_path);
+                                                return [3 /*break*/, 14];
+                                            case 11: return [4 /*yield*/, exec("dpkg -i " + h_deb_path)];
+                                            case 12:
+                                                _e.sent();
+                                                return [4 /*yield*/, exec("rm " + h_deb_path)];
+                                            case 13:
+                                                _e.sent();
+                                                _e.label = 14;
+                                            case 14:
                                                 onSuccess("DONE");
                                                 return [2 /*return*/];
                                         }
@@ -847,7 +887,7 @@ var udevRules;
     var rules_path = path.join("/etc/udev/rules.d", "98-" + srv_name + ".rules");
     function create() {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, recordIfNum, ConnectionMonitor, vendorIds, rules, vendorIds_1, vendorIds_1_1, vendorId, e_4, _b;
+            var _a, recordIfNum, ConnectionMonitor, vendorIds, rules, vendorIds_1, vendorIds_1_1, vendorId, e_5, _b;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, scriptLib.apt_get_install("usb-modeswitch")];
@@ -881,12 +921,12 @@ var udevRules;
                                 ].join(", ") + "\n";
                             }
                         }
-                        catch (e_4_1) { e_4 = { error: e_4_1 }; }
+                        catch (e_5_1) { e_5 = { error: e_5_1 }; }
                         finally {
                             try {
                                 if (vendorIds_1_1 && !vendorIds_1_1.done && (_b = vendorIds_1.return)) _b.call(vendorIds_1);
                             }
-                            finally { if (e_4) throw e_4.error; }
+                            finally { if (e_5) throw e_5.error; }
                         }
                         rules += [
                             "ACTION==\"add\"",
@@ -900,7 +940,7 @@ var udevRules;
                         execSync("chown " + unix_user + ":" + unix_user + " " + rules_path);
                         return [4 /*yield*/, (function applying_rules() {
                                 return __awaiter(this, void 0, void 0, function () {
-                                    var monitor, _a, _b, accessPoint, _c, _d, device_path, e_5, _e, e_6, _f;
+                                    var monitor, _a, _b, accessPoint, _c, _d, device_path, e_6, _e, e_7, _f;
                                     return __generator(this, function (_g) {
                                         switch (_g.label) {
                                             case 0:
@@ -924,21 +964,21 @@ var udevRules;
                                                                 execSync("chmod u+rw,g+rw,o+rw " + device_path);
                                                             }
                                                         }
-                                                        catch (e_6_1) { e_6 = { error: e_6_1 }; }
+                                                        catch (e_7_1) { e_7 = { error: e_7_1 }; }
                                                         finally {
                                                             try {
                                                                 if (_d && !_d.done && (_f = _c.return)) _f.call(_c);
                                                             }
-                                                            finally { if (e_6) throw e_6.error; }
+                                                            finally { if (e_7) throw e_7.error; }
                                                         }
                                                     }
                                                 }
-                                                catch (e_5_1) { e_5 = { error: e_5_1 }; }
+                                                catch (e_6_1) { e_6 = { error: e_6_1 }; }
                                                 finally {
                                                     try {
                                                         if (_b && !_b.done && (_e = _a.return)) _e.call(_a);
                                                     }
-                                                    finally { if (e_5) throw e_5.error; }
+                                                    finally { if (e_6) throw e_6.error; }
                                                 }
                                                 return [2 /*return*/];
                                         }
@@ -1114,7 +1154,7 @@ function rebuild_node_modules() {
                     cdExec = function (cmd, dir_path) { return exec("(cd " + dir_path + " && " + cmd + ")"); };
                     return [4 /*yield*/, (function build_udev() {
                             return __awaiter(this, void 0, void 0, function () {
-                                var udev_dir_path, pre_gyp_dir_path, _a, _b, root_module_path, e_7, _c;
+                                var udev_dir_path, pre_gyp_dir_path, _a, _b, root_module_path, e_8, _c;
                                 return __generator(this, function (_d) {
                                     switch (_d.label) {
                                         case 0:
@@ -1133,12 +1173,12 @@ function rebuild_node_modules() {
                                                     catch (_e) { }
                                                 }
                                             }
-                                            catch (e_7_1) { e_7 = { error: e_7_1 }; }
+                                            catch (e_8_1) { e_8 = { error: e_8_1 }; }
                                             finally {
                                                 try {
                                                     if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
                                                 }
-                                                finally { if (e_7) throw e_7.error; }
+                                                finally { if (e_8) throw e_8.error; }
                                             }
                                             return [4 /*yield*/, cdExec([
                                                     "PATH=" + path.join(module_dir_path) + ":$PATH",
