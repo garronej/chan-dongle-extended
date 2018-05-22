@@ -243,7 +243,7 @@ program
 }); });
 var selected_dongle;
 (function (selected_dongle) {
-    var get_storage_user_path = function () { return path.join("/tmp", os.userInfo().username + "_selected_dongle"); };
+    var get_storage_user_path = function () { return path.join("/var/tmp", os.userInfo().username + "_selected_dongle"); };
     function get(options) {
         return __awaiter(this, void 0, void 0, function () {
             var imei;

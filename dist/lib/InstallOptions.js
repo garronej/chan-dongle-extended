@@ -22,28 +22,38 @@ var InstallOptions;
         "disable_sms_dialplan": false,
         "ast_include_dir_path": "/usr/include",
         "enable_ast_ami_on_port": 5038,
-        "assume_asterisk_installed": false,
         "assume_chan_dongle_installed": false,
         "ld_library_path_for_asterisk": ""
     };
-    var instance = undefined;
+    var _options = undefined;
     function set(options) {
-        var installOptions = __assign({}, InstallOptions.defaults);
+        _options = {};
         for (var key in InstallOptions.defaults) {
-            if (options[key] !== undefined) {
-                installOptions[key] = options[key];
-            }
+            _options[key] = options[key];
         }
-        fs.writeFileSync(path.join(InstallOptions.dir_path, InstallOptions.file_name), Buffer.from(JSON.stringify(installOptions, null, 2), "utf8"));
-        instance = installOptions;
+        fs.writeFileSync(path.join(InstallOptions.dir_path, InstallOptions.file_name), Buffer.from(JSON.stringify(_options, null, 2), "utf8"));
     }
     InstallOptions.set = set;
     function get() {
-        if (!!instance) {
-            return instance;
+        if (!_options) {
+            _options = JSON.parse(fs.readFileSync(path.join(InstallOptions.dir_path, InstallOptions.file_name)).toString("utf8"));
         }
-        instance = JSON.parse(fs.readFileSync(path.join(InstallOptions.dir_path, InstallOptions.file_name)).toString("utf8"));
-        return instance;
+        var installOptions = __assign({}, InstallOptions.defaults);
+        for (var key in InstallOptions.defaults) {
+            if (_options[key] !== undefined) {
+                installOptions[key] = _options[key];
+            }
+        }
+        return installOptions;
     }
     InstallOptions.get = get;
+    function getDeduced() {
+        get();
+        var o = _options;
+        return {
+            "assume_asterisk_installed": !!o.ast_include_dir_path || !!o.asterisk_main_conf || !!o.ld_library_path_for_asterisk,
+            "overwrite_ami_port_if_enabled": o.enable_ast_ami_on_port !== undefined
+        };
+    }
+    InstallOptions.getDeduced = getDeduced;
 })(InstallOptions = exports.InstallOptions || (exports.InstallOptions = {}));

@@ -18,47 +18,66 @@ export namespace InstallOptions {
         "disable_sms_dialplan": false,
         "ast_include_dir_path": "/usr/include",
         "enable_ast_ami_on_port": 5038,
-        "assume_asterisk_installed": false,
         "assume_chan_dongle_installed": false,
         "ld_library_path_for_asterisk": ""
     };
 
-    let instance: InstallOptions | undefined = undefined;
+    let _options: Partial<InstallOptions> | undefined = undefined;
 
-    export function set( options: Partial<InstallOptions> ): void {
+    export function set(options: Partial<InstallOptions>): void {
 
-        const installOptions: InstallOptions = { ...InstallOptions.defaults };
+        _options = {};
 
-        for (let key in InstallOptions.defaults) {
-
-            if (options[key] !== undefined) {
-                installOptions[key] = options[key];
-            }
-
+        for (let key in defaults) {
+            _options[key] = options[key];
         }
 
         fs.writeFileSync(
             path.join(dir_path, file_name),
-            Buffer.from(JSON.stringify(installOptions, null, 2), "utf8")
+            Buffer.from(JSON.stringify(_options, null, 2), "utf8")
         );
-
-        instance = installOptions;
 
     }
 
     export function get(): InstallOptions {
 
-        if (!!instance) {
-            return instance;
+        if (!_options) {
+
+            _options = JSON.parse(
+                fs.readFileSync(
+                    path.join(dir_path, file_name)
+                ).toString("utf8")
+            ) as Partial<InstallOptions>;
+
         }
 
-        instance = JSON.parse(
-            fs.readFileSync(
-                path.join(dir_path, file_name)
-            ).toString("utf8")
-        );
+        const installOptions: InstallOptions = { ...InstallOptions.defaults };
 
-        return instance!;
+        for (let key in InstallOptions.defaults) {
+
+            if (_options[key] !== undefined) {
+                installOptions[key] = _options[key];
+            }
+
+        }
+
+        return installOptions;
+
+    }
+
+    export function getDeduced(): {
+        assume_asterisk_installed: boolean;
+        overwrite_ami_port_if_enabled: boolean;
+    } {
+
+        get();
+
+        const o = _options!;
+
+        return {
+            "assume_asterisk_installed": !!o.ast_include_dir_path || !!o.asterisk_main_conf || !!o.ld_library_path_for_asterisk,
+            "overwrite_ami_port_if_enabled": o.enable_ast_ami_on_port !== undefined
+        };
 
     }
 

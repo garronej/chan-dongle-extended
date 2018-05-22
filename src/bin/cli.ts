@@ -204,7 +204,7 @@ program
 
 namespace selected_dongle {
 
-    const get_storage_user_path = () => path.join("/tmp", `${os.userInfo().username}_selected_dongle`);
+    const get_storage_user_path = () => path.join("/var/tmp", `${os.userInfo().username}_selected_dongle`);
 
     export async function get(options: { imei: string | undefined }): Promise<string> {
 

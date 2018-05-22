@@ -9,10 +9,13 @@ export declare namespace InstallOptions {
         "disable_sms_dialplan": boolean;
         "ast_include_dir_path": string;
         "enable_ast_ami_on_port": number;
-        "assume_asterisk_installed": boolean;
         "assume_chan_dongle_installed": boolean;
         "ld_library_path_for_asterisk": string;
     };
     function set(options: Partial<InstallOptions>): void;
     function get(): InstallOptions;
+    function getDeduced(): {
+        assume_asterisk_installed: boolean;
+        overwrite_ami_port_if_enabled: boolean;
+    };
 }

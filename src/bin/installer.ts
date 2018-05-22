@@ -1,7 +1,5 @@
 #!/usr/bin/env node
 
-require("rejection-tracker").main(__dirname, "..", "..");
-
 import * as program from "commander";
 import * as child_process from "child_process";
 import * as fs from "fs";
@@ -19,7 +17,7 @@ const module_dir_path = path.join(__dirname, "..", "..");
 const [cli_js_path, main_js_path] = [
     "cli.js", "main.js"
 ].map(f => path.join(module_dir_path, "dist", "bin", f));
-const working_directory_path = path.join(module_dir_path, "working_directory");
+export const working_directory_path = path.join(module_dir_path, "working_directory");
 const stop_sh_path = path.join(working_directory_path, "stop.sh");
 const wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
 const node_path = path.join(module_dir_path, "node");
@@ -247,28 +245,19 @@ async function install(options: Partial<InstallOptions>) {
 
     InstallOptions.set(options);
 
-    await install_prereq();
-
     if (fs.existsSync(path.join(module_dir_path, ".git"))) {
 
-        /*
-        let stat = fs.statSync(module_dir_path);
-
-        child_process.execSync("npm install", {
-            "cwd": module_dir_path,
-            "uid": stat.uid,
-            "gid": stat.gid,
-            "stdio": "inherit"
-        });
-        */
+        scriptLib.enableTrace();
 
     } else {
+
+        await install_prereq();
 
         await rebuild_node_modules();
 
     }
 
-    if (!InstallOptions.get().assume_asterisk_installed) {
+    if (!InstallOptions.getDeduced().assume_asterisk_installed) {
 
         await apt_get_install_asterisk();
 
@@ -594,31 +583,25 @@ namespace chan_dongle {
 
     export async function install() {
 
-        const { astsbindir, astmoddir } = Astdirs.get();
-
-        const { ast_include_dir_path, ld_library_path_for_asterisk } = InstallOptions.get();
-
         await scriptLib.apt_get_install_if_missing("automake");
 
-        let { exec, onSuccess } = scriptLib.start_long_running_process(
+        const { exec, onSuccess } = scriptLib.start_long_running_process(
             `Building and installing asterisk chan_dongle ( may take several minutes )`
         );
 
-        let ast_ver = execSync(`LD_LIBRARY_PATH=${ld_library_path_for_asterisk} ${path.join(astsbindir, "asterisk")} -V`)
-            .match(/^Asterisk\s+([0-9\.]+)/)![1]
-            ;
+        const ast_ver = execSync(`${build_ast_cmdline()} -V`).match(/^Asterisk\s+([0-9\.]+)/)![1];
 
-        const cdExec = (cmd: string) => exec(`(cd ${chan_dongle_dir_path} && ${cmd})`);
+        const cdExec = (cmd: string) => exec(cmd, { "cwd": chan_dongle_dir_path });
 
         await exec(`git clone https://github.com/garronej/asterisk-chan-dongle ${chan_dongle_dir_path}`);
 
         await cdExec("./bootstrap");
 
-        await cdExec(`./configure --with-astversion=${ast_ver} --with-asterisk=${ast_include_dir_path}`);
+        await cdExec(`./configure --with-astversion=${ast_ver} --with-asterisk=${InstallOptions.get().ast_include_dir_path}`);
 
         await cdExec("make");
 
-        await cdExec(`cp chan_dongle.so ${astmoddir}`);
+        await cdExec(`cp chan_dongle.so ${Astdirs.get().astmoddir}`);
 
         linkDongleConfigFile();
 
@@ -628,17 +611,13 @@ namespace chan_dongle {
 
     export function remove() {
 
-        const { astmoddir, astsbindir, astetcdir } = Astdirs.get();
+        const { astmoddir, astetcdir } = Astdirs.get();
 
         execSyncSilent(`rm -rf ${path.join(astetcdir, "dongle.conf")}`);
 
         try {
 
-            execSyncSilent([
-                `LD_LIBRARY_PATH=${InstallOptions.get().ld_library_path_for_asterisk}`,
-                `${path.join(astsbindir, "asterisk")}`,
-                `-rx "module unload chan_dongle.so"`
-            ].join(" "));
+            execSyncSilent(`${build_ast_cmdline()} -rx "module unload chan_dongle.so"`);
 
         } catch{ }
 
@@ -697,13 +676,11 @@ namespace unixUser {
 
 namespace shellScripts {
 
-    const get_uninstaller_link_path = (astsbindir: string) => path.join(astsbindir, `${srv_name}_uninstaller`);
+    const get_uninstaller_link_path = () => path.join(Astdirs.get().astsbindir, `${srv_name}_uninstaller`);
 
     const cli_link_path = "/usr/bin/dongle";
 
     export function create(): void {
-
-        const { astsbindir } = Astdirs.get();
 
         process.stdout.write(`Creating launch scripts ... `);
 
@@ -739,7 +716,7 @@ namespace shellScripts {
                 ``,
                 `LD_LIBRARY_PATH=${InstallOptions.get().ld_library_path_for_asterisk}`,
                 ``,
-                `until ${path.join(astsbindir, "asterisk")} -rx "core waitfullybooted"`,
+                `until ${build_ast_cmdline()} -rx "core waitfullybooted"`,
                 `do`,
                 `   sleep 3`,
                 `done`,
@@ -796,7 +773,7 @@ namespace shellScripts {
             ].join("\n")
         );
 
-        execSync(`ln -sf ${uninstaller_sh_path} ${get_uninstaller_link_path(astsbindir)}`);
+        execSync(`ln -sf ${uninstaller_sh_path} ${get_uninstaller_link_path()}`);
 
         writeAndSetPerms(
             path.join(working_directory_path, "start.sh"),
@@ -821,11 +798,7 @@ namespace shellScripts {
 
     export function remove_symbolic_links() {
 
-        const { astsbindir } = Astdirs.get();
-
-        execSyncSilent(
-            `rm -f ${cli_link_path} ${get_uninstaller_link_path(astsbindir)}`
-        );
+        execSyncSilent( `rm -f ${cli_link_path} ${get_uninstaller_link_path()}`);
 
     }
 
@@ -892,7 +865,7 @@ namespace systemd {
 
 }
 
-namespace asterisk_manager {
+export namespace asterisk_manager {
 
     const ami_conf_back_path = path.join(working_directory_path, "manager.conf.back");
     const get_ami_conf_path = () => path.join(Astdirs.get().astetcdir, "manager.conf");
@@ -901,14 +874,14 @@ namespace asterisk_manager {
 
         process.stdout.write(`Enabling asterisk manager ... `);
 
-        const credential = {
-            "host": "127.0.0.1",
-            "port": InstallOptions.get().enable_ast_ami_on_port,
-            "user": "chan_dongle_extended",
-            "secret": `${Date.now()}`
-        };
-
         const ami_conf_path = get_ami_conf_path();
+
+        const general: any = {
+            "enabled": "yes",
+            "port": InstallOptions.get().enable_ast_ami_on_port,
+            "bindaddr": "127.0.0.1",
+            "displayconnects": "yes"
+        };
 
         if (!fs.existsSync(ami_conf_path)) {
 
@@ -919,30 +892,41 @@ namespace asterisk_manager {
                 "gid": stat.gid
             });
 
-            fs.chmodSync(ami_conf_path, stat.mode);
+            execSync(`chmod 640 ${ami_conf_path}`);
+
+        } else {
+
+            execSync(`cp -p ${ami_conf_path} ${ami_conf_back_path}`);
+
+            //TODO: test if return {} when empty file
+            const parsed_general = ini.parseStripWhitespace(
+                fs.readFileSync(ami_conf_path).toString("utf8")
+            )["general"] || {};
+
+            console.log({ parsed_general });
+
+            for (let key in parsed_general) {
+
+                switch (key) {
+                    case "enabled": break;
+                    case "port":
+                        if (!InstallOptions.getDeduced().overwrite_ami_port_if_enabled) {
+                            general["port"] = parsed_general["port"];
+                        }
+                        break;
+                    default: general[key] = parsed_general[key];
+                }
+
+            }
 
         }
 
-        execSync(`cp -p ${ami_conf_path} ${ami_conf_back_path}`);
-
-        let general = {
-            "enabled": "yes",
-            "port": credential.port,
-            "bindaddr": "127.0.0.1",
-            "displayconnects": "yes"
+        const credential = {
+            "host": "127.0.0.1",
+            "port": general["port"],
+            "user": "chan_dongle_extended",
+            "secret": `${Date.now()}`
         };
-
-        try {
-
-            general = ini.parseStripWhitespace(
-                fs.readFileSync(ami_conf_path).toString("utf8")
-            ).general;
-
-            general.enabled = "yes";
-            general.port = credential.port;
-
-        } catch{ }
-
 
         fs.writeFileSync(
             ami_conf_path,
@@ -961,11 +945,7 @@ namespace asterisk_manager {
 
         try {
 
-            execSyncSilent([
-                `LD_LIBRARY_PATH=${InstallOptions.get().ld_library_path_for_asterisk}`,
-                `${path.join(Astdirs.get().astsbindir, "asterisk")}`,
-                `-rx "core reload"`
-            ].join(" "));
+            execSyncSilent(`${build_ast_cmdline()} -rx "core reload"`);
 
         } catch{ }
 
@@ -977,15 +957,17 @@ namespace asterisk_manager {
 
     export function restore() {
 
-        execSyncSilent(`mv ${ami_conf_back_path} ${get_ami_conf_path()}`);
+        execSyncSilent(`rm -f ${get_ami_conf_path()}`);
+
+        if (fs.existsSync(ami_conf_back_path)) {
+
+            execSyncSilent(`mv ${ami_conf_back_path} ${get_ami_conf_path()}`);
+
+        }
 
         try {
 
-            execSyncSilent([
-                `LD_LIBRARY_PATH=${InstallOptions.get().ld_library_path_for_asterisk}`,
-                `${path.join(Astdirs.get().astsbindir, "asterisk")}`,
-                `-rx "core reload"`
-            ].join(" "));
+            execSyncSilent(`${build_ast_cmdline()} -rx "core reload"`);
 
         } catch{ }
 
@@ -1095,17 +1077,29 @@ namespace udevRules {
 
 async function apt_get_install_asterisk() {
 
+    if (!scriptLib.apt_get_install_if_missing.doesHaveProg("asterisk")) {
+
+        if (!scriptLib.apt_get_install_if_missing.isPkgInstalled("asterisk")) {
+            //Custom install, we do not install from repositories.
+            return;
+        }
+
+    }
+
     if (!scriptLib.apt_get_install_if_missing.isPkgInstalled("asterisk")) {
 
+        //If asterisk is not installed make sure asterisk-config is purged so the config files will be re-generated.
         execSyncSilent("dpkg -P asterisk-config");
 
     }
 
-    let pr_install_ast = scriptLib.apt_get_install_if_missing("asterisk-dev", "asterisk");
+    let pr_install_ast = scriptLib.apt_get_install_if_missing("asterisk-dev");
 
-    let service_path = "/lib/systemd/system/asterisk.service";
+    //HOTFIX: On old version of raspberry pi install crash because timeout is reached.
 
-    let watcher = fs.watch(path.dirname(service_path), (event, filename) => {
+    const service_path = "/lib/systemd/system/asterisk.service";
+
+    const watcher = fs.watch(path.dirname(service_path), (event, filename) => {
 
         if (
             event === 'rename' &&
@@ -1117,7 +1111,9 @@ async function apt_get_install_asterisk() {
                 Buffer.from(
                     fs.readFileSync(service_path).toString("utf8").replace(
                         "\n[Service]\n", "\n[Service]\nTimeoutSec=infinity\n"
-                    ), "utf8")
+                    ),
+                    "utf8"
+                )
             );
 
             execSync("systemctl daemon-reload");
@@ -1223,6 +1219,15 @@ async function install_prereq() {
 
 };
 
+function build_ast_cmdline(): string {
+
+    const { ld_library_path_for_asterisk, asterisk_main_conf } = InstallOptions.get();
+    const { astsbindir } = Astdirs.get();
+
+    return `LD_LIBRARY_PATH=${ld_library_path_for_asterisk} ${path.join(astsbindir, "asterisk")} -C ${asterisk_main_conf}`;
+
+}
+
 function find_module_path(
     module_name: string,
     root_module_path: string
@@ -1309,6 +1314,7 @@ async function rebuild_node_modules() {
 }
 
 if (require.main === module) {
+    require("rejection-tracker").main(module_dir_path);
     scriptLib.exit_if_not_root();
     program.parse(process.argv);
 }

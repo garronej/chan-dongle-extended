@@ -63,7 +63,6 @@ var __values = (this && this.__values) || function (o) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-require("rejection-tracker").main(__dirname, "..", "..");
 var program = require("commander");
 var child_process = require("child_process");
 var fs = require("fs");
@@ -80,16 +79,16 @@ var module_dir_path = path.join(__dirname, "..", "..");
 var _a = __read([
     "cli.js", "main.js"
 ].map(function (f) { return path.join(module_dir_path, "dist", "bin", f); }), 2), cli_js_path = _a[0], main_js_path = _a[1];
-var working_directory_path = path.join(module_dir_path, "working_directory");
-var stop_sh_path = path.join(working_directory_path, "stop.sh");
-var wait_ast_sh_path = path.join(working_directory_path, "wait_ast.sh");
+exports.working_directory_path = path.join(module_dir_path, "working_directory");
+var stop_sh_path = path.join(exports.working_directory_path, "stop.sh");
+var wait_ast_sh_path = path.join(exports.working_directory_path, "wait_ast.sh");
 var node_path = path.join(module_dir_path, "node");
 var pkg_list_path = path.join(module_dir_path, "pkg_installed.json");
 var unix_user = "chan_dongle";
 var srv_name = "chan_dongle";
-Astdirs_1.Astdirs.dir_path = working_directory_path;
-InstallOptions_1.InstallOptions.dir_path = working_directory_path;
-AmiCredential_1.AmiCredential.dir_path = working_directory_path;
+Astdirs_1.Astdirs.dir_path = exports.working_directory_path;
+InstallOptions_1.InstallOptions.dir_path = exports.working_directory_path;
+AmiCredential_1.AmiCredential.dir_path = exports.working_directory_path;
 scriptLib.apt_get_install.onInstallSuccess = function (package_name) {
     return scriptLib.apt_get_install.record_installed_package(pkg_list_path, package_name);
 };
@@ -114,7 +113,7 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
         switch (_b.label) {
             case 0:
                 console.log("---Installing chan-dongle-extended---");
-                if (!fs.existsSync(working_directory_path)) return [3 /*break*/, 2];
+                if (!fs.existsSync(exports.working_directory_path)) return [3 /*break*/, 2];
                 process.stdout.write(scriptLib.colorize("Already installed, uninstalling previous install... ", "YELLOW"));
                 return [4 /*yield*/, uninstall()];
             case 1:
@@ -238,7 +237,7 @@ program
             finally { if (e_2) throw e_2.error; }
         }
         scriptLib.execSyncTrace("find " + path.join(dir_path, "node_modules") + " -type f -name \"*.ts\" -exec rm -rf {} \\;");
-        scriptLib.execSyncTrace("rm -rf " + path.join(dir_path, path.basename(working_directory_path)));
+        scriptLib.execSyncTrace("rm -rf " + path.join(dir_path, path.basename(exports.working_directory_path)));
         (function hide_auth_token() {
             var files = child_process.execSync("find . -name \"package-lock.json\" -o -name \"package.json\"", { "cwd": dir_path })
                 .toString("utf8")
@@ -276,17 +275,18 @@ function install(options) {
                     unixUser.create();
                     workingDirectory.create();
                     InstallOptions_1.InstallOptions.set(options);
-                    return [4 /*yield*/, install_prereq()];
-                case 1:
-                    _a.sent();
-                    if (!fs.existsSync(path.join(module_dir_path, ".git"))) return [3 /*break*/, 2];
+                    if (!fs.existsSync(path.join(module_dir_path, ".git"))) return [3 /*break*/, 1];
+                    scriptLib.enableTrace();
                     return [3 /*break*/, 4];
-                case 2: return [4 /*yield*/, rebuild_node_modules()];
+                case 1: return [4 /*yield*/, install_prereq()];
+                case 2:
+                    _a.sent();
+                    return [4 /*yield*/, rebuild_node_modules()];
                 case 3:
                     _a.sent();
                     _a.label = 4;
                 case 4:
-                    if (!!InstallOptions_1.InstallOptions.get().assume_asterisk_installed) return [3 /*break*/, 6];
+                    if (!!InstallOptions_1.InstallOptions.getDeduced().assume_asterisk_installed) return [3 /*break*/, 6];
                     return [4 /*yield*/, apt_get_install_asterisk()];
                 case 5:
                     _a.sent();
@@ -346,7 +346,7 @@ function uninstall(verbose) {
 }
 var tty0tty;
 (function (tty0tty) {
-    var h_dir_path = path.join(working_directory_path, "linux-headers");
+    var h_dir_path = path.join(exports.working_directory_path, "linux-headers");
     var build_link_path = "/lib/modules/$(uname -r)/build";
     function remove_local_linux_headers() {
         return __awaiter(this, void 0, void 0, function () {
@@ -399,7 +399,7 @@ var tty0tty;
                         _a.sent();
                         return [2 /*return*/];
                     case 2:
-                        h_deb_path = path.join(working_directory_path, "linux-headers.deb");
+                        h_deb_path = path.join(exports.working_directory_path, "linux-headers.deb");
                         return [4 /*yield*/, (function download_deb() {
                                 return __awaiter(this, void 0, void 0, function () {
                                     var _a, onError, onSuccess, wget, firmware_release, url, _b, url, _c;
@@ -530,7 +530,7 @@ var tty0tty;
                     case 2:
                         _c.sent();
                         _a = scriptLib.start_long_running_process("Building and installing tty0tty kernel module"), exec = _a.exec, onSuccess = _a.onSuccess;
-                        tty0tty_dir_path = path.join(working_directory_path, "tty0tty");
+                        tty0tty_dir_path = path.join(exports.working_directory_path, "tty0tty");
                         cdExec = function (cmd) { return exec("(cd " + path.join(tty0tty_dir_path, "module") + " && " + cmd + ")"); };
                         return [4 /*yield*/, exec("git clone https://github.com/garronej/tty0tty " + tty0tty_dir_path)];
                     case 3:
@@ -577,11 +577,11 @@ var tty0tty;
 })(tty0tty || (tty0tty = {}));
 var chan_dongle;
 (function (chan_dongle) {
-    var chan_dongle_dir_path = path.join(working_directory_path, "asterisk-chan-dongle");
+    var chan_dongle_dir_path = path.join(exports.working_directory_path, "asterisk-chan-dongle");
     function linkDongleConfigFile() {
         var astetcdir = Astdirs_1.Astdirs.get().astetcdir;
         var dongle_etc_path = path.join(astetcdir, "dongle.conf");
-        var dongle_loc_path = path.join(working_directory_path, "dongle.conf");
+        var dongle_loc_path = path.join(exports.working_directory_path, "dongle.conf");
         execSync("touch " + dongle_etc_path);
         execSync("mv " + dongle_etc_path + " " + dongle_loc_path);
         execSync("chown " + unix_user + ":" + unix_user + " " + dongle_loc_path);
@@ -591,34 +591,30 @@ var chan_dongle;
     chan_dongle.linkDongleConfigFile = linkDongleConfigFile;
     function install() {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, astsbindir, astmoddir, _b, ast_include_dir_path, ld_library_path_for_asterisk, _c, exec, onSuccess, ast_ver, cdExec;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
-                    case 0:
-                        _a = Astdirs_1.Astdirs.get(), astsbindir = _a.astsbindir, astmoddir = _a.astmoddir;
-                        _b = InstallOptions_1.InstallOptions.get(), ast_include_dir_path = _b.ast_include_dir_path, ld_library_path_for_asterisk = _b.ld_library_path_for_asterisk;
-                        return [4 /*yield*/, scriptLib.apt_get_install_if_missing("automake")];
+            var _a, exec, onSuccess, ast_ver, cdExec;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, scriptLib.apt_get_install_if_missing("automake")];
                     case 1:
-                        _d.sent();
-                        _c = scriptLib.start_long_running_process("Building and installing asterisk chan_dongle ( may take several minutes )"), exec = _c.exec, onSuccess = _c.onSuccess;
-                        ast_ver = execSync("LD_LIBRARY_PATH=" + ld_library_path_for_asterisk + " " + path.join(astsbindir, "asterisk") + " -V")
-                            .match(/^Asterisk\s+([0-9\.]+)/)[1];
-                        cdExec = function (cmd) { return exec("(cd " + chan_dongle_dir_path + " && " + cmd + ")"); };
+                        _b.sent();
+                        _a = scriptLib.start_long_running_process("Building and installing asterisk chan_dongle ( may take several minutes )"), exec = _a.exec, onSuccess = _a.onSuccess;
+                        ast_ver = execSync(build_ast_cmdline() + " -V").match(/^Asterisk\s+([0-9\.]+)/)[1];
+                        cdExec = function (cmd) { return exec(cmd, { "cwd": chan_dongle_dir_path }); };
                         return [4 /*yield*/, exec("git clone https://github.com/garronej/asterisk-chan-dongle " + chan_dongle_dir_path)];
                     case 2:
-                        _d.sent();
+                        _b.sent();
                         return [4 /*yield*/, cdExec("./bootstrap")];
                     case 3:
-                        _d.sent();
-                        return [4 /*yield*/, cdExec("./configure --with-astversion=" + ast_ver + " --with-asterisk=" + ast_include_dir_path)];
+                        _b.sent();
+                        return [4 /*yield*/, cdExec("./configure --with-astversion=" + ast_ver + " --with-asterisk=" + InstallOptions_1.InstallOptions.get().ast_include_dir_path)];
                     case 4:
-                        _d.sent();
+                        _b.sent();
                         return [4 /*yield*/, cdExec("make")];
                     case 5:
-                        _d.sent();
-                        return [4 /*yield*/, cdExec("cp chan_dongle.so " + astmoddir)];
+                        _b.sent();
+                        return [4 /*yield*/, cdExec("cp chan_dongle.so " + Astdirs_1.Astdirs.get().astmoddir)];
                     case 6:
-                        _d.sent();
+                        _b.sent();
                         linkDongleConfigFile();
                         onSuccess("OK");
                         return [2 /*return*/];
@@ -628,14 +624,10 @@ var chan_dongle;
     }
     chan_dongle.install = install;
     function remove() {
-        var _a = Astdirs_1.Astdirs.get(), astmoddir = _a.astmoddir, astsbindir = _a.astsbindir, astetcdir = _a.astetcdir;
+        var _a = Astdirs_1.Astdirs.get(), astmoddir = _a.astmoddir, astetcdir = _a.astetcdir;
         execSyncSilent("rm -rf " + path.join(astetcdir, "dongle.conf"));
         try {
-            execSyncSilent([
-                "LD_LIBRARY_PATH=" + InstallOptions_1.InstallOptions.get().ld_library_path_for_asterisk,
-                "" + path.join(astsbindir, "asterisk"),
-                "-rx \"module unload chan_dongle.so\""
-            ].join(" "));
+            execSyncSilent(build_ast_cmdline() + " -rx \"module unload chan_dongle.so\"");
         }
         catch (_b) { }
         execSyncSilent("rm -f " + path.join(astmoddir, "chan_dongle.so"));
@@ -645,14 +637,14 @@ var chan_dongle;
 var workingDirectory;
 (function (workingDirectory) {
     function create() {
-        process.stdout.write("Creating app working directory '" + working_directory_path + "' ... ");
-        execSync("mkdir " + working_directory_path);
-        execSync("chown " + unix_user + ":" + unix_user + " " + working_directory_path);
+        process.stdout.write("Creating app working directory '" + exports.working_directory_path + "' ... ");
+        execSync("mkdir " + exports.working_directory_path);
+        execSync("chown " + unix_user + ":" + unix_user + " " + exports.working_directory_path);
         console.log(scriptLib.colorize("OK", "GREEN"));
     }
     workingDirectory.create = create;
     function remove() {
-        execSyncSilent("rm -r " + working_directory_path);
+        execSyncSilent("rm -r " + exports.working_directory_path);
     }
     workingDirectory.remove = remove;
 })(workingDirectory || (workingDirectory = {}));
@@ -663,7 +655,7 @@ var unixUser;
         process.stdout.write("Creating unix user '" + unix_user + "' ... ");
         unixUser.gracefullyKillProcess();
         execSyncSilent("userdel " + unix_user + " || true");
-        execSync("useradd -M " + unix_user + " -s /bin/false -d " + working_directory_path);
+        execSync("useradd -M " + unix_user + " -s /bin/false -d " + exports.working_directory_path);
         console.log(scriptLib.colorize("OK", "GREEN"));
     }
     unixUser.create = create;
@@ -674,10 +666,9 @@ var unixUser;
 })(unixUser || (unixUser = {}));
 var shellScripts;
 (function (shellScripts) {
-    var get_uninstaller_link_path = function (astsbindir) { return path.join(astsbindir, srv_name + "_uninstaller"); };
+    var get_uninstaller_link_path = function () { return path.join(Astdirs_1.Astdirs.get().astsbindir, srv_name + "_uninstaller"); };
     var cli_link_path = "/usr/bin/dongle";
     function create() {
-        var astsbindir = Astdirs_1.Astdirs.get().astsbindir;
         process.stdout.write("Creating launch scripts ... ");
         var writeAndSetPerms = function (script_path, script) {
             fs.writeFileSync(script_path, Buffer.from(script, "utf8"));
@@ -700,13 +691,13 @@ var shellScripts;
             "",
             "LD_LIBRARY_PATH=" + InstallOptions_1.InstallOptions.get().ld_library_path_for_asterisk,
             "",
-            "until " + path.join(astsbindir, "asterisk") + " -rx \"core waitfullybooted\"",
+            "until " + build_ast_cmdline() + " -rx \"core waitfullybooted\"",
             "do",
             "   sleep 3",
             "done",
             ""
         ].join("\n"));
-        var cli_sh_path = path.join(working_directory_path, "cli.sh");
+        var cli_sh_path = path.join(exports.working_directory_path, "cli.sh");
         writeAndSetPerms(cli_sh_path, [
             "#!/usr/bin/env bash",
             "",
@@ -714,7 +705,7 @@ var shellScripts;
             "# It is in charge of calling the cli.js with the right $HOME, via the bundled",
             "# version of node.js",
             "",
-            "cd " + working_directory_path,
+            "cd " + exports.working_directory_path,
             "args=\"\"",
             "for param in \"$@\"",
             "do",
@@ -724,7 +715,7 @@ var shellScripts;
             ""
         ].join("\n"));
         execSync("ln -sf " + cli_sh_path + " " + cli_link_path);
-        var uninstaller_sh_path = path.join(working_directory_path, "uninstaller.sh");
+        var uninstaller_sh_path = path.join(exports.working_directory_path, "uninstaller.sh");
         writeAndSetPerms(uninstaller_sh_path, [
             "#!/bin/bash",
             "",
@@ -744,8 +735,8 @@ var shellScripts;
             "fi",
             ""
         ].join("\n"));
-        execSync("ln -sf " + uninstaller_sh_path + " " + get_uninstaller_link_path(astsbindir));
-        writeAndSetPerms(path.join(working_directory_path, "start.sh"), [
+        execSync("ln -sf " + uninstaller_sh_path + " " + get_uninstaller_link_path());
+        writeAndSetPerms(path.join(exports.working_directory_path, "start.sh"), [
             "#!/usr/bin/env bash",
             "",
             "# In charge of launching the service in interactive mode (via $ nmp start)",
@@ -753,7 +744,7 @@ var shellScripts;
             "",
             "" + stop_sh_path,
             "" + wait_ast_sh_path,
-            "cd " + working_directory_path,
+            "cd " + exports.working_directory_path,
             "su -s $(which bash) -c \"" + node_path + " " + main_js_path + "\" " + unix_user,
             ""
         ].join("\n"));
@@ -761,8 +752,7 @@ var shellScripts;
     }
     shellScripts.create = create;
     function remove_symbolic_links() {
-        var astsbindir = Astdirs_1.Astdirs.get().astsbindir;
-        execSyncSilent("rm -f " + cli_link_path + " " + get_uninstaller_link_path(astsbindir));
+        execSyncSilent("rm -f " + cli_link_path + " " + get_uninstaller_link_path());
     }
     shellScripts.remove_symbolic_links = remove_symbolic_links;
 })(shellScripts || (shellScripts = {}));
@@ -782,7 +772,7 @@ var systemd;
             "Environment=NODE_ENV=production",
             "PermissionsStartOnly=true",
             "StandardOutput=journal",
-            "WorkingDirectory=" + working_directory_path,
+            "WorkingDirectory=" + exports.working_directory_path,
             "Restart=always",
             "RestartPreventExitStatus=0",
             "RestartSec=10",
@@ -812,42 +802,52 @@ var systemd;
 })(systemd || (systemd = {}));
 var asterisk_manager;
 (function (asterisk_manager) {
-    var ami_conf_back_path = path.join(working_directory_path, "manager.conf.back");
+    var ami_conf_back_path = path.join(exports.working_directory_path, "manager.conf.back");
     var get_ami_conf_path = function () { return path.join(Astdirs_1.Astdirs.get().astetcdir, "manager.conf"); };
     function enable() {
         process.stdout.write("Enabling asterisk manager ... ");
-        var credential = {
-            "host": "127.0.0.1",
-            "port": InstallOptions_1.InstallOptions.get().enable_ast_ami_on_port,
-            "user": "chan_dongle_extended",
-            "secret": "" + Date.now()
-        };
         var ami_conf_path = get_ami_conf_path();
+        var general = {
+            "enabled": "yes",
+            "port": InstallOptions_1.InstallOptions.get().enable_ast_ami_on_port,
+            "bindaddr": "127.0.0.1",
+            "displayconnects": "yes"
+        };
         if (!fs.existsSync(ami_conf_path)) {
             var stat = fs.statSync(InstallOptions_1.InstallOptions.get().asterisk_main_conf);
             child_process.execSync("touch " + ami_conf_path, {
                 "uid": stat.uid,
                 "gid": stat.gid
             });
-            fs.chmodSync(ami_conf_path, stat.mode);
+            execSync("chmod 640 " + ami_conf_path);
         }
-        execSync("cp -p " + ami_conf_path + " " + ami_conf_back_path);
-        var general = {
-            "enabled": "yes",
-            "port": credential.port,
-            "bindaddr": "127.0.0.1",
-            "displayconnects": "yes"
+        else {
+            execSync("cp -p " + ami_conf_path + " " + ami_conf_back_path);
+            //TODO: test if return {} when empty file
+            var parsed_general = ini_extended_1.ini.parseStripWhitespace(fs.readFileSync(ami_conf_path).toString("utf8"))["general"] || {};
+            console.log({ parsed_general: parsed_general });
+            for (var key in parsed_general) {
+                switch (key) {
+                    case "enabled": break;
+                    case "port":
+                        if (!InstallOptions_1.InstallOptions.getDeduced().overwrite_ami_port_if_enabled) {
+                            general["port"] = parsed_general["port"];
+                        }
+                        break;
+                    default: general[key] = parsed_general[key];
+                }
+            }
+        }
+        var credential = {
+            "host": "127.0.0.1",
+            "port": general["port"],
+            "user": "chan_dongle_extended",
+            "secret": "" + Date.now()
         };
-        try {
-            general = ini_extended_1.ini.parseStripWhitespace(fs.readFileSync(ami_conf_path).toString("utf8")).general;
-            general.enabled = "yes";
-            general.port = credential.port;
-        }
-        catch (_a) { }
-        fs.writeFileSync(ami_conf_path, Buffer.from(ini_extended_1.ini.stringify((_b = {
+        fs.writeFileSync(ami_conf_path, Buffer.from(ini_extended_1.ini.stringify((_a = {
                 general: general
             },
-            _b[credential.user] = {
+            _a[credential.user] = {
                 "secret": credential.secret,
                 "deny": "0.0.0.0/0.0.0.0",
                 "permit": "0.0.0.0/0.0.0.0",
@@ -855,33 +855,28 @@ var asterisk_manager;
                 "write": "all",
                 "writetimeout": "5000"
             },
-            _b)), "utf8"));
+            _a)), "utf8"));
         try {
-            execSyncSilent([
-                "LD_LIBRARY_PATH=" + InstallOptions_1.InstallOptions.get().ld_library_path_for_asterisk,
-                "" + path.join(Astdirs_1.Astdirs.get().astsbindir, "asterisk"),
-                "-rx \"core reload\""
-            ].join(" "));
+            execSyncSilent(build_ast_cmdline() + " -rx \"core reload\"");
         }
-        catch (_c) { }
+        catch (_b) { }
         AmiCredential_1.AmiCredential.set(credential);
         console.log(scriptLib.colorize("OK", "GREEN"));
-        var _b;
+        var _a;
     }
     asterisk_manager.enable = enable;
     function restore() {
-        execSyncSilent("mv " + ami_conf_back_path + " " + get_ami_conf_path());
+        execSyncSilent("rm -f " + get_ami_conf_path());
+        if (fs.existsSync(ami_conf_back_path)) {
+            execSyncSilent("mv " + ami_conf_back_path + " " + get_ami_conf_path());
+        }
         try {
-            execSyncSilent([
-                "LD_LIBRARY_PATH=" + InstallOptions_1.InstallOptions.get().ld_library_path_for_asterisk,
-                "" + path.join(Astdirs_1.Astdirs.get().astsbindir, "asterisk"),
-                "-rx \"core reload\""
-            ].join(" "));
+            execSyncSilent(build_ast_cmdline() + " -rx \"core reload\"");
         }
         catch (_a) { }
     }
     asterisk_manager.restore = restore;
-})(asterisk_manager || (asterisk_manager = {}));
+})(asterisk_manager = exports.asterisk_manager || (exports.asterisk_manager = {}));
 var udevRules;
 (function (udevRules) {
     var rules_path = path.join("/etc/udev/rules.d", "98-" + srv_name + ".rules");
@@ -1005,10 +1000,17 @@ function apt_get_install_asterisk() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
+                    if (!scriptLib.apt_get_install_if_missing.doesHaveProg("asterisk")) {
+                        if (!scriptLib.apt_get_install_if_missing.isPkgInstalled("asterisk")) {
+                            //Custom install, we do not install from repositories.
+                            return [2 /*return*/];
+                        }
+                    }
                     if (!scriptLib.apt_get_install_if_missing.isPkgInstalled("asterisk")) {
+                        //If asterisk is not installed make sure asterisk-config is purged so the config files will be re-generated.
                         execSyncSilent("dpkg -P asterisk-config");
                     }
-                    pr_install_ast = scriptLib.apt_get_install_if_missing("asterisk-dev", "asterisk");
+                    pr_install_ast = scriptLib.apt_get_install_if_missing("asterisk-dev");
                     service_path = "/lib/systemd/system/asterisk.service";
                     watcher = fs.watch(path.dirname(service_path), function (event, filename) {
                         if (event === 'rename' &&
@@ -1125,6 +1127,11 @@ function install_prereq() {
     });
 }
 ;
+function build_ast_cmdline() {
+    var _a = InstallOptions_1.InstallOptions.get(), ld_library_path_for_asterisk = _a.ld_library_path_for_asterisk, asterisk_main_conf = _a.asterisk_main_conf;
+    var astsbindir = Astdirs_1.Astdirs.get().astsbindir;
+    return "LD_LIBRARY_PATH=" + ld_library_path_for_asterisk + " " + path.join(astsbindir, "asterisk") + " -C " + asterisk_main_conf;
+}
 function find_module_path(module_name, root_module_path) {
     var cmd = [
         "find " + path.join(root_module_path, "node_modules"),
@@ -1221,6 +1228,7 @@ function rebuild_node_modules() {
     });
 }
 if (require.main === module) {
+    require("rejection-tracker").main(module_dir_path);
     scriptLib.exit_if_not_root();
     program.parse(process.argv);
 }
