@@ -850,7 +850,7 @@ namespace systemd {
 
         scriptLib.execSync("systemctl daemon-reload");
 
-        scriptLib.execSync(`systemctl enable ${srv_name}`);
+        scriptLib.execSync(`systemctl enable ${srv_name} --quiet`);
 
         scriptLib.execSync(`systemctl start ${srv_name}`);
 

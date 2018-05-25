@@ -792,7 +792,7 @@ var systemd;
             "WantedBy=multi-user.target",
         ].join("\n"), "utf8"));
         scriptLib.execSync("systemctl daemon-reload");
-        scriptLib.execSync("systemctl enable " + srv_name);
+        scriptLib.execSync("systemctl enable " + srv_name + " --quiet");
         scriptLib.execSync("systemctl start " + srv_name);
         console.log(scriptLib.colorize("OK", "GREEN"));
     }
