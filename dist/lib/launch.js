@@ -42,6 +42,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var trackable_map_1 = require("trackable-map");
@@ -63,6 +64,9 @@ debug.enabled = true;
 debug.log = logger_1.log;
 var modems = new trackable_map_1.TrackableMap();
 var evtScheduleRetry = new ts_events_extended_1.SyncEvent();
+exports.beforeExit = function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
+    return [2 /*return*/];
+}); }); };
 function launch() {
     return __awaiter(this, void 0, void 0, function () {
         var installOptions, ami, chanDongleConfManagerApi, defaults, monitor;
@@ -71,10 +75,13 @@ function launch() {
                 case 0:
                     installOptions = InstallOptions_1.InstallOptions.get();
                     ami = ts_ami_1.Ami.getInstance(AmiCredential_1.AmiCredential.get());
+                    ami.evtTcpConnectionClosed.attachOnce(function () {
+                        throw new Error("Asterisk TCP connection closed");
+                    });
                     return [4 /*yield*/, confManager.getApi(ami)];
                 case 1:
                     chanDongleConfManagerApi = _a.sent();
-                    setExitHandlers(chanDongleConfManagerApi);
+                    exports.beforeExit = function () { return chanDongleConfManagerApi.reset(); };
                     if (!installOptions.disable_sms_dialplan) {
                         defaults = chanDongleConfManagerApi.staticModuleConfiguration.defaults;
                         dialplan.init(modems, ami, defaults["context"], defaults["exten"]);
@@ -86,6 +93,7 @@ function launch() {
                 case 3:
                     _a.sent();
                     if (process.env["NODE_ENV"] !== "production") {
+                        debug("Enabling repl");
                         repl.start(modems);
                     }
                     debug("Started");
@@ -235,64 +243,4 @@ function onModem(accessPoint, modem) {
         evtScheduleRetry.post(accessPoint);
     });
     modems.set(accessPoint, modem);
-}
-function setExitHandlers(chanDongleConfManagerApi) {
-    var _this = this;
-    var cleanupAndExit = function (code) { return __awaiter(_this, void 0, void 0, function () {
-        var exitSync, _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    exitSync = function () {
-                        if (code !== 0) {
-                            debug("Create crash report");
-                            logger_1.createCrashReport();
-                        }
-                        else {
-                            debug("Backup log");
-                            logger_1.backupCurrentLog();
-                        }
-                        process.exit(code);
-                    };
-                    debug("cleaning up and exiting with code " + code);
-                    setTimeout(function () {
-                        debug("Force quit");
-                        exitSync();
-                    }, 2000);
-                    _b.label = 1;
-                case 1:
-                    _b.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, chanDongleConfManagerApi.reset()];
-                case 2:
-                    _b.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    _a = _b.sent();
-                    return [3 /*break*/, 4];
-                case 4:
-                    exitSync();
-                    return [2 /*return*/];
-            }
-        });
-    }); };
-    //Ctrl+C
-    process.once("SIGINT", function () {
-        debug("Ctrl+C pressed ( SIGINT )");
-        cleanupAndExit(2);
-    });
-    process.once("SIGUSR2", function () {
-        debug("Stop script called (SIGUSR2)");
-        cleanupAndExit(0);
-    });
-    process.once("beforeExit", function (code) { return cleanupAndExit(code); });
-    process.removeAllListeners("uncaughtException");
-    process.once("uncaughtException", function (error) {
-        debug("uncaughtException", error);
-        cleanupAndExit(-1);
-    });
-    process.removeAllListeners("unhandledRejection");
-    process.once("unhandledRejection", function (error) {
-        debug("unhandledRejection", error);
-        cleanupAndExit(-1);
-    });
 }

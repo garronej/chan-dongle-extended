@@ -13,7 +13,7 @@ import * as atBridge from "./atBridge";
 import { SyncEvent } from "ts-events-extended";
 import * as confManager from "./confManager";
 import * as types from "./types";
-import { log, backupCurrentLog, createCrashReport } from "./logger";
+import { log } from "./logger";
 
 import {InstallOptions} from "./InstallOptions";
 
@@ -27,15 +27,23 @@ debug.log = log;
 const modems: types.Modems = new TrackableMap();
 const evtScheduleRetry = new SyncEvent<AccessPoint>();
 
+export let beforeExit: ()=> Promise<void> = async ()=> {};
+
 export async function launch() {
 
     const installOptions= InstallOptions.get();
 
     const ami = Ami.getInstance(AmiCredential.get());
 
+    ami.evtTcpConnectionClosed.attachOnce(()=>{ 
+
+        throw new Error("Asterisk TCP connection closed"); 
+
+    });
+
     const chanDongleConfManagerApi = await confManager.getApi(ami);
 
-    setExitHandlers(chanDongleConfManagerApi);
+    beforeExit= ()=> chanDongleConfManagerApi.reset();
 
     if (!installOptions.disable_sms_dialplan) {
 
@@ -50,6 +58,8 @@ export async function launch() {
     await api.launch(modems, chanDongleConfManagerApi.staticModuleConfiguration);
 
     if (process.env["NODE_ENV"] !== "production") {
+
+        debug("Enabling repl");
 
         repl.start(modems);
 
@@ -241,92 +251,5 @@ function onModem(
     );
 
     modems.set(accessPoint, modem);
-
-}
-
-function setExitHandlers(
-    chanDongleConfManagerApi: confManager.Api
-) {
-
-    const cleanupAndExit = async (code: number) => {
-
-        const exitSync = () => {
-
-            if (code !== 0) {
-
-                debug("Create crash report");
-
-                createCrashReport();
-
-            } else {
-
-                debug("Backup log");
-
-                backupCurrentLog();
-
-            }
-
-            process.exit(code);
-
-        };
-
-        debug(`cleaning up and exiting with code ${code}`);
-
-        setTimeout(() => {
-
-            debug("Force quit");
-
-            exitSync();
-
-        }, 2000);
-
-        try {
-
-            await chanDongleConfManagerApi.reset();
-
-        } catch{ }
-
-        exitSync();
-
-    }
-
-    //Ctrl+C
-    process.once("SIGINT", () => {
-
-        debug("Ctrl+C pressed ( SIGINT )");
-
-        cleanupAndExit(2);
-
-    });
-
-    process.once("SIGUSR2", () => {
-
-        debug("Stop script called (SIGUSR2)");
-
-        cleanupAndExit(0);
-
-    });
-
-    process.once("beforeExit", code => cleanupAndExit(code));
-
-    process.removeAllListeners("uncaughtException");
-
-    process.once("uncaughtException", error => {
-
-        debug("uncaughtException", error);
-
-        cleanupAndExit(-1);
-
-    });
-
-    process.removeAllListeners("unhandledRejection");
-
-    process.once("unhandledRejection", error => {
-
-        debug("unhandledRejection", error);
-
-        cleanupAndExit(-1);
-
-    });
 
 }
