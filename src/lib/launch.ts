@@ -3,7 +3,6 @@ import {
     ConnectionMonitor, AtMessage, PerformUnlock 
 } from "ts-gsm-modem";
 import { TrackableMap } from "trackable-map";
-import * as storage from "./appStorage";
 import { AmiCredential } from "./AmiCredential";
 import { Ami } from "ts-ami";
 import * as repl from "./repl";
@@ -14,6 +13,8 @@ import { SyncEvent } from "ts-events-extended";
 import * as confManager from "./confManager";
 import * as types from "./types";
 import { log } from "./logger";
+
+import * as db from "./db";
 
 import {InstallOptions} from "./InstallOptions";
 
@@ -44,6 +45,8 @@ export async function launch() {
     const chanDongleConfManagerApi = await confManager.getApi(ami);
 
     beforeExit= ()=> chanDongleConfManagerApi.reset();
+
+    await db.launch();
 
     if (!installOptions.disable_sms_dialplan) {
 
@@ -149,28 +152,31 @@ async function onLockedModem(
 
     debug("onLockedModem", { ...modemInfos, iccid, pinState, tryLeft });
 
-    let appData = await storage.read();
+    const associatedTo: db.pin.AssociatedTo = !!iccid ? ({ iccid }) : ({ "imei": modemInfos.imei });
 
-    let pin = appData.pins[iccid || modemInfos.imei];
+    const pin = await db.pin.get(associatedTo);
 
-    if (pin) {
+    if (!!pin) {
 
         if (pinState === "SIM PIN" && tryLeft === 3) {
 
             let unlockResult = await performUnlock(pin);
 
-            if (unlockResult.success) return;
+            if (unlockResult.success) {
+                return;
+            }
 
             pinState = unlockResult.pinState;
             tryLeft = unlockResult.tryLeft;
 
         } else {
 
-            delete appData.pins[iccid || modemInfos.imei];
+            await db.pin.save(undefined, associatedTo);
 
         }
 
     }
+
 
     let lockedModem: types.LockedModem = {
         "imei": modemInfos.imei,
@@ -203,17 +209,15 @@ async function onLockedModem(
 
             }
 
-            let appData = await storage.read();
-
-            if (unlockResult.success) {
+            if( unlockResult.success ){
 
                 debug(`Persistent storing of pin: ${pin}`);
 
-                appData.pins[iccid || modemInfos.imei] = pin;
+                await db.pin.save(pin, associatedTo);
 
-            } else {
+            }else{
 
-                delete appData.pins[iccid || modemInfos.imei];
+                await db.pin.save(undefined, associatedTo);
 
                 lockedModem.pinState = unlockResult.pinState;
                 lockedModem.tryLeft = unlockResult.tryLeft;

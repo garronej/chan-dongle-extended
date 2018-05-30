@@ -84,6 +84,7 @@ var start_sh_path = path.join(exports.working_directory_path, "start.sh");
 var node_path = path.join(module_dir_path, "node");
 var pkg_list_path = path.join(module_dir_path, "pkg_installed.json");
 var pid_file_path = path.join(exports.working_directory_path, srv_name + ".pid");
+exports.db_path = path.join(exports.working_directory_path, "app.db");
 Astdirs_1.Astdirs.dir_path = exports.working_directory_path;
 InstallOptions_1.InstallOptions.dir_path = exports.working_directory_path;
 AmiCredential_1.AmiCredential.dir_path = exports.working_directory_path;
@@ -310,6 +311,7 @@ function install(options) {
                     _a.sent();
                     shellScripts.create();
                     asterisk_manager.enable();
+                    scriptLib.execSync("cp " + path.join(module_dir_path, "res", "app_empty.db") + " " + exports.db_path, { "unix_user": unix_user });
                     systemd.create();
                     return [2 /*return*/];
             }
@@ -1007,11 +1009,10 @@ function apt_get_install_asterisk() {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    if (!scriptLib.apt_get_install_if_missing.doesHaveProg("asterisk")) {
-                        if (!scriptLib.apt_get_install_if_missing.isPkgInstalled("asterisk")) {
-                            //Custom install, we do not install from repositories.
-                            return [2 /*return*/];
-                        }
+                    if (scriptLib.apt_get_install_if_missing.doesHaveProg("asterisk") &&
+                        !scriptLib.apt_get_install_if_missing.isPkgInstalled("asterisk")) {
+                        //Custom install, we do not install from repositories.
+                        return [2 /*return*/];
                     }
                     if (!scriptLib.apt_get_install_if_missing.isPkgInstalled("asterisk")) {
                         //If asterisk is not installed make sure asterisk-config is purged so the config files will be re-generated.

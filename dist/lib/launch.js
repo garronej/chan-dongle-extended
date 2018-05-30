@@ -46,7 +46,6 @@ var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var trackable_map_1 = require("trackable-map");
-var storage = require("./appStorage");
 var AmiCredential_1 = require("./AmiCredential");
 var ts_ami_1 = require("ts-ami");
 var repl = require("./repl");
@@ -56,6 +55,7 @@ var atBridge = require("./atBridge");
 var ts_events_extended_1 = require("ts-events-extended");
 var confManager = require("./confManager");
 var logger_1 = require("./logger");
+var db = require("./db");
 var InstallOptions_1 = require("./InstallOptions");
 require("colors");
 var debugFactory = require("debug");
@@ -82,15 +82,18 @@ function launch() {
                 case 1:
                     chanDongleConfManagerApi = _a.sent();
                     exports.beforeExit = function () { return chanDongleConfManagerApi.reset(); };
+                    return [4 /*yield*/, db.launch()];
+                case 2:
+                    _a.sent();
                     if (!installOptions.disable_sms_dialplan) {
                         defaults = chanDongleConfManagerApi.staticModuleConfiguration.defaults;
                         dialplan.init(modems, ami, defaults["context"], defaults["exten"]);
                     }
                     return [4 /*yield*/, atBridge.init(modems, chanDongleConfManagerApi)];
-                case 2:
+                case 3:
                     _a.sent();
                     return [4 /*yield*/, api.launch(modems, chanDongleConfManagerApi.staticModuleConfiguration)];
-                case 3:
+                case 4:
                     _a.sent();
                     if (process.env["NODE_ENV"] !== "production") {
                         debug("Enabling repl");
@@ -155,29 +158,31 @@ function onModemInitializationFailed(accessPoint, message, modemInfos) {
 function onLockedModem(accessPoint, modemInfos, iccid, pinState, tryLeft, performUnlock) {
     return __awaiter(this, void 0, void 0, function () {
         var _this = this;
-        var appData, pin, unlockResult, lockedModem;
+        var associatedTo, pin, unlockResult, lockedModem;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     debug("onLockedModem", __assign({}, modemInfos, { iccid: iccid, pinState: pinState, tryLeft: tryLeft }));
-                    return [4 /*yield*/, storage.read()];
+                    associatedTo = !!iccid ? ({ iccid: iccid }) : ({ "imei": modemInfos.imei });
+                    return [4 /*yield*/, db.pin.get(associatedTo)];
                 case 1:
-                    appData = _a.sent();
-                    pin = appData.pins[iccid || modemInfos.imei];
-                    if (!pin) return [3 /*break*/, 4];
+                    pin = _a.sent();
+                    if (!!!pin) return [3 /*break*/, 5];
                     if (!(pinState === "SIM PIN" && tryLeft === 3)) return [3 /*break*/, 3];
                     return [4 /*yield*/, performUnlock(pin)];
                 case 2:
                     unlockResult = _a.sent();
-                    if (unlockResult.success)
+                    if (unlockResult.success) {
                         return [2 /*return*/];
+                    }
                     pinState = unlockResult.pinState;
                     tryLeft = unlockResult.tryLeft;
-                    return [3 /*break*/, 4];
-                case 3:
-                    delete appData.pins[iccid || modemInfos.imei];
-                    _a.label = 4;
+                    return [3 /*break*/, 5];
+                case 3: return [4 /*yield*/, db.pin.save(undefined, associatedTo)];
                 case 4:
+                    _a.sent();
+                    _a.label = 5;
+                case 5:
                     lockedModem = {
                         "imei": modemInfos.imei,
                         "manufacturer": modemInfos.manufacturer,
@@ -190,7 +195,7 @@ function onLockedModem(accessPoint, modemInfos, iccid, pinState, tryLeft, perfor
                                 inputs[_i] = arguments[_i];
                             }
                             return __awaiter(_this, void 0, void 0, function () {
-                                var pin, puk, unlockResult, appData;
+                                var pin, puk, unlockResult;
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
                                         case 0:
@@ -210,20 +215,21 @@ function onLockedModem(accessPoint, modemInfos, iccid, pinState, tryLeft, perfor
                                         case 3:
                                             unlockResult = _a.sent();
                                             _a.label = 4;
-                                        case 4: return [4 /*yield*/, storage.read()];
+                                        case 4:
+                                            if (!unlockResult.success) return [3 /*break*/, 6];
+                                            debug("Persistent storing of pin: " + pin);
+                                            return [4 /*yield*/, db.pin.save(pin, associatedTo)];
                                         case 5:
-                                            appData = _a.sent();
-                                            if (unlockResult.success) {
-                                                debug("Persistent storing of pin: " + pin);
-                                                appData.pins[iccid || modemInfos.imei] = pin;
-                                            }
-                                            else {
-                                                delete appData.pins[iccid || modemInfos.imei];
-                                                lockedModem.pinState = unlockResult.pinState;
-                                                lockedModem.tryLeft = unlockResult.tryLeft;
-                                                modems.set(accessPoint, lockedModem);
-                                            }
-                                            return [2 /*return*/, unlockResult];
+                                            _a.sent();
+                                            return [3 /*break*/, 8];
+                                        case 6: return [4 /*yield*/, db.pin.save(undefined, associatedTo)];
+                                        case 7:
+                                            _a.sent();
+                                            lockedModem.pinState = unlockResult.pinState;
+                                            lockedModem.tryLeft = unlockResult.tryLeft;
+                                            modems.set(accessPoint, lockedModem);
+                                            _a.label = 8;
+                                        case 8: return [2 /*return*/, unlockResult];
                                     }
                                 });
                             });

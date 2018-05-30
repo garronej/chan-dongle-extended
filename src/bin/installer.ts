@@ -23,6 +23,7 @@ const start_sh_path = path.join(working_directory_path, "start.sh");
 const node_path = path.join(module_dir_path, "node");
 const pkg_list_path = path.join(module_dir_path, "pkg_installed.json");
 const pid_file_path= path.join(working_directory_path, `${srv_name}.pid`)
+export const db_path= path.join(working_directory_path, "app.db");
 
 Astdirs.dir_path = working_directory_path;
 InstallOptions.dir_path = working_directory_path;
@@ -288,6 +289,11 @@ async function install(options: Partial<InstallOptions>) {
     shellScripts.create();
 
     asterisk_manager.enable();
+
+    scriptLib.execSync(
+        `cp ${path.join(module_dir_path, "res", "app_empty.db")} ${db_path}`,
+        { "unix_user": unix_user }
+    );
 
     systemd.create();
 
@@ -1092,12 +1098,13 @@ namespace udevRules {
 
 async function apt_get_install_asterisk() {
 
-    if (!scriptLib.apt_get_install_if_missing.doesHaveProg("asterisk")) {
+    if (
+        scriptLib.apt_get_install_if_missing.doesHaveProg("asterisk") && 
+        !scriptLib.apt_get_install_if_missing.isPkgInstalled("asterisk")
+    ) {
 
-        if (!scriptLib.apt_get_install_if_missing.isPkgInstalled("asterisk")) {
             //Custom install, we do not install from repositories.
             return;
-        }
 
     }
 
@@ -1108,7 +1115,7 @@ async function apt_get_install_asterisk() {
 
     }
 
-    let pr_install_ast = scriptLib.apt_get_install_if_missing("asterisk-dev");
+    const pr_install_ast = scriptLib.apt_get_install_if_missing("asterisk-dev");
 
     //HOTFIX: On old version of raspberry pi install crash because timeout is reached.
 

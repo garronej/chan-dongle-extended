@@ -2,26 +2,25 @@ import { Modem } from "ts-gsm-modem";
 import * as types from "./types";
 import { InstallOptions } from "./InstallOptions";
 
-import { 
+import {
     apiDeclaration, types as dcTypes, misc
 } from "../chan-dongle-extended-client";
-import localApiDeclaration= apiDeclaration.service;
-import remoteApiDeclaration= apiDeclaration.controller;
+import localApiDeclaration = apiDeclaration.service;
+import remoteApiDeclaration = apiDeclaration.controller;
 
 import { isVoid, Void } from "trackable-map";
-
-import * as storage from "./appStorage";
 
 import * as sipLibrary from "ts-sip";
 import { VoidSyncEvent } from "ts-events-extended";
 import { log } from "./logger";
+import * as db from "./db";
 
 import * as net from "net";
 
 const sockets = new Set<sipLibrary.Socket>();
 
 export function launch(
-    modems: types.Modems, 
+    modems: types.Modems,
     staticModuleConfiguration: dcTypes.StaticModuleConfiguration
 ): Promise<void> {
 
@@ -36,7 +35,7 @@ export function launch(
         })
     );
 
-    let evtListening= new VoidSyncEvent();
+    let evtListening = new VoidSyncEvent();
 
     net.createServer()
         .once("error", error => { throw error; })
@@ -60,7 +59,7 @@ export function launch(
                     socket,
                     methodName,
                     {
-                        "dongles": Array.from(modems.values()).map(modem => buildDongle(modem)!),
+                        "dongles": Array.from(modems.values()).map(modem => buildDongleFromModem(modem)!),
                         staticModuleConfiguration
                     }
                 ).catch(() => { });
@@ -69,7 +68,7 @@ export function launch(
 
 
         })
-        .once("listening", ()=> evtListening.post())
+        .once("listening", () => evtListening.post())
         .listen(port, bind_addr)
         ;
 
@@ -98,7 +97,7 @@ export function launch(
                     methodName,
                     {
                         dongleImei,
-                        "dongle": buildDongle(newModem)
+                        "dongle": buildDongleFromModem(newModem)
                     }
                 );
 
@@ -114,7 +113,7 @@ export function launch(
     );
 
     return new Promise<void>(
-        resolve=> evtListening.attachOnce(()=> resolve())
+        resolve => evtListening.attachOnce(() => resolve())
     );
 
 }
@@ -124,13 +123,13 @@ function broadcastRequest<Params, Response extends undefined>(
     params: Params
 ): void {
 
-    for( let socket of sockets ){
+    for (let socket of sockets) {
 
         sipLibrary.api.client.sendRequest<Params, Response>(
             socket,
             methodName,
             params
-        ).catch(()=> {});
+        ).catch(() => { });
 
     }
 
@@ -138,19 +137,7 @@ function broadcastRequest<Params, Response extends undefined>(
 
 function onNewModem(modem: Modem) {
 
-    let imsi = modem.imsi;
-
-    (async () => {
-
-        let appData = await storage.read();
-
-        if (!appData.messages[imsi]) {
-            appData.messages[imsi] = [];
-        }
-
-    })();
-
-    let dongleImei = modem.imei;
+    const dongleImei = modem.imei;
 
     modem.evtMessage.attach(async message => {
 
@@ -158,7 +145,7 @@ function onNewModem(modem: Modem) {
         type Params = remoteApiDeclaration.notifyMessage.Params;
         type Response = remoteApiDeclaration.notifyMessage.Response;
 
-        let response = await new Promise<Response>(resolve => {
+        const response = await new Promise<Response>(resolve => {
 
             let tasks: Promise<void>[] = [];
 
@@ -166,35 +153,31 @@ function onNewModem(modem: Modem) {
 
                 tasks[tasks.length] = (async () => {
 
-                    let response: Response = "DO NOT SAVE MESSAGE";
-
                     try {
 
-                        response = await sipLibrary.api.client.sendRequest<Params, Response>(
+                        const response = await sipLibrary.api.client.sendRequest<Params, Response>(
                             socket,
                             methodName,
                             { dongleImei, message }
                         );
 
-                    } catch{ }
+                        if (response === "DO NOT SAVE MESSAGE") {
+                            resolve(response);
+                        }
 
-                    if (response === "SAVE MESSAGE") {
-                        resolve(response);
-                    }
+                    } catch{ }
 
                 })();
 
             }
 
-            Promise.all(tasks).then(() => resolve("DO NOT SAVE MESSAGE"));
+            Promise.all(tasks).then(() => resolve("SAVE MESSAGE"));
 
         });
 
         if (response === "SAVE MESSAGE") {
 
-            let appData = await storage.read();
-
-            appData.messages[imsi].push(message);
+            await db.messages.save(modem.imsi, message);
 
         }
 
@@ -323,59 +306,7 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
         type Response = localApiDeclaration.getMessages.Response;
 
         let handler: sipLibrary.api.Server.Handler<Params, Response> = {
-            "handler": async (params) => {
-
-                let response: Response = {};
-
-                let from = 0;
-                let to = Infinity;
-                let flush = false;
-
-                if (params.fromDate !== undefined) {
-                    from = params.fromDate.getTime();
-                }
-
-                if (params.toDate !== undefined) {
-                    to = params.toDate.getTime();
-                }
-
-                if (params.flush !== undefined) {
-                    flush = params.flush;
-                }
-
-                let appData = await storage.read();
-
-                for (let imsi of params.imsi ? [params.imsi] : Object.keys(appData.messages)) {
-
-                    let messagesOfSim = appData.messages[imsi];
-
-                    if (!messagesOfSim) {
-                        throw new Error(`Sim imsi: ${imsi} was never connected`);
-                    }
-
-                    response[imsi] = [];
-
-                    for (let message of [...messagesOfSim]) {
-
-                        let time = message.date.getTime();
-
-                        if ((time < from) || (time > to)) continue;
-
-                        response[imsi].push(message);
-
-                        if (flush) {
-                            messagesOfSim.splice(messagesOfSim.indexOf(message), 1);
-                        }
-
-
-                    }
-
-                }
-
-                return response;
-
-
-            }
+            "handler": params => db.messages.retrieve(params)
         };
 
         handlers[methodName] = handler;
@@ -386,98 +317,93 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
 }
 
-function buildDongle(
+function buildDongleFromModem(
     modem: Modem | types.LockedModem | Void
 ): dcTypes.Dongle | undefined {
 
     if (types.LockedModem.match(modem)) {
 
-        return (function buildLockedDongle(lockedModem: types.LockedModem): dcTypes.Dongle.Locked {
-
-            return {
-                "imei": lockedModem.imei,
-                "manufacturer": lockedModem.manufacturer,
-                "model": lockedModem.model,
-                "firmwareVersion": lockedModem.firmwareVersion,
-                "sim": {
-                    "iccid": lockedModem.iccid,
-                    "pinState": lockedModem.pinState,
-                    "tryLeft": lockedModem.tryLeft
-                }
-            };
-
-        })(modem);
+        return buildDongleFromModem.buildLockedDongleFromLockedModem(modem);
 
     } else if (types.matchModem(modem)) {
 
-        return (function buildUsableDongle(modem: Modem): dcTypes.Dongle.Usable {
-
-            let number = modem.number;
-            let storageLeft = modem.storageLeft;
-
-            let contacts: dcTypes.Sim.Contact[] = [];
-
-            let imsi = modem.imsi;
-
-            for (let contact of modem.contacts) {
-
-                contacts.push({
-                    "index": contact.index,
-                    "name": {
-                        "asStored": contact.name,
-                        "full": contact.name
-                    },
-                    "number": {
-                        "asStored": contact.number,
-                        "localFormat": misc.toNationalNumber(contact.number, imsi)
-                    }
-                });
-
-            }
-
-            let digest = misc.computeSimStorageDigest(number, storageLeft, contacts);
-
-            let simCountryAndSp = misc.getSimCountryAndSp(imsi);
-
-            return {
-                "imei": modem.imei,
-                "manufacturer": modem.manufacturer,
-                "model": modem.model,
-                "firmwareVersion": modem.firmwareVersion,
-                "isVoiceEnabled": modem.isVoiceEnabled,
-                "sim": {
-                    "iccid": modem.iccid,
-                    imsi,
-                    "country": simCountryAndSp ? ({
-                        "iso": simCountryAndSp.iso,
-                        "code": simCountryAndSp.code,
-                        "name": simCountryAndSp.name
-                    }) : undefined,
-                    "serviceProvider": {
-                        "fromImsi": simCountryAndSp ? simCountryAndSp.serviceProvider : undefined,
-                        "fromNetwork": modem.serviceProviderName
-                    },
-                    "storage": {
-                        "number": number ?
-                            ({ "asStored": number, "localFormat": misc.toNationalNumber(number, imsi) })
-                            : undefined,
-                        "infos": {
-                            "contactNameMaxLength": modem.contactNameMaxLength,
-                            "numberMaxLength": modem.numberMaxLength,
-                            storageLeft
-                        },
-                        contacts,
-                        digest
-                    }
-                }
-            };
-
-        })(modem);
+        return buildDongleFromModem.buildUsableDongleFromModem(modem);
 
     } else {
 
         return undefined;
 
     }
+
+}
+
+namespace buildDongleFromModem {
+
+    export function buildLockedDongleFromLockedModem(
+        lockedModem: types.LockedModem
+    ): dcTypes.Dongle.Locked {
+
+        return {
+            "imei": lockedModem.imei,
+            "manufacturer": lockedModem.manufacturer,
+            "model": lockedModem.model,
+            "firmwareVersion": lockedModem.firmwareVersion,
+            "sim": {
+                "iccid": lockedModem.iccid,
+                "pinState": lockedModem.pinState,
+                "tryLeft": lockedModem.tryLeft
+            }
+        };
+
+    }
+
+    export function buildUsableDongleFromModem(
+        modem: Modem
+    ): dcTypes.Dongle.Usable {
+
+        let number = modem.number;
+        let storageLeft = modem.storageLeft;
+
+        let contacts: dcTypes.Sim.Contact[] = modem.contacts;
+
+        let imsi = modem.imsi;
+
+        let digest = misc.computeSimStorageDigest(number, storageLeft, contacts);
+
+        let simCountryAndSp = misc.getSimCountryAndSp(imsi);
+
+        return {
+            "imei": modem.imei,
+            "manufacturer": modem.manufacturer,
+            "model": modem.model,
+            "firmwareVersion": modem.firmwareVersion,
+            "isVoiceEnabled": modem.isVoiceEnabled,
+            "sim": {
+                "iccid": modem.iccid,
+                imsi,
+                "country": simCountryAndSp ? ({
+                    "iso": simCountryAndSp.iso,
+                    "code": simCountryAndSp.code,
+                    "name": simCountryAndSp.name
+                }) : undefined,
+                "serviceProvider": {
+                    "fromImsi": simCountryAndSp ? simCountryAndSp.serviceProvider : undefined,
+                    "fromNetwork": modem.serviceProviderName
+                },
+                "storage": {
+                    "number": number || undefined,
+                    "infos": {
+                        "contactNameMaxLength": modem.contactNameMaxLength,
+                        "numberMaxLength": modem.numberMaxLength,
+                        storageLeft
+                    },
+                    contacts,
+                    digest
+                }
+            }
+        };
+
+    }
+
 
 }

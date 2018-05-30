@@ -219,7 +219,7 @@ program
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
-                flush = (options.flush === true);
+                flush = options.flush === true;
                 return [4 /*yield*/, getDcInstance()];
             case 1:
                 dc = _a.sent();
@@ -228,7 +228,7 @@ program
                 _a.trys.push([2, 4, , 5]);
                 return [4 /*yield*/, dc.getMessages({ flush: flush })];
             case 3:
-                messages = (_a.sent());
+                messages = _a.sent();
                 console.log(JSON.stringify(messages, null, 2));
                 process.exit(0);
                 return [3 /*break*/, 5];

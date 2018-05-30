@@ -179,13 +179,13 @@ program
     .option("-f, --flush", "Whether or not erasing retrieved messages")
     .action(async options => {
 
-        let flush = (options.flush === true);
+        const flush = options.flush === true;
 
         let dc = await getDcInstance();
 
         try {
 
-            let messages = (await dc.getMessages({ flush }));
+            const messages = await dc.getMessages({ flush });
 
             console.log(JSON.stringify(messages, null, 2));
 
