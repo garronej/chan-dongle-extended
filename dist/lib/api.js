@@ -222,7 +222,7 @@ function makeApiHandlers(modems) {
             "handler": function (_a) {
                 var viaDongleImei = _a.viaDongleImei, toNumber = _a.toNumber, text = _a.text;
                 return __awaiter(_this, void 0, void 0, function () {
-                    var modem, sendDate, boundTo_1, _b;
+                    var modem, sendDate, _b;
                     return __generator(this, function (_c) {
                         switch (_c.label) {
                             case 0:
@@ -236,14 +236,9 @@ function makeApiHandlers(modems) {
                                 _c.label = 1;
                             case 1:
                                 _c.trys.push([1, 3, , 4]);
-                                boundTo_1 = [];
-                                return [4 /*yield*/, Promise.race([
-                                        modem.sendMessage(toNumber, text),
-                                        new Promise(function (_, reject) { return modem.evtTerminate.attachOnce(boundTo_1, function () { return reject(); }); })
-                                    ])];
+                                return [4 /*yield*/, performModemAction(modem, function () { return modem.sendMessage(toNumber, text); })];
                             case 2:
                                 sendDate = _c.sent();
-                                modem.evtTerminate.detach(boundTo_1);
                                 return [3 /*break*/, 4];
                             case 3:
                                 _b = _c.sent();
@@ -302,7 +297,132 @@ function makeApiHandlers(modems) {
         };
         handlers[methodName] = handler;
     })();
+    (function () {
+        var methodName = localApiDeclaration.createContact.methodName;
+        var handler = {
+            "handler": function (_a) {
+                var imsi = _a.imsi, number = _a.number, name = _a.name;
+                return __awaiter(_this, void 0, void 0, function () {
+                    var modem, contact, _b;
+                    return __generator(this, function (_c) {
+                        switch (_c.label) {
+                            case 0:
+                                modem = Array.from(modems.values())
+                                    .filter(types.matchModem)
+                                    .find(function (modem) { return modem.imsi === imsi; });
+                                if (!modem) {
+                                    return [2 /*return*/, { "isSuccess": false }];
+                                }
+                                _c.label = 1;
+                            case 1:
+                                _c.trys.push([1, 3, , 4]);
+                                return [4 /*yield*/, performModemAction(modem, function () { return modem.createContact(number, name); })];
+                            case 2:
+                                contact = _c.sent();
+                                return [3 /*break*/, 4];
+                            case 3:
+                                _b = _c.sent();
+                                return [2 /*return*/, { "isSuccess": false }];
+                            case 4: return [2 /*return*/, { "isSuccess": true, contact: contact }];
+                        }
+                    });
+                });
+            }
+        };
+        handlers[methodName] = handler;
+    })();
+    (function () {
+        var methodName = localApiDeclaration.updateContact.methodName;
+        var handler = {
+            "handler": function (_a) {
+                var imsi = _a.imsi, index = _a.index, new_number = _a.new_number, new_name = _a.new_name;
+                return __awaiter(_this, void 0, void 0, function () {
+                    var modem, contact, _b;
+                    return __generator(this, function (_c) {
+                        switch (_c.label) {
+                            case 0:
+                                modem = Array.from(modems.values())
+                                    .filter(types.matchModem)
+                                    .find(function (modem) { return modem.imsi === imsi; });
+                                if (!modem) {
+                                    return [2 /*return*/, { "isSuccess": false }];
+                                }
+                                _c.label = 1;
+                            case 1:
+                                _c.trys.push([1, 3, , 4]);
+                                return [4 /*yield*/, performModemAction(modem, function () { return modem.updateContact(index, { "name": new_name, "number": new_number }); })];
+                            case 2:
+                                contact = _c.sent();
+                                return [3 /*break*/, 4];
+                            case 3:
+                                _b = _c.sent();
+                                return [2 /*return*/, { "isSuccess": false }];
+                            case 4: return [2 /*return*/, { "isSuccess": true, contact: contact }];
+                        }
+                    });
+                });
+            }
+        };
+        handlers[methodName] = handler;
+    })();
+    (function () {
+        var methodName = localApiDeclaration.deleteContact.methodName;
+        var handler = {
+            "handler": function (_a) {
+                var imsi = _a.imsi, index = _a.index;
+                return __awaiter(_this, void 0, void 0, function () {
+                    var modem, _b;
+                    return __generator(this, function (_c) {
+                        switch (_c.label) {
+                            case 0:
+                                modem = Array.from(modems.values())
+                                    .filter(types.matchModem)
+                                    .find(function (modem) { return modem.imsi === imsi; });
+                                if (!modem) {
+                                    return [2 /*return*/, { "isSuccess": false }];
+                                }
+                                _c.label = 1;
+                            case 1:
+                                _c.trys.push([1, 3, , 4]);
+                                return [4 /*yield*/, performModemAction(modem, function () { return modem.deleteContact(index); })];
+                            case 2:
+                                _c.sent();
+                                return [3 /*break*/, 4];
+                            case 3:
+                                _b = _c.sent();
+                                return [2 /*return*/, { "isSuccess": false }];
+                            case 4: return [2 /*return*/, { "isSuccess": true }];
+                        }
+                    });
+                });
+            }
+        };
+        handlers[methodName] = handler;
+    })();
     return handlers;
+}
+/**
+ * Perform an action on modem, throw if the Modem disconnect
+ * before the action is completed.
+ * */
+function performModemAction(modem, action) {
+    return __awaiter(this, void 0, void 0, function () {
+        var boundTo, response;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    boundTo = [];
+                    return [4 /*yield*/, Promise.race([
+                            action(),
+                            new Promise(function (_, reject) { return modem.evtTerminate.attachOnce(boundTo, function () { return reject(new Error("Modem disconnect while performing action")); }); })
+                        ])];
+                case 1:
+                    response = _a.sent();
+                    modem.evtTerminate.detach(boundTo);
+                    return [2 /*return*/, response];
+            }
+        });
+    });
 }
 function buildDongleFromModem(modem) {
     if (types.LockedModem.match(modem)) {

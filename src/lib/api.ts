@@ -26,7 +26,7 @@ export function launch(
 
     const { bind_addr, port } = InstallOptions.get();
 
-    let server = new sipLibrary.api.Server(
+    const server = new sipLibrary.api.Server(
         makeApiHandlers(modems),
         sipLibrary.api.Server.getDefaultLogger({
             log,
@@ -210,7 +210,7 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
         let handler: sipLibrary.api.Server.Handler<Params, Response> = {
             "handler": async ({ viaDongleImei, toNumber, text }) => {
 
-                let modem = modems.find(({ imei }) => imei === viaDongleImei);
+                const modem = modems.find(({ imei }) => imei === viaDongleImei);
 
                 if (!types.matchModem(modem)) {
 
@@ -222,16 +222,9 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
                 try {
 
-                    let boundTo = [];
-
-                    sendDate = await Promise.race([
-                        modem.sendMessage(toNumber, text),
-                        new Promise<never>(
-                            (_, reject) => (modem as Modem).evtTerminate.attachOnce(boundTo, () => reject())
-                        )
-                    ]);
-
-                    modem.evtTerminate.detach(boundTo);
+                    sendDate= await performModemAction(
+                        modem, ()=> modem.sendMessage(toNumber, text)
+                    );
 
                 } catch {
 
@@ -313,7 +306,158 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
     })();
 
+    (() => {
+
+        const methodName = localApiDeclaration.createContact.methodName;
+        type Params = localApiDeclaration.createContact.Params;
+        type Response = localApiDeclaration.createContact.Response;
+
+        const handler: sipLibrary.api.Server.Handler<Params, Response> = {
+            "handler": async ({ imsi, number, name }) => {
+
+                const modem = Array.from(modems.values())
+                    .filter(types.matchModem)
+                    .find(modem => modem.imsi === imsi)
+                    ;
+
+                if (!modem) {
+                    return { "isSuccess": false };
+                }
+
+                let contact: dcTypes.Sim.Contact;
+
+                try {
+
+                    contact = await performModemAction(modem, 
+                        ()=> modem.createContact(number, name)
+                    );
+
+                } catch{
+
+                    return { "isSuccess": false };
+
+                }
+
+                return { "isSuccess": true, contact };
+
+            }
+        };
+
+        handlers[methodName] = handler;
+
+    })();
+
+    (() => {
+
+        const methodName = localApiDeclaration.updateContact.methodName;
+        type Params = localApiDeclaration.updateContact.Params;
+        type Response = localApiDeclaration.updateContact.Response;
+
+        const handler: sipLibrary.api.Server.Handler<Params, Response> = {
+            "handler": async ({ imsi, index, new_number, new_name }) => {
+
+                const modem = Array.from(modems.values())
+                    .filter(types.matchModem)
+                    .find(modem => modem.imsi === imsi)
+                    ;
+
+                if (!modem) {
+                    return { "isSuccess": false };
+                }
+
+                let contact: dcTypes.Sim.Contact;
+
+                try {
+
+                    contact = await performModemAction(modem, 
+                        ()=> modem.updateContact(
+                            index, { "name": new_name, "number": new_number }
+                        )
+                    );
+
+                } catch{
+
+                    return { "isSuccess": false };
+
+                }
+
+                return { "isSuccess": true, contact };
+
+            }
+        };
+
+        handlers[methodName] = handler;
+
+    })();
+
+    (() => {
+
+        const methodName = localApiDeclaration.deleteContact.methodName;
+        type Params = localApiDeclaration.deleteContact.Params;
+        type Response = localApiDeclaration.deleteContact.Response;
+
+        const handler: sipLibrary.api.Server.Handler<Params, Response> = {
+            "handler": async ({ imsi, index }) => {
+
+                const modem = Array.from(modems.values())
+                    .filter(types.matchModem)
+                    .find(modem => modem.imsi === imsi)
+                    ;
+
+                if (!modem) {
+                    return { "isSuccess": false };
+                }
+
+                try {
+
+                    await performModemAction(modem, 
+                        () => modem.deleteContact(index)
+                    );
+
+                } catch{
+
+                    return { "isSuccess": false };
+
+                }
+
+                return { "isSuccess": true };
+
+            }
+        };
+
+        handlers[methodName] = handler;
+
+    })();
+
     return handlers;
+
+}
+
+/** 
+ * Perform an action on modem, throw if the Modem disconnect 
+ * before the action is completed.
+ * */
+async function performModemAction<Response>(
+    modem: Modem,
+    action: () => Promise<Response>
+): Promise<Response> {
+
+    const boundTo = [];
+
+    const response = await Promise.race([
+        action(),
+        new Promise<never>(
+            (_, reject) => modem.evtTerminate.attachOnce(
+                boundTo, () => reject(
+                    new Error("Modem disconnect while performing action")
+                )
+            )
+        )
+    ]);
+
+    modem.evtTerminate.detach(boundTo);
+
+    return response;
 
 }
 
