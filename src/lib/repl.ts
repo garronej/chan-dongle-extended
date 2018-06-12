@@ -12,7 +12,7 @@ export function start(modems: types.Modems) {
     }) as any;
 
     Object.defineProperty(context, "exit", {
-        "get": () => process.emit("beforeExit", 0)
+        "get": () => process.emit("SIGUSR2")
     });
 
     Object.defineProperty(context, "accessPoints", {

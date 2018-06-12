@@ -154,9 +154,12 @@ program
         process.exit(0);
 
     });
+
 program
     .command("tarball")
     .action(async () => {
+
+        scriptLib.enableCmdTrace();
 
         const _module_dir_path = path.join("/tmp", path.basename(module_dir_path));
 
@@ -293,7 +296,7 @@ function uninstall(verbose?: "VERBOSE" | undefined) {
     const write: (str: string) => void = !!verbose ? process.stdout.write.bind(process.stdout) : (() => { });
     const log = (str: string) => write(`${str}\n`);
 
-    const runRecover = (description: string, action: () => void) => {
+    const runRecover = async (description: string, action: () => void) => {
 
         write(description);
 
@@ -301,7 +304,6 @@ function uninstall(verbose?: "VERBOSE" | undefined) {
 
             action();
 
-            log(scriptLib.colorize("ok", "GREEN"));
 
         } catch ({ message }) {
 
@@ -309,17 +311,18 @@ function uninstall(verbose?: "VERBOSE" | undefined) {
 
         }
 
-    }
+        log(scriptLib.colorize("ok", "GREEN"));
 
-    runRecover("Stopping running instance ... ", () => stopRunningInstance());
+    }
+    runRecover("Stopping running instance ... ", () => stopService());
+
+    runRecover("Removing systemd service ... ", () => systemd.remove());
 
     runRecover("Uninstalling chan_dongle.so ... ", () => chan_dongle.remove());
 
     runRecover("Restoring asterisk manager ... ", () => asterisk_manager.restore());
 
     runRecover("Removing binary symbolic links ... ", () => shellScripts.remove_symbolic_links());
-
-    runRecover("Removing systemd service ... ", () => systemd.remove());
 
     runRecover("Removing udev rules ... ", () => udevRules.remove());
 
@@ -333,13 +336,50 @@ function uninstall(verbose?: "VERBOSE" | undefined) {
 
 }
 
-function stopRunningInstance() {
-    try {
-        scriptLib.execSyncQuiet(stopRunningInstance.getCmd());
-    } catch{ }
+function stopService() {
+
+    if( !stopService.isRunning() ){
+
+        return;
+
+    }else if( fs.existsSync(pid_file_path) ){
+
+        try { scriptLib.execSyncQuiet(stopService.getCmd()); } catch{ }
+
+        let count= 0;
+
+        while( count++ < 3  ){
+
+            if( !stopService.isRunning() ){
+                return;
+            }
+
+            scriptLib.execSync(`sleep 1`);
+
+        }
+
+        scriptLib.execSync(`rm -f ${pid_file_path}`);
+
+        return stopService();
+
+    }else{
+
+        try{ scriptLib.execSyncQuiet(`systemctl stop ${srv_name}`) } catch{}
+
+        try { scriptLib.execSyncQuiet(`pkill -u ${unix_user}`); } catch{ }
+
+        while( stopService.isRunning() ){
+
+            scriptLib.execSync(`sleep 1`);
+        }
+
+        return;
+
+    }
+
 }
 
-namespace stopRunningInstance {
+namespace stopService {
 
     let cmd: string | undefined = undefined;
 
@@ -356,6 +396,12 @@ namespace stopRunningInstance {
         ].join(" ");
 
         return getCmd();
+
+    }
+
+    export function isRunning(): boolean{
+
+        return scriptLib.sh_if(`ps -u ${unix_user}`) || fs.existsSync(pid_file_path);
 
     }
 
@@ -389,7 +435,7 @@ namespace tty0tty {
 
         process.stdout.write("Checking for linux kernel headers ...");
 
-        if( fs.existsSync(path.join(build_link_path, "include"))){
+        if (fs.existsSync(path.join(build_link_path, "include"))) {
 
             console.log(`found. ${scriptLib.colorize("OK", "GREEN")}`);
 
@@ -506,7 +552,7 @@ namespace tty0tty {
     }
 
     const load_module_file_path = "/etc/modules";
-    const ko_file_path= "/lib/modules/$(uname -r)/kernel/drivers/misc/tty0tty.ko";
+    const ko_file_path = "/lib/modules/$(uname -r)/kernel/drivers/misc/tty0tty.ko";
 
     export async function install() {
 
@@ -622,7 +668,7 @@ namespace chan_dongle {
         try {
 
             scriptLib.execSyncQuiet(
-                `${build_ast_cmdline()} -rx "module unload chan_dongle.so"`, 
+                `${build_ast_cmdline()} -rx "module unload chan_dongle.so"`,
                 { "timeout": 5000 }
             );
 
@@ -659,12 +705,6 @@ namespace unixUser {
     export function create() {
 
         process.stdout.write(`Creating unix user '${unix_user}' ... `);
-
-        stopRunningInstance();
-
-        scriptLib.execSyncQuiet(`pkill -u ${unix_user} || true`);
-
-        scriptLib.execSyncQuiet(`userdel ${unix_user} || true`);
 
         scriptLib.execSync(`useradd -M ${unix_user} -s /bin/false -d ${working_directory_path}`);
 
@@ -731,7 +771,7 @@ namespace shellScripts {
                 `       exit 1`,
                 `   fi`,
                 `   ${node_path} ${__filename} uninstall`,
-                `   ${fs.existsSync(path.join(module_dir_path, ".git")) ? `` : `rm -r ${module_dir_path}`}`,
+                `   ${getIsProd() ? `rm -r ${module_dir_path}` : ""}`,
                 `else`,
                 `   echo "If you wish to uninstall chan-dongle-extended call this script with 'run' as argument:"`,
                 `   echo "$0 run"`,
@@ -750,7 +790,7 @@ namespace shellScripts {
                 `# In charge of launching the service in interactive mode (via $ nmp start)`,
                 `# It will gracefully terminate any running instance before.`,
                 ``,
-                `${stopRunningInstance.getCmd()} 2>/dev/null`,
+                `${stopService.getCmd()} 2>/dev/null`,
                 `echo $$ > ${pid_file_path}`,
                 `chown ${unix_user}:${unix_user} ${pid_file_path}`,
                 `trap "rm -f ${pid_file_path}" 0`,
@@ -795,7 +835,7 @@ namespace systemd {
                 ``,
                 `[Service]`,
                 `ExecStart=${start_sh_path}`,
-                `ExecStop=${stopRunningInstance.getCmd()}`,
+                `ExecStop=${stopService.getCmd()}`,
                 `ExecStopPost=${scriptLib.sh_eval(`which rm`)} -f ${pid_file_path}`,
                 `Environment=NODE_ENV=production`,
                 `StandardOutput=journal`,
@@ -812,7 +852,7 @@ namespace systemd {
 
         scriptLib.execSync("systemctl daemon-reload");
 
-        scriptLib.execSync(`systemctl enable ${srv_name} --quiet`);
+        scriptLib.execSyncQuiet(`systemctl enable ${srv_name}`);
 
         scriptLib.execSync(`systemctl start ${srv_name}`);
 
@@ -821,6 +861,7 @@ namespace systemd {
     }
 
     export function remove() {
+
 
         scriptLib.execSyncQuiet(`systemctl disable ${srv_name} || true`);
 
@@ -869,8 +910,6 @@ export namespace asterisk_manager {
             const parsed_general = ini.parseStripWhitespace(
                 fs.readFileSync(ami_conf_path).toString("utf8")
             )["general"] || {};
-
-            console.log({ parsed_general });
 
             for (let key in parsed_general) {
 
@@ -1051,12 +1090,12 @@ namespace udevRules {
 async function apt_get_install_asterisk() {
 
     if (
-        scriptLib.apt_get_install_if_missing.doesHaveProg("asterisk") && 
+        scriptLib.apt_get_install_if_missing.doesHaveProg("asterisk") &&
         !scriptLib.apt_get_install_if_missing.isPkgInstalled("asterisk")
     ) {
 
-            //Custom install, we do not install from repositories.
-            return;
+        //Custom install, we do not install from repositories.
+        return;
 
     }
 

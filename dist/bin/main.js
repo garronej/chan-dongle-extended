@@ -48,6 +48,7 @@ fs.writeFileSync(pidfile_path, Buffer.from(process.pid.toString(), "utf8"));
 process.once("SIGUSR2", function () {
     logger.log("Stop script called (SIGUSR2)");
     exitCode = 0;
+    process.emit("beforeExit", NaN);
 });
 process.removeAllListeners("uncaughtException");
 process.once("uncaughtException", function (error) {
@@ -69,7 +70,7 @@ process.once("beforeExit", function () { return __awaiter(_this, void 0, void 0,
                 process.on("unhandledRejection", function () { });
                 process.removeAllListeners("uncaughtException");
                 process.on("uncaughtException", function () { });
-                prCleanLog = logger.log("");
+                prCleanLog = logger.log("---end---");
                 evtDone = new ts_events_extended_1.VoidSyncEvent();
                 _c.label = 1;
             case 1:

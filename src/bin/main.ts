@@ -17,6 +17,8 @@ process.once("SIGUSR2", () => {
 
     exitCode= 0;
 
+    process.emit("beforeExit", NaN);
+
 });
 
 process.removeAllListeners("uncaughtException");
@@ -44,13 +46,13 @@ let exitCode = 1;
 process.once("beforeExit", async () => {
 
     process.removeAllListeners("unhandledRejection");
-    process.on("unhandledRejection", ()=> {});
+    process.on("unhandledRejection", ()=> { });
 
     process.removeAllListeners("uncaughtException");
-    process.on("uncaughtException", ()=> {});
+    process.on("uncaughtException", ()=> { });
 
     //log do not throw synchronously
-    const prCleanLog= logger.log("");
+    const prCleanLog= logger.log("---end---");
 
     const evtDone = new VoidSyncEvent();
 
@@ -71,6 +73,7 @@ process.once("beforeExit", async () => {
         try{ scriptLib.execSync(`cp ${logfile_path} ./previous_crash.log`); }catch{}
 
     }
+
     try{ fs.unlinkSync(logfile_path); }catch{}
 
     try{ fs.unlinkSync(pidfile_path); }catch{}

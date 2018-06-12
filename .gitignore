@@ -42,3 +42,4 @@ dist/test
 working_directory
 pkg_installed.json
 node
+dongle_*.tar.gz

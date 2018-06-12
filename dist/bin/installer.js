@@ -189,6 +189,7 @@ program
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
     var e_1, _a, e_2, _b, _module_dir_path, to_distribute_rel_paths_1, to_distribute_rel_paths_1_1, name, _node_modules_path, _c, _d, name;
     return __generator(this, function (_e) {
+        scriptLib.enableCmdTrace();
         _module_dir_path = path.join("/tmp", path.basename(module_dir_path));
         scriptLib.execSyncTrace("rm -rf " + _module_dir_path);
         try {
@@ -309,39 +310,72 @@ function install(options) {
     });
 }
 function uninstall(verbose) {
+    var _this = this;
     var write = !!verbose ? process.stdout.write.bind(process.stdout) : (function () { });
     var log = function (str) { return write(str + "\n"); };
-    var runRecover = function (description, action) {
-        write(description);
-        try {
-            action();
+    var runRecover = function (description, action) { return __awaiter(_this, void 0, void 0, function () {
+        var message;
+        return __generator(this, function (_a) {
+            write(description);
+            try {
+                action();
+            }
+            catch (_b) {
+                message = _b.message;
+                log(scriptLib.colorize(message, "RED"));
+            }
             log(scriptLib.colorize("ok", "GREEN"));
-        }
-        catch (_a) {
-            var message = _a.message;
-            log(scriptLib.colorize(message, "RED"));
-        }
-    };
-    runRecover("Stopping running instance ... ", function () { return stopRunningInstance(); });
+            return [2 /*return*/];
+        });
+    }); };
+    runRecover("Stopping running instance ... ", function () { return stopService(); });
+    runRecover("Removing systemd service ... ", function () { return systemd.remove(); });
     runRecover("Uninstalling chan_dongle.so ... ", function () { return chan_dongle.remove(); });
     runRecover("Restoring asterisk manager ... ", function () { return asterisk_manager.restore(); });
     runRecover("Removing binary symbolic links ... ", function () { return shellScripts.remove_symbolic_links(); });
-    runRecover("Removing systemd service ... ", function () { return systemd.remove(); });
     runRecover("Removing udev rules ... ", function () { return udevRules.remove(); });
     runRecover("Removing tty0tty kernel module ...", function () { return tty0tty.remove(); });
     runRecover("Removing app working directory ... ", function () { return workingDirectory.remove(); });
     runRecover("Deleting unix user ... ", function () { return unixUser.remove(); });
     runRecover("Re enabling ModemManager if present...", function () { return modemManager.enable_and_start(); });
 }
-function stopRunningInstance() {
-    try {
-        scriptLib.execSyncQuiet(stopRunningInstance.getCmd());
+function stopService() {
+    if (!stopService.isRunning()) {
+        return;
     }
-    catch (_a) { }
+    else if (fs.existsSync(pid_file_path)) {
+        try {
+            scriptLib.execSyncQuiet(stopService.getCmd());
+        }
+        catch (_a) { }
+        var count = 0;
+        while (count++ < 3) {
+            if (!stopService.isRunning()) {
+                return;
+            }
+            scriptLib.execSync("sleep 1");
+        }
+        scriptLib.execSync("rm -f " + pid_file_path);
+        return stopService();
+    }
+    else {
+        try {
+            scriptLib.execSyncQuiet("systemctl stop " + srv_name);
+        }
+        catch (_b) { }
+        try {
+            scriptLib.execSyncQuiet("pkill -u " + unix_user);
+        }
+        catch (_c) { }
+        while (stopService.isRunning()) {
+            scriptLib.execSync("sleep 1");
+        }
+        return;
+    }
 }
-(function (stopRunningInstance) {
+(function (stopService) {
     var cmd = undefined;
-    stopRunningInstance.getCmd = function () {
+    stopService.getCmd = function () {
         if (!!cmd) {
             return cmd;
         }
@@ -350,9 +384,13 @@ function stopRunningInstance() {
             "--pidfile " + pid_file_path,
             "-SIGUSR2"
         ].join(" ");
-        return stopRunningInstance.getCmd();
+        return stopService.getCmd();
     };
-})(stopRunningInstance || (stopRunningInstance = {}));
+    function isRunning() {
+        return scriptLib.sh_if("ps -u " + unix_user) || fs.existsSync(pid_file_path);
+    }
+    stopService.isRunning = isRunning;
+})(stopService || (stopService = {}));
 var tty0tty;
 (function (tty0tty) {
     var h_dir_path = path.join(exports.working_directory_path, "linux-headers");
@@ -654,9 +692,6 @@ var unixUser;
 (function (unixUser) {
     function create() {
         process.stdout.write("Creating unix user '" + unix_user + "' ... ");
-        stopRunningInstance();
-        scriptLib.execSyncQuiet("pkill -u " + unix_user + " || true");
-        scriptLib.execSyncQuiet("userdel " + unix_user + " || true");
         scriptLib.execSync("useradd -M " + unix_user + " -s /bin/false -d " + exports.working_directory_path);
         console.log(scriptLib.colorize("OK", "GREEN"));
     }
@@ -703,7 +738,7 @@ var shellScripts;
             "       exit 1",
             "   fi",
             "   " + node_path + " " + __filename + " uninstall",
-            "   " + (fs.existsSync(path.join(module_dir_path, ".git")) ? "" : "rm -r " + module_dir_path),
+            "   " + (getIsProd() ? "rm -r " + module_dir_path : ""),
             "else",
             "   echo \"If you wish to uninstall chan-dongle-extended call this script with 'run' as argument:\"",
             "   echo \"$0 run\"",
@@ -717,7 +752,7 @@ var shellScripts;
             "# In charge of launching the service in interactive mode (via $ nmp start)",
             "# It will gracefully terminate any running instance before.",
             "",
-            stopRunningInstance.getCmd() + " 2>/dev/null",
+            stopService.getCmd() + " 2>/dev/null",
             "echo $$ > " + pid_file_path,
             "chown " + unix_user + ":" + unix_user + " " + pid_file_path,
             "trap \"rm -f " + pid_file_path + "\" 0",
@@ -750,7 +785,7 @@ var systemd;
             "",
             "[Service]",
             "ExecStart=" + start_sh_path,
-            "ExecStop=" + stopRunningInstance.getCmd(),
+            "ExecStop=" + stopService.getCmd(),
             "ExecStopPost=" + scriptLib.sh_eval("which rm") + " -f " + pid_file_path,
             "Environment=NODE_ENV=production",
             "StandardOutput=journal",
@@ -764,7 +799,7 @@ var systemd;
             "WantedBy=multi-user.target",
         ].join("\n"), "utf8"));
         scriptLib.execSync("systemctl daemon-reload");
-        scriptLib.execSync("systemctl enable " + srv_name + " --quiet");
+        scriptLib.execSyncQuiet("systemctl enable " + srv_name);
         scriptLib.execSync("systemctl start " + srv_name);
         console.log(scriptLib.colorize("OK", "GREEN"));
     }
@@ -805,7 +840,6 @@ var asterisk_manager;
             scriptLib.execSync("cp -p " + ami_conf_path + " " + ami_conf_back_path);
             //TODO: test if return {} when empty file
             var parsed_general = ini_extended_1.ini.parseStripWhitespace(fs.readFileSync(ami_conf_path).toString("utf8"))["general"] || {};
-            console.log({ parsed_general: parsed_general });
             for (var key in parsed_general) {
                 switch (key) {
                     case "enabled": break;

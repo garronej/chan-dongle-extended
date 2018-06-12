@@ -52,9 +52,7 @@ function launch() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0:
-                    sqliteCustom.enableLog();
-                    return [4 /*yield*/, sqliteCustom.connectAndGetApi(installer_1.db_path, "HANDLE STRING ENCODING")];
+                case 0: return [4 /*yield*/, sqliteCustom.connectAndGetApi(installer_1.db_path, "HANDLE STRING ENCODING")];
                 case 1:
                     exports._ = _a.sent();
                     return [2 /*return*/];

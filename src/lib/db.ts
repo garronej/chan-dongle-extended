@@ -8,8 +8,6 @@ export let _: sqliteCustom.Api;
 /** Must be called and awaited before use */
 export async function launch(): Promise<void> {
 
-    sqliteCustom.enableLog();
-
     _ = await sqliteCustom.connectAndGetApi(
         db_path, "HANDLE STRING ENCODING"
     );
