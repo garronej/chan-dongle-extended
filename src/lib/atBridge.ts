@@ -4,19 +4,10 @@
 import { SerialPortExt, AtMessage, Modem, AccessPoint } from "ts-gsm-modem";
 import { Api as ConfManagerApi } from "./confManager";
 import { Tty0tty } from "./Tty0tty";
-import { log, fileOnlyLog } from "./logger";
-
-import * as debugFactory from "debug";
-
-const debug = debugFactory("atBridge");
-debug.enabled= true;
-debug.log= log;
-
-let fileOnlyDebug= debugFactory("bridge");
-fileOnlyDebug.enabled= true;
-fileOnlyDebug.log= fileOnlyLog;
-
+import * as logger from "logger";
 import * as types from "./types";
+
+const debug= logger.debugFactory();
 
 export function init(
     modems: types.Modems, 
@@ -39,7 +30,6 @@ export function init(
 
 }
 
-const ok = "\r\nOK\r\n";
 
 async function atBridge(
     accessPoint: AccessPoint, 
@@ -95,7 +85,8 @@ async function atBridge(
             return;
         }
 
-        fileOnlyDebug("response: " + JSON.stringify(rawResp).blue);
+        logger.file.log("(AT) response: " + JSON.stringify(rawResp).blue);
+
 
         portVirtual.writeAndDrain(rawResp);
 
@@ -107,7 +98,9 @@ async function atBridge(
 
         let command = buff.toString("utf8") + "\r";
 
-        fileOnlyDebug("from chan_dongle: " + JSON.stringify(command));
+        logger.file.log("(AT) from ast-chan-dongle: " + JSON.stringify(command));
+
+        const ok = "\r\nOK\r\n";
 
         if (
             command === "ATZ\r" ||
@@ -146,7 +139,7 @@ async function atBridge(
             "recoverable": true,
             "reportMode": AtMessage.ReportMode.NO_DEBUG_INFO,
             "retryOnErrors": false
-        }, (_, __, rawResp) => forwardResp(rawResp));
+        }).then(({ raw })=> forwardResp(raw));
 
     });
 
@@ -154,7 +147,7 @@ async function atBridge(
 
     modem.evtUnsolicitedAtMessage.attach(urc => {
 
-        fileOnlyDebug(`forwarding urc: ${JSON.stringify(urc.raw).blue}`);
+        logger.file.log(`(AT) forwarding urc: ${JSON.stringify(urc.raw).blue}`);
 
         portVirtual.writeAndDrain(urc.raw)
 

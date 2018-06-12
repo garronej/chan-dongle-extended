@@ -12,22 +12,16 @@ import * as atBridge from "./atBridge";
 import { SyncEvent } from "ts-events-extended";
 import * as confManager from "./confManager";
 import * as types from "./types";
-import { log } from "./logger";
-
+import * as logger from "logger";
 import * as db from "./db";
+import { InstallOptions } from "./InstallOptions";
 
-import {InstallOptions} from "./InstallOptions";
-
-import "colors";
-
-import * as debugFactory from "debug";
-let debug = debugFactory("main");
-debug.enabled = true;
-debug.log = log;
+const debug = logger.debugFactory();
 
 const modems: types.Modems = new TrackableMap();
 const evtScheduleRetry = new SyncEvent<AccessPoint>();
 
+//TODO: check if we can update this.
 export let beforeExit: ()=> Promise<void> = async ()=> {};
 
 export async function launch() {
@@ -70,7 +64,7 @@ export async function launch() {
 
     debug("Started");
 
-    const monitor = ConnectionMonitor.getInstance(log);
+    const monitor = ConnectionMonitor.getInstance(logger.log);
 
     monitor.evtModemConnect.attach(accessPoint => createModem(accessPoint));
 
@@ -101,7 +95,7 @@ async function createModem(accessPoint: AccessPoint) {
             "dataIfPath": accessPoint.dataIfPath,
             "unlock": (modemInfo, iccid, pinState, tryLeft, performUnlock) =>
                 onLockedModem(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock),
-            log,
+            "log": logger.log
         });
 
     } catch (error) {

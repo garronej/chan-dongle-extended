@@ -21,16 +21,42 @@ const [cli_js_path, main_js_path] = [
 export const working_directory_path = path.join(module_dir_path, "working_directory");
 const start_sh_path = path.join(working_directory_path, "start.sh");
 const node_path = path.join(module_dir_path, "node");
-const pkg_list_path = path.join(module_dir_path, "pkg_installed.json");
+const installed_pkg_record_path = path.join(module_dir_path, "pkg_installed.json");
 const pid_file_path= path.join(working_directory_path, `${srv_name}.pid`)
+const uninstaller_link_default_path= `/usr/sbin/${srv_name}_uninstaller`;
+
 export const db_path= path.join(working_directory_path, "app.db");
+const to_distribute_rel_paths= [
+    "LICENSE", 
+    "README.md", 
+    `res/${path.basename(db_path)}`, 
+    "dist", 
+    "node_modules", 
+    "package.json"
+];
 
 Astdirs.dir_path = working_directory_path;
 InstallOptions.dir_path = working_directory_path;
 AmiCredential.dir_path= working_directory_path;
 
 scriptLib.apt_get_install.onInstallSuccess = package_name =>
-    scriptLib.apt_get_install.record_installed_package(pkg_list_path, package_name);
+    scriptLib.apt_get_install.record_installed_package(installed_pkg_record_path, package_name);
+
+export function getIsProd(): boolean {
+
+    if( getIsProd.value !== undefined ){
+        return getIsProd.value;
+    }
+
+    getIsProd.value= !fs.existsSync(path.join(module_dir_path, ".git"));
+
+    return getIsProd();
+
+}
+
+export namespace getIsProd {
+    export let value: boolean | undefined = undefined;
+}
 
 let _install = program.command("install");
 
@@ -55,88 +81,70 @@ for (let key in InstallOptions.defaults) {
 
 _install.action(async options => {
 
-    console.log("---Installing chan-dongle-extended---");
+        console.log("---Installing chan-dongle-extended---");
 
+        if (
+            fs.existsSync(uninstaller_link_default_path) &&
+            path.dirname(scriptLib.sh_eval(`readlink -f ${uninstaller_link_default_path}`)) !== working_directory_path
+        ) {
 
-    if (fs.existsSync(working_directory_path)) {
+            process.stdout.write(scriptLib.colorize("Uninstalling previous instal found in other location... ", "YELLOW"));
 
-        process.stdout.write(scriptLib.colorize("Already installed, uninstalling previous install... ", "YELLOW"));
+            scriptLib.execSync(`${uninstaller_link_default_path} run`);
 
-        await uninstall();
+            console.log(scriptLib.colorize("DONE", "GREEN"));
 
-        console.log("DONE");
+        }
 
-    } else {
-
-        stopRunningInstance();
-
-    }
-
-    (() => {
-
-        let previous_working_directory_path: string;
+        uninstall();
 
         try {
 
-            previous_working_directory_path = scriptLib.execSyncQuiet(`dirname $(readlink -e $(which dongle))`).replace("\n","");
+            await install(options);
 
-        } catch{
+        } catch ({ message }) {
+
+            console.log(scriptLib.colorize(`An error occurred: '${message}`, "RED"));
+
+            uninstall();
+
+            if( getIsProd() ){
+
+                scriptLib.execSync(`rm -r ${module_dir_path}`);
+
+            }
+
+            process.exit(-1);
 
             return;
 
         }
 
-        process.stdout.write(scriptLib.colorize("Previous install found, uninstalling... ", "YELLOW"));
+        console.log("---DONE---");
 
-        scriptLib.execSyncQuiet(`${path.join(previous_working_directory_path, "uninstaller.sh")} run`);
+        process.exit(0);
 
-        console.log("DONE");
-
-    })();
-
-    try {
-
-        await install(options);
-
-    } catch({ message }){
-
-        process.stdout.write(scriptLib.colorize(`An error occurred: '${message}', rollback ...`, "RED"));
-
-        await uninstall();
-
-        console.log("DONE");
-
-        process.exit(-1);
-
-        return;
-
-    }
-
-    console.log("---DONE---");
-
-    process.exit(0);
 
 });
+
 
 program
     .command("uninstall")
     .action(async () => {
 
-        console.log("---Uninstalling chan-dongle-extended---");
+        console.log(`---Uninstalling ${srv_name}---`);
 
         uninstall("VERBOSE");
 
         console.log("---DONE---");
 
-        if (fs.existsSync(pkg_list_path)) {
-
-            let pkg_list = require(pkg_list_path);
+        if (fs.existsSync(installed_pkg_record_path)) {
 
             console.log([
                 "NOTE: Some packages have been installed automatically, ",
                 "you can remove them if you no longer need them.",
                 "\n",
-                `$ sudo apt-get purge ${pkg_list.join(" ")}`,
+                `$ sudo apt-get purge ${require(installed_pkg_record_path).join(" ")}`,
                 "\n",
                 `$ sudo apt-get --purge autoremove`
             ].join(""));
@@ -146,71 +154,49 @@ program
         process.exit(0);
 
     });
-
 program
     .command("tarball")
     .action(async () => {
 
-        const v_name = [
-            "dongle",
-            //`v${require(path.join(module_dir_path, "package.json"))["version"]}`,
-            child_process.execSync("uname -m").toString("utf8").replace("\n", "")
-        ].join("_");
+        const _module_dir_path = path.join("/tmp", path.basename(module_dir_path));
 
-        const dir_path = path.join("/tmp", v_name);
+        scriptLib.execSyncTrace(`rm -rf ${_module_dir_path}`);
 
-        scriptLib.execSyncTrace(`rm -rf ${dir_path}`);
-
-        scriptLib.execSyncTrace(`cp -r ${module_dir_path} ${dir_path}`);
-
-        (()=>{
-
-            const new_node_path= path.join(dir_path,"node");
-
-            if( !fs.existsSync(new_node_path) ){
-
-                scriptLib.execSyncTrace(`cp $(readlink -e ${process.argv[0]}) ${new_node_path}`);
-
-            }
-
-        })();
-
-
-        (() => {
-
-            let node_python_messaging_path = find_module_path("node-python-messaging", dir_path);
-
-            scriptLib.execSyncTrace(`rm -r ${path.join(node_python_messaging_path, "dist", "virtual")}`);
-
-        })();
-
-        (() => {
-
-            let udev_module_path = find_module_path("udev", dir_path);
-
-            scriptLib.execSyncTrace(`rm -r ${path.join(udev_module_path, "build")}`);
-
-        })();
-
-        for (let name of [".git", ".gitignore", "src", "tsconfig.json"]) {
-            scriptLib.execSyncTrace(`rm -rf ${path.join(dir_path, name)}`);
+        for (const name of to_distribute_rel_paths) {
+            scriptLib.fs_move("COPY", module_dir_path, _module_dir_path, name);
         }
 
-        for (let name of ["@types", "typescript"]) {
-            scriptLib.execSyncTrace(`rm -r ${path.join(dir_path, "node_modules", name)}`);
+        scriptLib.execSyncTrace(`cp $(readlink -e ${process.argv[0]}) ${path.join(_module_dir_path, path.basename(node_path))}`);
+
+        const _node_modules_path = path.join(_module_dir_path, "node_modules");
+
+        for (const name of ["@types", "typescript" ]) {
+
+            scriptLib.execSyncTrace(`rm -r ${path.join(_node_modules_path, name)}`);
+
         }
 
-        scriptLib.execSyncTrace(`find ${path.join(dir_path, "node_modules")} -type f -name "*.ts" -exec rm -rf {} \\;`);
+        scriptLib.execSyncTrace([
+            "rm -r",
+            path.join(
+                scriptLib.find_module_path("node-python-messaging", _module_dir_path), 
+                "dist", "virtual"
+            ),
+            path.join(
+                scriptLib.find_module_path("udev", _module_dir_path), 
+                "build"
+            )
+        ].join(" "));
 
-        scriptLib.execSyncTrace(`rm -rf ${path.join(dir_path, path.basename(working_directory_path))}`);
+
+        scriptLib.execSyncTrace(`find ${_node_modules_path} -type f -name "*.ts" -exec rm -rf {} \\;`);
 
         (function hide_auth_token() {
 
-            let files = child_process.execSync(`find . -name "package-lock.json" -o -name "package.json"`, { "cwd": dir_path })
-                .toString("utf8")
+            let files = scriptLib.execSync(`find . -name "package-lock.json" -o -name "package.json"`, { "cwd": _module_dir_path })
                 .slice(0, -1)
                 .split("\n")
-                .map(rp => path.join(dir_path, rp));
+                .map(rp => path.join(_module_dir_path, rp));
 
             for (let file of files) {
 
@@ -228,13 +214,19 @@ program
 
         })();
 
-        scriptLib.execSyncTrace(`tar -czf ${path.join(module_dir_path, `${v_name}.tar.gz`)} -C ${dir_path} .`);
+        scriptLib.execSyncTrace([
+            "tar -czf",
+            path.join(module_dir_path, `dongle_${scriptLib.sh_eval("uname -m")}.tar.gz`),
+            `-C ${_module_dir_path} .`
+        ].join(" ")
+        );
 
-        scriptLib.execSyncTrace(`rm -r ${dir_path}`);
+        scriptLib.execSyncTrace(`rm -r ${_module_dir_path}`);
 
         console.log("---DONE---");
 
     });
+
 
 async function install(options: Partial<InstallOptions>) {
 
@@ -244,17 +236,20 @@ async function install(options: Partial<InstallOptions>) {
 
     InstallOptions.set(options);
 
-    if (fs.existsSync(path.join(module_dir_path, ".git"))) {
-
-        scriptLib.enableTrace();
-
-    } else {
+    if( getIsProd() ){
 
         await install_prereq();
 
         await rebuild_node_modules();
 
+    }else{
+
+        scriptLib.enableCmdTrace();
+
+        scriptLib.execSync(`cp $(readlink -e ${process.argv[0]}) ${node_path}`);
+
     }
+
 
     if (!InstallOptions.getDeduced().assume_asterisk_installed) {
 
@@ -265,12 +260,6 @@ async function install(options: Partial<InstallOptions>) {
     Astdirs.set(InstallOptions.get().asterisk_main_conf);
 
     modemManager.disable_and_stop();
-
-    if( !fs.existsSync(node_path) ){
-
-        scriptLib.execSync(`cp $(readlink -e ${process.argv[0]}) ${node_path}`);
-
-    }
 
     await tty0tty.install();
 
@@ -291,7 +280,7 @@ async function install(options: Partial<InstallOptions>) {
     asterisk_manager.enable();
 
     scriptLib.execSync(
-        `cp ${path.join(module_dir_path, "res", "app_empty.db")} ${db_path}`,
+        `cp ${path.join(module_dir_path, "res", path.basename(db_path))} ${db_path}`,
         { "unix_user": unix_user }
     );
 
@@ -345,30 +334,23 @@ function uninstall(verbose?: "VERBOSE" | undefined) {
 }
 
 function stopRunningInstance() {
-
-    try{ scriptLib.execSyncQuiet(stopRunningInstance.getCmd()); }catch{}
-
+    try {
+        scriptLib.execSyncQuiet(stopRunningInstance.getCmd());
+    } catch{ }
 }
 
 namespace stopRunningInstance {
-    /*
-    export const cmd = [
-        `pkill --pidfile ${pid_file_path} -SIGUSR2 2>/dev/null`,
-        `pkill --euid ${unix_user} -SIGUSR2 2>/dev/null`,
-        `true`
-    ].join(" ; ");
-    */
 
-    let cmd: string | undefined= undefined;
+    let cmd: string | undefined = undefined;
 
-    export const getCmd= ()=> {
+    export const getCmd = () => {
 
-        if( !!cmd ){
+        if (!!cmd) {
             return cmd;
         }
 
         cmd = [
-            scriptLib.execSync(`which pkill`).slice(0, -1),
+            scriptLib.sh_eval("which pkill"),
             `--pidfile ${pid_file_path}`,
             `-SIGUSR2`
         ].join(" ");
@@ -405,30 +387,13 @@ namespace tty0tty {
 
         let kernel_release = scriptLib.execSync("uname -r").replace(/\n$/, "");
 
-        const are_headers_installed = (): boolean => {
-
-            try {
-
-                scriptLib.execSyncQuiet(`ls ${path.join(build_link_path, "include")}`);
-
-            } catch{
-
-                return false;
-
-            }
-
-            return true;
-
-        };
-
         process.stdout.write("Checking for linux kernel headers ...");
 
-        if (are_headers_installed()) {
+        if( fs.existsSync(path.join(build_link_path, "include"))){
 
             console.log(`found. ${scriptLib.colorize("OK", "GREEN")}`);
 
             return;
-
         }
 
         readline.clearLine(process.stdout, 0);
@@ -450,17 +415,17 @@ namespace tty0tty {
 
         await (async function download_deb() {
 
-            let { onError, onSuccess } = scriptLib.start_long_running_process("Downloading raspberrypi linux headers");
+            const { onError, onSuccess } = scriptLib.start_long_running_process("Downloading raspberrypi linux headers");
 
             const wget = (url: string) => scriptLib.exec(`wget ${url} -O ${h_deb_path}`);
 
             try {
 
-                let firmware_release = scriptLib.execSync("zcat /usr/share/doc/raspberrypi-bootloader/changelog.Debian.gz | head")
+                const firmware_release = scriptLib.execSync("zcat /usr/share/doc/raspberrypi-bootloader/changelog.Debian.gz | head")
                     .match(/^[^r]*raspberrypi-firmware\ \(([^\)]+)\)/)![1]
                     ;
 
-                let url = [
+                const url = [
                     "https://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/",
                     `raspberrypi-kernel-headers_${firmware_release}_armhf.deb`
                 ].join("");
@@ -473,7 +438,7 @@ namespace tty0tty {
 
                 try {
 
-                    let url = [
+                    const url = [
                         "https://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi" + (kernel_release[0] === "3" ? "/3.x.x/" : "/"),
                         `linux-headers-${kernel_release}_${kernel_release}-2_armhf.deb`
                     ].join("");
@@ -509,7 +474,7 @@ namespace tty0tty {
 
             }
 
-            let { exec, onSuccess } = scriptLib.start_long_running_process("Installing linux headers");
+            const { exec, onSuccess } = scriptLib.start_long_running_process("Installing linux headers");
 
             if (downloaded_from! === "OFFICIAL") {
 
@@ -549,7 +514,7 @@ namespace tty0tty {
 
         await scriptLib.apt_get_install_if_missing("git", "git");
 
-        let { exec, onSuccess } = scriptLib.start_long_running_process("Building and installing tty0tty kernel module");
+        const { exec, onSuccess } = scriptLib.start_long_running_process("Building and installing tty0tty kernel module");
 
         const tty0tty_dir_path = path.join(working_directory_path, "tty0tty");
 
@@ -689,7 +654,6 @@ namespace workingDirectory {
     }
 
 }
-
 namespace unixUser {
 
     export function create() {
@@ -697,6 +661,8 @@ namespace unixUser {
         process.stdout.write(`Creating unix user '${unix_user}' ... `);
 
         stopRunningInstance();
+
+        scriptLib.execSyncQuiet(`pkill -u ${unix_user} || true`);
 
         scriptLib.execSyncQuiet(`userdel ${unix_user} || true`);
 
@@ -716,7 +682,7 @@ namespace unixUser {
 
 namespace shellScripts {
 
-    const get_uninstaller_link_path = () => path.join(Astdirs.get().astsbindir, `${srv_name}_uninstaller`);
+    const get_uninstaller_link_path = () => path.join(Astdirs.get().astsbindir, path.basename(uninstaller_link_default_path));
 
     const cli_link_path = "/usr/bin/dongle";
 
@@ -724,19 +690,10 @@ namespace shellScripts {
 
         process.stdout.write(`Creating launch scripts ... `);
 
-        const writeAndSetPerms = (script_path: string, script: string): void => {
-
-            fs.writeFileSync(script_path, Buffer.from(script, "utf8"));
-
-            scriptLib.execSync(`chown ${unix_user}:${unix_user} ${script_path}`);
-
-            scriptLib.execSync(`chmod +x ${script_path}`);
-
-        };
 
         const cli_sh_path = path.join(working_directory_path, "cli.sh");
 
-        writeAndSetPerms(
+        scriptLib.createScript(
             cli_sh_path,
             [
                 `#!/usr/bin/env bash`,
@@ -760,7 +717,7 @@ namespace shellScripts {
 
         const uninstaller_sh_path = path.join(working_directory_path, "uninstaller.sh");
 
-        writeAndSetPerms(
+        scriptLib.createScript(
             uninstaller_sh_path,
             [
                 `#!/bin/bash`,
@@ -783,9 +740,9 @@ namespace shellScripts {
             ].join("\n")
         );
 
-        scriptLib.execSyncQuiet(`ln -sf ${uninstaller_sh_path} ${get_uninstaller_link_path()}`);
+        scriptLib.createSymlink(uninstaller_sh_path, get_uninstaller_link_path());
 
-        writeAndSetPerms(
+        scriptLib.createScript(
             start_sh_path,
             [
                 `#!/usr/bin/env bash`,
@@ -823,7 +780,6 @@ namespace shellScripts {
 
 namespace systemd {
 
-
     const service_file_path = path.join("/etc/systemd/system", `${srv_name}.service`);
 
     export function create(): void {
@@ -834,13 +790,13 @@ namespace systemd {
             service_file_path,
             Buffer.from([
                 `[Unit]`,
-                `Description=chan-dongle-extended service.`,
+                `Description=${srv_name} service.`,
                 `After=network.target`,
                 ``,
                 `[Service]`,
                 `ExecStart=${start_sh_path}`,
                 `ExecStop=${stopRunningInstance.getCmd()}`,
-                `ExecStopPost=${scriptLib.execSync(`which rm`).slice(0, -1)} -f ${pid_file_path}`,
+                `ExecStopPost=${scriptLib.sh_eval(`which rm`)} -f ${pid_file_path}`,
                 `Environment=NODE_ENV=production`,
                 `StandardOutput=journal`,
                 `Restart=always`,
@@ -866,15 +822,11 @@ namespace systemd {
 
     export function remove() {
 
-        try {
+        scriptLib.execSyncQuiet(`systemctl disable ${srv_name} || true`);
 
-            scriptLib.execSyncQuiet(`systemctl disable ${srv_name}`);
+        try { fs.unlinkSync(service_file_path); } catch{ }
 
-            fs.unlinkSync(service_file_path);
-
-        } catch{ }
-
-        scriptLib.execSyncQuiet("systemctl daemon-reload");
+        scriptLib.execSyncQuiet("systemctl daemon-reload || true");
 
     }
 
@@ -1250,53 +1202,25 @@ function build_ast_cmdline(): string {
 
 }
 
-function find_module_path(
-    module_name: string,
-    root_module_path: string
-): string {
-
-    let cmd = [
-        `find ${path.join(root_module_path, "node_modules")}`,
-        `-type f`,
-        `-path \\*/node_modules/${module_name}/package.json`,
-        `-exec dirname {} \\;`
-    ].join(" ");
-
-    let match = child_process
-        .execSync(cmd, { "stdio": [] })
-        .toString("utf8")
-        .slice(0, -1)
-        .split("\n");
-
-    if (!match.length) {
-        throw new Error("Not found");
-    } else {
-        return match.sort((a, b) => a.length - b.length)[0];
-    }
-
-}
-
 async function rebuild_node_modules() {
 
     const { exec, onSuccess } = scriptLib.start_long_running_process("Building node_modules dependencies");
 
-    const cdExec = (cmd: string, dir_path: string) => exec(`(cd ${dir_path} && ${cmd})`);
-
     await (async function build_udev() {
 
-        const udev_dir_path = find_module_path("udev", module_dir_path);
+        const udev_dir_path = scriptLib.find_module_path("udev", module_dir_path);
 
         if (fs.existsSync(path.join(udev_dir_path, "build"))) {
             return;
         }
 
-        let pre_gyp_dir_path: string = "";
+        let pre_gyp_dir_path = "";
 
-        for (let root_module_path of [udev_dir_path, module_dir_path]) {
+        for (const _module_dir_path of [udev_dir_path, module_dir_path]) {
 
             try {
 
-                pre_gyp_dir_path = find_module_path("node-pre-gyp", root_module_path);
+                pre_gyp_dir_path = scriptLib.find_module_path("node-pre-gyp", _module_dir_path);
 
                 break;
 
@@ -1304,19 +1228,20 @@ async function rebuild_node_modules() {
 
         }
 
-        await cdExec([
-            `PATH=${path.join(module_dir_path)}:$PATH`,
-            `node ${path.join(pre_gyp_dir_path, "bin", "node-pre-gyp")} install`,
-            "--fallback-to-build"
-        ].join(" "),
-            udev_dir_path
+        await exec(
+            [
+                `PATH=${path.join(module_dir_path)}:$PATH`,
+                `node ${path.join(pre_gyp_dir_path, "bin", "node-pre-gyp")} install`,
+                "--fallback-to-build"
+            ].join(" "),
+            { "cwd": udev_dir_path }
         );
 
     })();
 
     await (async function postinstall_node_python_messaging() {
 
-        const node_python_messaging_dir_path = find_module_path(
+        const node_python_messaging_dir_path = scriptLib.find_module_path(
             "node-python-messaging", module_dir_path
         );
 
@@ -1324,9 +1249,9 @@ async function rebuild_node_modules() {
             return;
         }
 
-        await cdExec(
+        await exec(
             "./install-python-dep.sh",
-            node_python_messaging_dir_path
+            { "cwd": node_python_messaging_dir_path }
         );
 
     })();
@@ -1336,8 +1261,13 @@ async function rebuild_node_modules() {
 }
 
 if (require.main === module) {
-    require("rejection-tracker").main(module_dir_path);
+
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", error => { throw error; });
+
     scriptLib.exit_if_not_root();
+
     program.parse(process.argv);
+
 }
 

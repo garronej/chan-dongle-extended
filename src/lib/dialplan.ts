@@ -1,13 +1,9 @@
 import { Ami } from "ts-ami";
 import * as tt from "transfer-tools";
 import * as types from "./types";
+import * as logger from "logger";
 
-import { log } from "./logger";
-
-import * as _debug from "debug";
-let debug = _debug("dialplan");
-debug.enabled= true;
-debug.log= log;
+const debug= logger.debugFactory();
 
 export function init(
     modems: types.Modems,
@@ -21,6 +17,7 @@ export function init(
         if (!types.matchModem(modem)) {
             return;
         }
+
 
         const dongleVariables = {
             "DONGLENAME": accessPoint.friendlyId,

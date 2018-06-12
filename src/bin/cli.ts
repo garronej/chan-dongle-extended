@@ -1,5 +1,4 @@
 #!/usr/bin/env node
-require("rejection-tracker").main(__filename, "..", "..");
 
 import * as program from "commander";
 import { DongleController as Dc, types as dcTypes } from "../chan-dongle-extended-client";
@@ -358,5 +357,7 @@ namespace selected_dongle {
 }
 
 if (require.main === module) {
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", error => { throw error; });
     program.parse(process.argv);
 }

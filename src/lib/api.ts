@@ -1,18 +1,15 @@
 import { Modem } from "ts-gsm-modem";
 import * as types from "./types";
 import { InstallOptions } from "./InstallOptions";
-
+import * as logger from "logger";
 import {
     apiDeclaration, types as dcTypes, misc
 } from "../chan-dongle-extended-client";
 import localApiDeclaration = apiDeclaration.service;
 import remoteApiDeclaration = apiDeclaration.controller;
-
 import { isVoid, Void } from "trackable-map";
-
 import * as sipLibrary from "ts-sip";
 import { VoidSyncEvent } from "ts-events-extended";
-import { log } from "./logger";
 import * as db from "./db";
 
 import * as net from "net";
@@ -29,7 +26,7 @@ export function launch(
     const server = new sipLibrary.api.Server(
         makeApiHandlers(modems),
         sipLibrary.api.Server.getDefaultLogger({
-            log,
+            "log": logger.log,
             "displayOnlyErrors": false,
             "hideKeepAlive": true
         })

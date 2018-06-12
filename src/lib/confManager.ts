@@ -3,15 +3,11 @@ import { ini } from "ini-extended";
 import * as runExclusive from "run-exclusive";
 import * as path from "path";
 import { Astdirs } from "./Astdirs";
-
 import { types as dcTypes } from "../chan-dongle-extended-client";
 import { Ami } from "ts-ami";
-import { log } from "./logger";
+import * as logger from "logger";
 
-import * as debugFactory from "debug";
-let debug = debugFactory("confManager");
-debug.enabled = true;
-debug.log = log;
+const debug= logger.debugFactory();
 
 export type DongleConf= {
     dongleName: string;

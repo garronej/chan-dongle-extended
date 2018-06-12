@@ -34,74 +34,83 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var fs = require("fs");
-fs.writeFileSync("./chan_dongle.pid", Buffer.from(process.pid.toString(), "utf8"));
 var launch_1 = require("../lib/launch");
-var logger_1 = require("../lib/logger");
 var ts_events_extended_1 = require("ts-events-extended");
-function cleanupAndExit(code) {
-    return __awaiter(this, void 0, void 0, function () {
-        var evtDone, _a;
-        return __generator(this, function (_b) {
-            switch (_b.label) {
-                case 0:
-                    logger_1.log("cleaning up and exiting with code " + code);
-                    evtDone = new ts_events_extended_1.VoidSyncEvent();
-                    launch_1.beforeExit().then(function () { return evtDone.post(); }).catch(function () { return evtDone.post(); });
-                    _b.label = 1;
-                case 1:
-                    _b.trys.push([1, 3, , 4]);
-                    return [4 /*yield*/, evtDone.waitFor(2000)];
-                case 2:
-                    _b.sent();
-                    return [3 /*break*/, 4];
-                case 3:
-                    _a = _b.sent();
-                    return [3 /*break*/, 4];
-                case 4:
-                    if (code !== 0) {
-                        logger_1.log("Create crash report");
-                        try {
-                            logger_1.createCrashReport();
-                        }
-                        catch (_c) { }
-                    }
-                    else {
-                        logger_1.log("Backup log");
-                        try {
-                            logger_1.backupCurrentLog();
-                        }
-                        catch (_d) { }
-                    }
-                    try {
-                        fs.unlinkSync("./chan_dongle.pid");
-                    }
-                    catch (_e) { }
-                    process.exit(code);
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-//Ctrl+C
-process.once("SIGINT", function () {
-    logger_1.log("Ctrl+C pressed ( SIGINT )");
-    cleanupAndExit(2);
-});
+var scriptLib = require("scripting-tools");
+var logger = require("logger");
+var pidfile_path = "./chan_dongle.pid";
+var logfile_path = "./current.log";
+logger.file.enable(logfile_path, 900000);
+fs.writeFileSync(pidfile_path, Buffer.from(process.pid.toString(), "utf8"));
 process.once("SIGUSR2", function () {
-    logger_1.log("Stop script called (SIGUSR2)");
-    cleanupAndExit(0);
+    logger.log("Stop script called (SIGUSR2)");
+    exitCode = 0;
 });
-process.once("beforeExit", function (code) { return cleanupAndExit(code); });
 process.removeAllListeners("uncaughtException");
 process.once("uncaughtException", function (error) {
-    logger_1.log("uncaughtException", error);
-    cleanupAndExit(-1);
+    logger.log(error);
+    process.emit("beforeExit", NaN);
 });
 process.removeAllListeners("unhandledRejection");
 process.once("unhandledRejection", function (error) {
-    logger_1.log("unhandledRejection", error);
-    cleanupAndExit(-1);
+    logger.log(error);
+    process.emit("beforeExit", NaN);
 });
+var exitCode = 1;
+process.once("beforeExit", function () { return __awaiter(_this, void 0, void 0, function () {
+    var prCleanLog, evtDone, _a, _b;
+    return __generator(this, function (_c) {
+        switch (_c.label) {
+            case 0:
+                process.removeAllListeners("unhandledRejection");
+                process.on("unhandledRejection", function () { });
+                process.removeAllListeners("uncaughtException");
+                process.on("uncaughtException", function () { });
+                prCleanLog = logger.log("");
+                evtDone = new ts_events_extended_1.VoidSyncEvent();
+                _c.label = 1;
+            case 1:
+                _c.trys.push([1, 3, , 4]);
+                launch_1.beforeExit()
+                    .then(function () { return evtDone.post(); })
+                    .catch(function () { return evtDone.post(); });
+                return [4 /*yield*/, evtDone.waitFor(2000)];
+            case 2:
+                _c.sent();
+                return [3 /*break*/, 4];
+            case 3:
+                _a = _c.sent();
+                return [3 /*break*/, 4];
+            case 4:
+                _c.trys.push([4, 6, , 7]);
+                return [4 /*yield*/, prCleanLog];
+            case 5:
+                _c.sent();
+                return [3 /*break*/, 7];
+            case 6:
+                _b = _c.sent();
+                return [3 /*break*/, 7];
+            case 7:
+                if (exitCode !== 0) {
+                    try {
+                        scriptLib.execSync("cp " + logfile_path + " ./previous_crash.log");
+                    }
+                    catch (_d) { }
+                }
+                try {
+                    fs.unlinkSync(logfile_path);
+                }
+                catch (_e) { }
+                try {
+                    fs.unlinkSync(pidfile_path);
+                }
+                catch (_f) { }
+                process.exit(exitCode);
+                return [2 /*return*/];
+        }
+    });
+}); });
 launch_1.launch();

@@ -37,7 +37,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
 };
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-require("rejection-tracker").main(__filename, "..", "..");
 var program = require("commander");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
 var storage = require("node-persist");
@@ -406,5 +405,7 @@ var selected_dongle;
     selected_dongle.set = set;
 })(selected_dongle || (selected_dongle = {}));
 if (require.main === module) {
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", function (error) { throw error; });
     program.parse(process.argv);
 }

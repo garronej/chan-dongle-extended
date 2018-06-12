@@ -63,13 +63,13 @@ var __values = (this && this.__values) || function (o) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var types = require("./types");
 var InstallOptions_1 = require("./InstallOptions");
+var logger = require("logger");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
 var localApiDeclaration = chan_dongle_extended_client_1.apiDeclaration.service;
 var remoteApiDeclaration = chan_dongle_extended_client_1.apiDeclaration.controller;
 var trackable_map_1 = require("trackable-map");
 var sipLibrary = require("ts-sip");
 var ts_events_extended_1 = require("ts-events-extended");
-var logger_1 = require("./logger");
 var db = require("./db");
 var net = require("net");
 var sockets = new Set();
@@ -77,7 +77,7 @@ function launch(modems, staticModuleConfiguration) {
     var _this = this;
     var _a = InstallOptions_1.InstallOptions.get(), bind_addr = _a.bind_addr, port = _a.port;
     var server = new sipLibrary.api.Server(makeApiHandlers(modems), sipLibrary.api.Server.getDefaultLogger({
-        log: logger_1.log,
+        "log": logger.log,
         "displayOnlyErrors": false,
         "hideKeepAlive": true
     }));
@@ -132,6 +132,7 @@ function launch(modems, staticModuleConfiguration) {
 }
 exports.launch = launch;
 function broadcastRequest(methodName, params) {
+    var e_1, _a;
     try {
         for (var sockets_1 = __values(sockets), sockets_1_1 = sockets_1.next(); !sockets_1_1.done; sockets_1_1 = sockets_1.next()) {
             var socket = sockets_1_1.value;
@@ -145,19 +146,19 @@ function broadcastRequest(methodName, params) {
         }
         finally { if (e_1) throw e_1.error; }
     }
-    var e_1, _a;
 }
 function onNewModem(modem) {
     var _this = this;
     var dongleImei = modem.imei;
     modem.evtMessage.attach(function (message) { return __awaiter(_this, void 0, void 0, function () {
-        var _this = this;
         var methodName, response;
+        var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
                     methodName = remoteApiDeclaration.notifyMessage.methodName;
                     return [4 /*yield*/, new Promise(function (resolve) {
+                            var e_2, _a;
                             var tasks = [];
                             var _loop_1 = function (socket) {
                                 tasks[tasks.length] = (function () { return __awaiter(_this, void 0, void 0, function () {
@@ -195,7 +196,6 @@ function onNewModem(modem) {
                                 finally { if (e_2) throw e_2.error; }
                             }
                             Promise.all(tasks).then(function () { return resolve("SAVE MESSAGE"); });
-                            var e_2, _a;
                         })];
                 case 1:
                     response = _a.sent();

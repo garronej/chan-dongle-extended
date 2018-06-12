@@ -54,16 +54,13 @@ var api = require("./api");
 var atBridge = require("./atBridge");
 var ts_events_extended_1 = require("ts-events-extended");
 var confManager = require("./confManager");
-var logger_1 = require("./logger");
+var logger = require("logger");
 var db = require("./db");
 var InstallOptions_1 = require("./InstallOptions");
-require("colors");
-var debugFactory = require("debug");
-var debug = debugFactory("main");
-debug.enabled = true;
-debug.log = logger_1.log;
+var debug = logger.debugFactory();
 var modems = new trackable_map_1.TrackableMap();
 var evtScheduleRetry = new ts_events_extended_1.SyncEvent();
+//TODO: check if we can update this.
 exports.beforeExit = function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
     return [2 /*return*/];
 }); }); };
@@ -100,7 +97,7 @@ function launch() {
                         repl.start(modems);
                     }
                     debug("Started");
-                    monitor = ts_gsm_modem_1.ConnectionMonitor.getInstance(logger_1.log);
+                    monitor = ts_gsm_modem_1.ConnectionMonitor.getInstance(logger.log);
                     monitor.evtModemConnect.attach(function (accessPoint) { return createModem(accessPoint); });
                     evtScheduleRetry.attach(function (accessPoint) {
                         if (!monitor.connectedModems.has(accessPoint)) {
@@ -132,7 +129,7 @@ function createModem(accessPoint) {
                             "unlock": function (modemInfo, iccid, pinState, tryLeft, performUnlock) {
                                 return onLockedModem(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock);
                             },
-                            log: logger_1.log,
+                            "log": logger.log
                         })];
                 case 2:
                     modem = _a.sent();
@@ -157,8 +154,8 @@ function onModemInitializationFailed(accessPoint, message, modemInfos) {
 }
 function onLockedModem(accessPoint, modemInfos, iccid, pinState, tryLeft, performUnlock) {
     return __awaiter(this, void 0, void 0, function () {
-        var _this = this;
         var associatedTo, pin, unlockResult, lockedModem;
+        var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:

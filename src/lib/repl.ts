@@ -36,15 +36,20 @@ export function start(modems: types.Modems) {
             return;
         }
 
-        let [resp, final] = await (modem.atStack.runCommand as typeof Modem.prototype.runCommand)(
+        const { resp, final } = await (modem.atStack.runCommand as typeof Modem.prototype.runCommand)(
             command + "\r",
             { "recoverable": true, "retryOnErrors": false }
         );
 
-        if (resp) console.log(JSON.stringify(resp, null, 2));
+        if (resp){
+             console.log(JSON.stringify(resp, null, 2));
+        }
 
-        if (final.isError) console.log(JSON.stringify(final, null, 2).red);
-        else console.log(final.raw.green);
+        if (final.isError){
+             console.log(JSON.stringify(final, null, 2).red);
+        } else {
+            console.log(final.raw.green);
+        }
 
     };
 

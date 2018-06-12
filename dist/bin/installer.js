@@ -82,15 +82,35 @@ var _a = __read([
 exports.working_directory_path = path.join(module_dir_path, "working_directory");
 var start_sh_path = path.join(exports.working_directory_path, "start.sh");
 var node_path = path.join(module_dir_path, "node");
-var pkg_list_path = path.join(module_dir_path, "pkg_installed.json");
+var installed_pkg_record_path = path.join(module_dir_path, "pkg_installed.json");
 var pid_file_path = path.join(exports.working_directory_path, srv_name + ".pid");
+var uninstaller_link_default_path = "/usr/sbin/" + srv_name + "_uninstaller";
 exports.db_path = path.join(exports.working_directory_path, "app.db");
+var to_distribute_rel_paths = [
+    "LICENSE",
+    "README.md",
+    "res/" + path.basename(exports.db_path),
+    "dist",
+    "node_modules",
+    "package.json"
+];
 Astdirs_1.Astdirs.dir_path = exports.working_directory_path;
 InstallOptions_1.InstallOptions.dir_path = exports.working_directory_path;
 AmiCredential_1.AmiCredential.dir_path = exports.working_directory_path;
 scriptLib.apt_get_install.onInstallSuccess = function (package_name) {
-    return scriptLib.apt_get_install.record_installed_package(pkg_list_path, package_name);
+    return scriptLib.apt_get_install.record_installed_package(installed_pkg_record_path, package_name);
 };
+function getIsProd() {
+    if (getIsProd.value !== undefined) {
+        return getIsProd.value;
+    }
+    getIsProd.value = !fs.existsSync(path.join(module_dir_path, ".git"));
+    return getIsProd();
+}
+exports.getIsProd = getIsProd;
+(function (getIsProd) {
+    getIsProd.value = undefined;
+})(getIsProd = exports.getIsProd || (exports.getIsProd = {}));
 var _install = program.command("install");
 for (var key in InstallOptions_1.InstallOptions.defaults) {
     var value = InstallOptions_1.InstallOptions.defaults[key];
@@ -112,47 +132,31 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
         switch (_b.label) {
             case 0:
                 console.log("---Installing chan-dongle-extended---");
-                if (!fs.existsSync(exports.working_directory_path)) return [3 /*break*/, 2];
-                process.stdout.write(scriptLib.colorize("Already installed, uninstalling previous install... ", "YELLOW"));
-                return [4 /*yield*/, uninstall()];
+                if (fs.existsSync(uninstaller_link_default_path) &&
+                    path.dirname(scriptLib.sh_eval("readlink -f " + uninstaller_link_default_path)) !== exports.working_directory_path) {
+                    process.stdout.write(scriptLib.colorize("Uninstalling previous instal found in other location... ", "YELLOW"));
+                    scriptLib.execSync(uninstaller_link_default_path + " run");
+                    console.log(scriptLib.colorize("DONE", "GREEN"));
+                }
+                uninstall();
+                _b.label = 1;
             case 1:
-                _b.sent();
-                console.log("DONE");
-                return [3 /*break*/, 3];
-            case 2:
-                stopRunningInstance();
-                _b.label = 3;
-            case 3:
-                (function () {
-                    var previous_working_directory_path;
-                    try {
-                        previous_working_directory_path = scriptLib.execSyncQuiet("dirname $(readlink -e $(which dongle))").replace("\n", "");
-                    }
-                    catch (_a) {
-                        return;
-                    }
-                    process.stdout.write(scriptLib.colorize("Previous install found, uninstalling... ", "YELLOW"));
-                    scriptLib.execSyncQuiet(path.join(previous_working_directory_path, "uninstaller.sh") + " run");
-                    console.log("DONE");
-                })();
-                _b.label = 4;
-            case 4:
-                _b.trys.push([4, 6, , 8]);
+                _b.trys.push([1, 3, , 4]);
                 return [4 /*yield*/, install(options)];
-            case 5:
+            case 2:
                 _b.sent();
-                return [3 /*break*/, 8];
-            case 6:
+                return [3 /*break*/, 4];
+            case 3:
                 _a = _b.sent();
                 message = _a.message;
-                process.stdout.write(scriptLib.colorize("An error occurred: '" + message + "', rollback ...", "RED"));
-                return [4 /*yield*/, uninstall()];
-            case 7:
-                _b.sent();
-                console.log("DONE");
+                console.log(scriptLib.colorize("An error occurred: '" + message, "RED"));
+                uninstall();
+                if (getIsProd()) {
+                    scriptLib.execSync("rm -r " + module_dir_path);
+                }
                 process.exit(-1);
                 return [2 /*return*/];
-            case 8:
+            case 4:
                 console.log("---DONE---");
                 process.exit(0);
                 return [2 /*return*/];
@@ -162,18 +166,16 @@ _install.action(function (options) { return __awaiter(_this, void 0, void 0, fun
 program
     .command("uninstall")
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
-    var pkg_list;
     return __generator(this, function (_a) {
-        console.log("---Uninstalling chan-dongle-extended---");
+        console.log("---Uninstalling " + srv_name + "---");
         uninstall("VERBOSE");
         console.log("---DONE---");
-        if (fs.existsSync(pkg_list_path)) {
-            pkg_list = require(pkg_list_path);
+        if (fs.existsSync(installed_pkg_record_path)) {
             console.log([
                 "NOTE: Some packages have been installed automatically, ",
                 "you can remove them if you no longer need them.",
                 "\n",
-                "$ sudo apt-get purge " + pkg_list.join(" "),
+                "$ sudo apt-get purge " + require(installed_pkg_record_path).join(" "),
                 "\n",
                 "$ sudo apt-get --purge autoremove"
             ].join(""));
@@ -185,64 +187,50 @@ program
 program
     .command("tarball")
     .action(function () { return __awaiter(_this, void 0, void 0, function () {
-    var v_name, dir_path, _a, _b, name, _c, _d, name, e_1, _e, e_2, _f;
-    return __generator(this, function (_g) {
-        v_name = [
-            "dongle",
-            //`v${require(path.join(module_dir_path, "package.json"))["version"]}`,
-            child_process.execSync("uname -m").toString("utf8").replace("\n", "")
-        ].join("_");
-        dir_path = path.join("/tmp", v_name);
-        scriptLib.execSyncTrace("rm -rf " + dir_path);
-        scriptLib.execSyncTrace("cp -r " + module_dir_path + " " + dir_path);
-        (function () {
-            var new_node_path = path.join(dir_path, "node");
-            if (!fs.existsSync(new_node_path)) {
-                scriptLib.execSyncTrace("cp $(readlink -e " + process.argv[0] + ") " + new_node_path);
-            }
-        })();
-        (function () {
-            var node_python_messaging_path = find_module_path("node-python-messaging", dir_path);
-            scriptLib.execSyncTrace("rm -r " + path.join(node_python_messaging_path, "dist", "virtual"));
-        })();
-        (function () {
-            var udev_module_path = find_module_path("udev", dir_path);
-            scriptLib.execSyncTrace("rm -r " + path.join(udev_module_path, "build"));
-        })();
+    var e_1, _a, e_2, _b, _module_dir_path, to_distribute_rel_paths_1, to_distribute_rel_paths_1_1, name, _node_modules_path, _c, _d, name;
+    return __generator(this, function (_e) {
+        _module_dir_path = path.join("/tmp", path.basename(module_dir_path));
+        scriptLib.execSyncTrace("rm -rf " + _module_dir_path);
         try {
-            for (_a = __values([".git", ".gitignore", "src", "tsconfig.json"]), _b = _a.next(); !_b.done; _b = _a.next()) {
-                name = _b.value;
-                scriptLib.execSyncTrace("rm -rf " + path.join(dir_path, name));
+            for (to_distribute_rel_paths_1 = __values(to_distribute_rel_paths), to_distribute_rel_paths_1_1 = to_distribute_rel_paths_1.next(); !to_distribute_rel_paths_1_1.done; to_distribute_rel_paths_1_1 = to_distribute_rel_paths_1.next()) {
+                name = to_distribute_rel_paths_1_1.value;
+                scriptLib.fs_move("COPY", module_dir_path, _module_dir_path, name);
             }
         }
         catch (e_1_1) { e_1 = { error: e_1_1 }; }
         finally {
             try {
-                if (_b && !_b.done && (_e = _a.return)) _e.call(_a);
+                if (to_distribute_rel_paths_1_1 && !to_distribute_rel_paths_1_1.done && (_a = to_distribute_rel_paths_1.return)) _a.call(to_distribute_rel_paths_1);
             }
             finally { if (e_1) throw e_1.error; }
         }
+        scriptLib.execSyncTrace("cp $(readlink -e " + process.argv[0] + ") " + path.join(_module_dir_path, path.basename(node_path)));
+        _node_modules_path = path.join(_module_dir_path, "node_modules");
         try {
             for (_c = __values(["@types", "typescript"]), _d = _c.next(); !_d.done; _d = _c.next()) {
                 name = _d.value;
-                scriptLib.execSyncTrace("rm -r " + path.join(dir_path, "node_modules", name));
+                scriptLib.execSyncTrace("rm -r " + path.join(_node_modules_path, name));
             }
         }
         catch (e_2_1) { e_2 = { error: e_2_1 }; }
         finally {
             try {
-                if (_d && !_d.done && (_f = _c.return)) _f.call(_c);
+                if (_d && !_d.done && (_b = _c.return)) _b.call(_c);
             }
             finally { if (e_2) throw e_2.error; }
         }
-        scriptLib.execSyncTrace("find " + path.join(dir_path, "node_modules") + " -type f -name \"*.ts\" -exec rm -rf {} \\;");
-        scriptLib.execSyncTrace("rm -rf " + path.join(dir_path, path.basename(exports.working_directory_path)));
+        scriptLib.execSyncTrace([
+            "rm -r",
+            path.join(scriptLib.find_module_path("node-python-messaging", _module_dir_path), "dist", "virtual"),
+            path.join(scriptLib.find_module_path("udev", _module_dir_path), "build")
+        ].join(" "));
+        scriptLib.execSyncTrace("find " + _node_modules_path + " -type f -name \"*.ts\" -exec rm -rf {} \\;");
         (function hide_auth_token() {
-            var files = child_process.execSync("find . -name \"package-lock.json\" -o -name \"package.json\"", { "cwd": dir_path })
-                .toString("utf8")
+            var e_3, _a;
+            var files = scriptLib.execSync("find . -name \"package-lock.json\" -o -name \"package.json\"", { "cwd": _module_dir_path })
                 .slice(0, -1)
                 .split("\n")
-                .map(function (rp) { return path.join(dir_path, rp); });
+                .map(function (rp) { return path.join(_module_dir_path, rp); });
             try {
                 for (var files_1 = __values(files), files_1_1 = files_1.next(); !files_1_1.done; files_1_1 = files_1.next()) {
                     var file = files_1_1.value;
@@ -258,10 +246,13 @@ program
                 }
                 finally { if (e_3) throw e_3.error; }
             }
-            var e_3, _a;
         })();
-        scriptLib.execSyncTrace("tar -czf " + path.join(module_dir_path, v_name + ".tar.gz") + " -C " + dir_path + " .");
-        scriptLib.execSyncTrace("rm -r " + dir_path);
+        scriptLib.execSyncTrace([
+            "tar -czf",
+            path.join(module_dir_path, "dongle_" + scriptLib.sh_eval("uname -m") + ".tar.gz"),
+            "-C " + _module_dir_path + " ."
+        ].join(" "));
+        scriptLib.execSyncTrace("rm -r " + _module_dir_path);
         console.log("---DONE---");
         return [2 /*return*/];
     });
@@ -274,15 +265,17 @@ function install(options) {
                     unixUser.create();
                     workingDirectory.create();
                     InstallOptions_1.InstallOptions.set(options);
-                    if (!fs.existsSync(path.join(module_dir_path, ".git"))) return [3 /*break*/, 1];
-                    scriptLib.enableTrace();
-                    return [3 /*break*/, 4];
-                case 1: return [4 /*yield*/, install_prereq()];
-                case 2:
+                    if (!getIsProd()) return [3 /*break*/, 3];
+                    return [4 /*yield*/, install_prereq()];
+                case 1:
                     _a.sent();
                     return [4 /*yield*/, rebuild_node_modules()];
-                case 3:
+                case 2:
                     _a.sent();
+                    return [3 /*break*/, 4];
+                case 3:
+                    scriptLib.enableCmdTrace();
+                    scriptLib.execSync("cp $(readlink -e " + process.argv[0] + ") " + node_path);
                     _a.label = 4;
                 case 4:
                     if (!!InstallOptions_1.InstallOptions.getDeduced().assume_asterisk_installed) return [3 /*break*/, 6];
@@ -293,9 +286,6 @@ function install(options) {
                 case 6:
                     Astdirs_1.Astdirs.set(InstallOptions_1.InstallOptions.get().asterisk_main_conf);
                     modemManager.disable_and_stop();
-                    if (!fs.existsSync(node_path)) {
-                        scriptLib.execSync("cp $(readlink -e " + process.argv[0] + ") " + node_path);
-                    }
                     return [4 /*yield*/, tty0tty.install()];
                 case 7:
                     _a.sent();
@@ -311,7 +301,7 @@ function install(options) {
                     _a.sent();
                     shellScripts.create();
                     asterisk_manager.enable();
-                    scriptLib.execSync("cp " + path.join(module_dir_path, "res", "app_empty.db") + " " + exports.db_path, { "unix_user": unix_user });
+                    scriptLib.execSync("cp " + path.join(module_dir_path, "res", path.basename(exports.db_path)) + " " + exports.db_path, { "unix_user": unix_user });
                     systemd.create();
                     return [2 /*return*/];
             }
@@ -350,20 +340,13 @@ function stopRunningInstance() {
     catch (_a) { }
 }
 (function (stopRunningInstance) {
-    /*
-    export const cmd = [
-        `pkill --pidfile ${pid_file_path} -SIGUSR2 2>/dev/null`,
-        `pkill --euid ${unix_user} -SIGUSR2 2>/dev/null`,
-        `true`
-    ].join(" ; ");
-    */
     var cmd = undefined;
     stopRunningInstance.getCmd = function () {
         if (!!cmd) {
             return cmd;
         }
         cmd = [
-            scriptLib.execSync("which pkill").slice(0, -1),
+            scriptLib.sh_eval("which pkill"),
             "--pidfile " + pid_file_path,
             "-SIGUSR2"
         ].join(" ");
@@ -397,22 +380,13 @@ var tty0tty;
     }
     function install_linux_headers() {
         return __awaiter(this, void 0, void 0, function () {
-            var kernel_release, are_headers_installed, is_raspbian_host, h_deb_path, downloaded_from;
+            var kernel_release, is_raspbian_host, h_deb_path, downloaded_from;
             return __generator(this, function (_a) {
                 switch (_a.label) {
                     case 0:
                         kernel_release = scriptLib.execSync("uname -r").replace(/\n$/, "");
-                        are_headers_installed = function () {
-                            try {
-                                scriptLib.execSyncQuiet("ls " + path.join(build_link_path, "include"));
-                            }
-                            catch (_a) {
-                                return false;
-                            }
-                            return true;
-                        };
                         process.stdout.write("Checking for linux kernel headers ...");
-                        if (are_headers_installed()) {
+                        if (fs.existsSync(path.join(build_link_path, "include"))) {
                             console.log("found. " + scriptLib.colorize("OK", "GREEN"));
                             return [2 /*return*/];
                         }
@@ -478,7 +452,7 @@ var tty0tty;
                         _a.sent();
                         return [4 /*yield*/, (function install_deb() {
                                 return __awaiter(this, void 0, void 0, function () {
-                                    var _a, _b, pkg_name, e_4_1, _c, exec, onSuccess, build_dir_path, e_4, _d;
+                                    var e_4, _a, _b, _c, pkg_name, e_4_1, _d, exec, onSuccess, build_dir_path;
                                     return __generator(this, function (_e) {
                                         switch (_e.label) {
                                             case 0:
@@ -486,17 +460,17 @@ var tty0tty;
                                                 _e.label = 1;
                                             case 1:
                                                 _e.trys.push([1, 6, 7, 8]);
-                                                _a = __values(["gcc-4.7", "bc", "dkms"]), _b = _a.next();
+                                                _b = __values(["gcc-4.7", "bc", "dkms"]), _c = _b.next();
                                                 _e.label = 2;
                                             case 2:
-                                                if (!!_b.done) return [3 /*break*/, 5];
-                                                pkg_name = _b.value;
+                                                if (!!_c.done) return [3 /*break*/, 5];
+                                                pkg_name = _c.value;
                                                 return [4 /*yield*/, scriptLib.apt_get_install(pkg_name)];
                                             case 3:
                                                 _e.sent();
                                                 _e.label = 4;
                                             case 4:
-                                                _b = _a.next();
+                                                _c = _b.next();
                                                 return [3 /*break*/, 2];
                                             case 5: return [3 /*break*/, 8];
                                             case 6:
@@ -505,12 +479,12 @@ var tty0tty;
                                                 return [3 /*break*/, 8];
                                             case 7:
                                                 try {
-                                                    if (_b && !_b.done && (_d = _a.return)) _d.call(_a);
+                                                    if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
                                                 }
                                                 finally { if (e_4) throw e_4.error; }
                                                 return [7 /*endfinally*/];
                                             case 8:
-                                                _c = scriptLib.start_long_running_process("Installing linux headers"), exec = _c.exec, onSuccess = _c.onSuccess;
+                                                _d = scriptLib.start_long_running_process("Installing linux headers"), exec = _d.exec, onSuccess = _d.onSuccess;
                                                 if (!(downloaded_from === "OFFICIAL")) return [3 /*break*/, 11];
                                                 return [4 /*yield*/, exec("dpkg -x " + h_deb_path + " " + h_dir_path)];
                                             case 9:
@@ -681,6 +655,7 @@ var unixUser;
     function create() {
         process.stdout.write("Creating unix user '" + unix_user + "' ... ");
         stopRunningInstance();
+        scriptLib.execSyncQuiet("pkill -u " + unix_user + " || true");
         scriptLib.execSyncQuiet("userdel " + unix_user + " || true");
         scriptLib.execSync("useradd -M " + unix_user + " -s /bin/false -d " + exports.working_directory_path);
         console.log(scriptLib.colorize("OK", "GREEN"));
@@ -693,17 +668,12 @@ var unixUser;
 })(unixUser || (unixUser = {}));
 var shellScripts;
 (function (shellScripts) {
-    var get_uninstaller_link_path = function () { return path.join(Astdirs_1.Astdirs.get().astsbindir, srv_name + "_uninstaller"); };
+    var get_uninstaller_link_path = function () { return path.join(Astdirs_1.Astdirs.get().astsbindir, path.basename(uninstaller_link_default_path)); };
     var cli_link_path = "/usr/bin/dongle";
     function create() {
         process.stdout.write("Creating launch scripts ... ");
-        var writeAndSetPerms = function (script_path, script) {
-            fs.writeFileSync(script_path, Buffer.from(script, "utf8"));
-            scriptLib.execSync("chown " + unix_user + ":" + unix_user + " " + script_path);
-            scriptLib.execSync("chmod +x " + script_path);
-        };
         var cli_sh_path = path.join(exports.working_directory_path, "cli.sh");
-        writeAndSetPerms(cli_sh_path, [
+        scriptLib.createScript(cli_sh_path, [
             "#!/usr/bin/env bash",
             "",
             "# This script is a proxy to the cli interface of the service ( run $ dongle --help )",
@@ -721,7 +691,7 @@ var shellScripts;
         ].join("\n"));
         scriptLib.execSyncQuiet("ln -sf " + cli_sh_path + " " + cli_link_path);
         var uninstaller_sh_path = path.join(exports.working_directory_path, "uninstaller.sh");
-        writeAndSetPerms(uninstaller_sh_path, [
+        scriptLib.createScript(uninstaller_sh_path, [
             "#!/bin/bash",
             "",
             "# Will uninstall the service and remove source if installed from tarball",
@@ -740,8 +710,8 @@ var shellScripts;
             "fi",
             ""
         ].join("\n"));
-        scriptLib.execSyncQuiet("ln -sf " + uninstaller_sh_path + " " + get_uninstaller_link_path());
-        writeAndSetPerms(start_sh_path, [
+        scriptLib.createSymlink(uninstaller_sh_path, get_uninstaller_link_path());
+        scriptLib.createScript(start_sh_path, [
             "#!/usr/bin/env bash",
             "",
             "# In charge of launching the service in interactive mode (via $ nmp start)",
@@ -775,13 +745,13 @@ var systemd;
         process.stdout.write("Creating systemd service " + service_file_path + " ... ");
         fs.writeFileSync(service_file_path, Buffer.from([
             "[Unit]",
-            "Description=chan-dongle-extended service.",
+            "Description=" + srv_name + " service.",
             "After=network.target",
             "",
             "[Service]",
             "ExecStart=" + start_sh_path,
             "ExecStop=" + stopRunningInstance.getCmd(),
-            "ExecStopPost=" + scriptLib.execSync("which rm").slice(0, -1) + " -f " + pid_file_path,
+            "ExecStopPost=" + scriptLib.sh_eval("which rm") + " -f " + pid_file_path,
             "Environment=NODE_ENV=production",
             "StandardOutput=journal",
             "Restart=always",
@@ -800,12 +770,12 @@ var systemd;
     }
     systemd.create = create;
     function remove() {
+        scriptLib.execSyncQuiet("systemctl disable " + srv_name + " || true");
         try {
-            scriptLib.execSyncQuiet("systemctl disable " + srv_name);
             fs.unlinkSync(service_file_path);
         }
         catch (_a) { }
-        scriptLib.execSyncQuiet("systemctl daemon-reload");
+        scriptLib.execSyncQuiet("systemctl daemon-reload || true");
     }
     systemd.remove = remove;
 })(systemd || (systemd = {}));
@@ -814,6 +784,7 @@ var asterisk_manager;
     var ami_conf_back_path = path.join(exports.working_directory_path, "manager.conf.back");
     var get_ami_conf_path = function () { return path.join(Astdirs_1.Astdirs.get().astetcdir, "manager.conf"); };
     function enable() {
+        var _a;
         process.stdout.write("Enabling asterisk manager ... ");
         var ami_conf_path = get_ami_conf_path();
         var general = {
@@ -871,7 +842,6 @@ var asterisk_manager;
         catch (_b) { }
         AmiCredential_1.AmiCredential.set(credential, unix_user);
         console.log(scriptLib.colorize("OK", "GREEN"));
-        var _a;
     }
     asterisk_manager.enable = enable;
     function restore() {
@@ -891,7 +861,7 @@ var udevRules;
     var rules_path = path.join("/etc/udev/rules.d", "98-" + srv_name + ".rules");
     function create() {
         return __awaiter(this, void 0, void 0, function () {
-            var _a, recordIfNum, ConnectionMonitor, vendorIds, rules, vendorIds_1, vendorIds_1_1, vendorId, e_5, _b;
+            var e_5, _a, _b, recordIfNum, ConnectionMonitor, vendorIds, rules, vendorIds_1, vendorIds_1_1, vendorId;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, scriptLib.apt_get_install("usb-modeswitch")];
@@ -902,7 +872,7 @@ var udevRules;
                         scriptLib.execSync("mkdir -p " + path.dirname(rules_path));
                         return [4 /*yield*/, Promise.resolve().then(function () { return require("ts-gsm-modem"); })];
                     case 2:
-                        _a = _c.sent(), recordIfNum = _a.recordIfNum, ConnectionMonitor = _a.ConnectionMonitor;
+                        _b = _c.sent(), recordIfNum = _b.recordIfNum, ConnectionMonitor = _b.ConnectionMonitor;
                         vendorIds = Object.keys(recordIfNum);
                         rules = "# Automatically generated by chan-dongle-extended. (disable network on dongles )\n\n";
                         try {
@@ -928,7 +898,7 @@ var udevRules;
                         catch (e_5_1) { e_5 = { error: e_5_1 }; }
                         finally {
                             try {
-                                if (vendorIds_1_1 && !vendorIds_1_1.done && (_b = vendorIds_1.return)) _b.call(vendorIds_1);
+                                if (vendorIds_1_1 && !vendorIds_1_1.done && (_a = vendorIds_1.return)) _a.call(vendorIds_1);
                             }
                             finally { if (e_5) throw e_5.error; }
                         }
@@ -944,7 +914,7 @@ var udevRules;
                         scriptLib.execSync("chown " + unix_user + ":" + unix_user + " " + rules_path);
                         return [4 /*yield*/, (function applying_rules() {
                                 return __awaiter(this, void 0, void 0, function () {
-                                    var monitor, _a, _b, accessPoint, _c, _d, device_path, e_6, _e, e_7, _f;
+                                    var e_6, _a, e_7, _b, monitor, _c, _d, accessPoint, _e, _f, device_path;
                                     return __generator(this, function (_g) {
                                         switch (_g.label) {
                                             case 0:
@@ -959,11 +929,11 @@ var udevRules;
                                                     console.log("No USB dongles currently connected.");
                                                 }
                                                 try {
-                                                    for (_a = __values(monitor.connectedModems), _b = _a.next(); !_b.done; _b = _a.next()) {
-                                                        accessPoint = _b.value;
+                                                    for (_c = __values(monitor.connectedModems), _d = _c.next(); !_d.done; _d = _c.next()) {
+                                                        accessPoint = _d.value;
                                                         try {
-                                                            for (_c = __values([accessPoint.audioIfPath, accessPoint.dataIfPath]), _d = _c.next(); !_d.done; _d = _c.next()) {
-                                                                device_path = _d.value;
+                                                            for (_e = __values([accessPoint.audioIfPath, accessPoint.dataIfPath]), _f = _e.next(); !_f.done; _f = _e.next()) {
+                                                                device_path = _f.value;
                                                                 scriptLib.execSync("chown root:" + unix_user + " " + device_path);
                                                                 scriptLib.execSync("chmod u+rw,g+rw,o+rw " + device_path);
                                                             }
@@ -971,7 +941,7 @@ var udevRules;
                                                         catch (e_7_1) { e_7 = { error: e_7_1 }; }
                                                         finally {
                                                             try {
-                                                                if (_d && !_d.done && (_f = _c.return)) _f.call(_c);
+                                                                if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
                                                             }
                                                             finally { if (e_7) throw e_7.error; }
                                                         }
@@ -980,7 +950,7 @@ var udevRules;
                                                 catch (e_6_1) { e_6 = { error: e_6_1 }; }
                                                 finally {
                                                     try {
-                                                        if (_b && !_b.done && (_e = _a.return)) _e.call(_a);
+                                                        if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
                                                     }
                                                     finally { if (e_6) throw e_6.error; }
                                                 }
@@ -1140,49 +1110,29 @@ function build_ast_cmdline() {
     var astsbindir = Astdirs_1.Astdirs.get().astsbindir;
     return "LD_LIBRARY_PATH=" + ld_library_path_for_asterisk + " " + path.join(astsbindir, "asterisk") + " -C " + asterisk_main_conf;
 }
-function find_module_path(module_name, root_module_path) {
-    var cmd = [
-        "find " + path.join(root_module_path, "node_modules"),
-        "-type f",
-        "-path \\*/node_modules/" + module_name + "/package.json",
-        "-exec dirname {} \\;"
-    ].join(" ");
-    var match = child_process
-        .execSync(cmd, { "stdio": [] })
-        .toString("utf8")
-        .slice(0, -1)
-        .split("\n");
-    if (!match.length) {
-        throw new Error("Not found");
-    }
-    else {
-        return match.sort(function (a, b) { return a.length - b.length; })[0];
-    }
-}
 function rebuild_node_modules() {
     return __awaiter(this, void 0, void 0, function () {
-        var _a, exec, onSuccess, cdExec;
+        var _a, exec, onSuccess;
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
                     _a = scriptLib.start_long_running_process("Building node_modules dependencies"), exec = _a.exec, onSuccess = _a.onSuccess;
-                    cdExec = function (cmd, dir_path) { return exec("(cd " + dir_path + " && " + cmd + ")"); };
                     return [4 /*yield*/, (function build_udev() {
                             return __awaiter(this, void 0, void 0, function () {
-                                var udev_dir_path, pre_gyp_dir_path, _a, _b, root_module_path, e_8, _c;
+                                var e_8, _a, udev_dir_path, pre_gyp_dir_path, _b, _c, _module_dir_path;
                                 return __generator(this, function (_d) {
                                     switch (_d.label) {
                                         case 0:
-                                            udev_dir_path = find_module_path("udev", module_dir_path);
+                                            udev_dir_path = scriptLib.find_module_path("udev", module_dir_path);
                                             if (fs.existsSync(path.join(udev_dir_path, "build"))) {
                                                 return [2 /*return*/];
                                             }
                                             pre_gyp_dir_path = "";
                                             try {
-                                                for (_a = __values([udev_dir_path, module_dir_path]), _b = _a.next(); !_b.done; _b = _a.next()) {
-                                                    root_module_path = _b.value;
+                                                for (_b = __values([udev_dir_path, module_dir_path]), _c = _b.next(); !_c.done; _c = _b.next()) {
+                                                    _module_dir_path = _c.value;
                                                     try {
-                                                        pre_gyp_dir_path = find_module_path("node-pre-gyp", root_module_path);
+                                                        pre_gyp_dir_path = scriptLib.find_module_path("node-pre-gyp", _module_dir_path);
                                                         break;
                                                     }
                                                     catch (_e) { }
@@ -1191,15 +1141,15 @@ function rebuild_node_modules() {
                                             catch (e_8_1) { e_8 = { error: e_8_1 }; }
                                             finally {
                                                 try {
-                                                    if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
+                                                    if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
                                                 }
                                                 finally { if (e_8) throw e_8.error; }
                                             }
-                                            return [4 /*yield*/, cdExec([
+                                            return [4 /*yield*/, exec([
                                                     "PATH=" + path.join(module_dir_path) + ":$PATH",
                                                     "node " + path.join(pre_gyp_dir_path, "bin", "node-pre-gyp") + " install",
                                                     "--fallback-to-build"
-                                                ].join(" "), udev_dir_path)];
+                                                ].join(" "), { "cwd": udev_dir_path })];
                                         case 1:
                                             _d.sent();
                                             return [2 /*return*/];
@@ -1215,11 +1165,11 @@ function rebuild_node_modules() {
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
                                         case 0:
-                                            node_python_messaging_dir_path = find_module_path("node-python-messaging", module_dir_path);
+                                            node_python_messaging_dir_path = scriptLib.find_module_path("node-python-messaging", module_dir_path);
                                             if (fs.existsSync(path.join(node_python_messaging_dir_path, "dist", "virtual"))) {
                                                 return [2 /*return*/];
                                             }
-                                            return [4 /*yield*/, cdExec("./install-python-dep.sh", node_python_messaging_dir_path)];
+                                            return [4 /*yield*/, exec("./install-python-dep.sh", { "cwd": node_python_messaging_dir_path })];
                                         case 1:
                                             _a.sent();
                                             return [2 /*return*/];
@@ -1236,7 +1186,8 @@ function rebuild_node_modules() {
     });
 }
 if (require.main === module) {
-    require("rejection-tracker").main(module_dir_path);
+    process.removeAllListeners("unhandledRejection");
+    process.once("unhandledRejection", function (error) { throw error; });
     scriptLib.exit_if_not_root();
     program.parse(process.argv);
 }

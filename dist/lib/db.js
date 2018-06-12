@@ -164,7 +164,7 @@ var messages;
 (function (messages) {
     function retrieve(params) {
         return __awaiter(this, void 0, void 0, function () {
-            var fromDate, toDate, where_clause, sql, entries, res, entries_1, entries_1_1, entry, e_1, _a;
+            var e_1, _a, fromDate, toDate, where_clause, sql, entries, res, entries_1, entries_1_1, entry;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:

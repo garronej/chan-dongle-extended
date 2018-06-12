@@ -27,11 +27,8 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var ts_ami_1 = require("ts-ami");
 var tt = require("transfer-tools");
 var types = require("./types");
-var logger_1 = require("./logger");
-var _debug = require("debug");
-var debug = _debug("dialplan");
-debug.enabled = true;
-debug.log = logger_1.log;
+var logger = require("logger");
+var debug = logger.debugFactory();
 function init(modems, ami, dialplanContext, defaultNumber) {
     modems.evtCreate.attach(function (_a) {
         var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];

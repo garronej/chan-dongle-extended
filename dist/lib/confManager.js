@@ -58,11 +58,8 @@ var ini_extended_1 = require("ini-extended");
 var runExclusive = require("run-exclusive");
 var path = require("path");
 var Astdirs_1 = require("./Astdirs");
-var logger_1 = require("./logger");
-var debugFactory = require("debug");
-var debug = debugFactory("confManager");
-debug.enabled = true;
-debug.log = logger_1.log;
+var logger = require("logger");
+var debug = logger.debugFactory();
 var default_staticModuleConfiguration = {
     "general": {
         "interval": "10000000",
@@ -129,8 +126,8 @@ function loadChanDongleSo(ami) {
 }
 function getApi(ami) {
     return __awaiter(this, void 0, void 0, function () {
-        var _this = this;
         var dongle_conf_path, staticModuleConfiguration, state, update, groupRef, api;
+        var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0: return [4 /*yield*/, loadChanDongleSo(ami)];
@@ -174,21 +171,21 @@ function getApi(ami) {
                     api = {
                         staticModuleConfiguration: staticModuleConfiguration,
                         "reset": runExclusive.build(groupRef, function () { return __awaiter(_this, void 0, void 0, function () {
-                            var _a, _b, key, e_1, _c;
+                            var e_1, _a, _b, _c, key;
                             return __generator(this, function (_d) {
                                 switch (_d.label) {
                                     case 0:
                                         debug("reset");
                                         try {
-                                            for (_a = __values(Object.keys(state).filter(function (key) { return key !== "general" && key !== "defaults"; })), _b = _a.next(); !_b.done; _b = _a.next()) {
-                                                key = _b.value;
+                                            for (_b = __values(Object.keys(state).filter(function (key) { return key !== "general" && key !== "defaults"; })), _c = _b.next(); !_c.done; _c = _b.next()) {
+                                                key = _c.value;
                                                 delete state[key];
                                             }
                                         }
                                         catch (e_1_1) { e_1 = { error: e_1_1 }; }
                                         finally {
                                             try {
-                                                if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
+                                                if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
                                             }
                                             finally { if (e_1) throw e_1.error; }
                                         }

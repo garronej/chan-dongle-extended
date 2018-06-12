@@ -55,15 +55,9 @@ var __read = (this && this.__read) || function (o, n) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var Tty0tty_1 = require("./Tty0tty");
-var logger_1 = require("./logger");
-var debugFactory = require("debug");
-var debug = debugFactory("atBridge");
-debug.enabled = true;
-debug.log = logger_1.log;
-var fileOnlyDebug = debugFactory("bridge");
-fileOnlyDebug.enabled = true;
-fileOnlyDebug.log = logger_1.fileOnlyLog;
+var logger = require("logger");
 var types = require("./types");
+var debug = logger.debugFactory();
 function init(modems, chanDongleConfManagerApi) {
     atBridge.confManagerApi = chanDongleConfManagerApi;
     var tty0ttyFactory = Tty0tty_1.Tty0tty.makeFactory();
@@ -76,11 +70,10 @@ function init(modems, chanDongleConfManagerApi) {
     });
 }
 exports.init = init;
-var ok = "\r\nOK\r\n";
 function atBridge(accessPoint, modem, tty0tty) {
     return __awaiter(this, void 0, void 0, function () {
-        var _this = this;
         var portVirtual, serviceProviderShort, forwardResp;
+        var _this = this;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
@@ -122,14 +115,15 @@ function atBridge(accessPoint, modem, tty0tty) {
                             debug(("Newer command from chanDongle, dropping " + JSON.stringify(rawResp)).red);
                             return;
                         }
-                        fileOnlyDebug("response: " + JSON.stringify(rawResp).blue);
+                        logger.file.log("(AT) response: " + JSON.stringify(rawResp).blue);
                         portVirtual.writeAndDrain(rawResp);
                     };
                     portVirtual.on("data", function (buff) {
                         if (modem.isTerminated)
                             return;
                         var command = buff.toString("utf8") + "\r";
-                        fileOnlyDebug("from chan_dongle: " + JSON.stringify(command));
+                        logger.file.log("(AT) from ast-chan-dongle: " + JSON.stringify(command));
+                        var ok = "\r\nOK\r\n";
                         if (command === "ATZ\r" ||
                             command.match(/^AT\+CNMI=/)) {
                             forwardResp(ok);
@@ -156,13 +150,16 @@ function atBridge(accessPoint, modem, tty0tty) {
                             "recoverable": true,
                             "reportMode": ts_gsm_modem_1.AtMessage.ReportMode.NO_DEBUG_INFO,
                             "retryOnErrors": false
-                        }, function (_, __, rawResp) { return forwardResp(rawResp); });
+                        }).then(function (_a) {
+                            var raw = _a.raw;
+                            return forwardResp(raw);
+                        });
                     });
                     return [4 /*yield*/, portVirtual.evtData.waitFor()];
                 case 1:
                     _a.sent();
                     modem.evtUnsolicitedAtMessage.attach(function (urc) {
-                        fileOnlyDebug("forwarding urc: " + JSON.stringify(urc.raw).blue);
+                        logger.file.log("(AT) forwarding urc: " + JSON.stringify(urc.raw).blue);
                         portVirtual.writeAndDrain(urc.raw);
                     });
                     return [2 /*return*/];
