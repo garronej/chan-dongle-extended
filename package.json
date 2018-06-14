@@ -5,6 +5,7 @@
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
   "scripts": {
+    "postinstall": "cp $(readlink -e $(which node)) ./node",
     "tsc": "node ./node_modules/typescript/bin/tsc -p ./tsconfig.json",
     "tsc-w": "node ./node_modules/typescript/bin/tsc -w -p ./tsconfig.json",
     "start": "sudo ./working_directory/start.sh",
@@ -22,12 +23,9 @@
     "chan-dongle-extended-client": "github:garronej/chan-dongle-extended-client",
     "colors": "^1.3.0",
     "commander": "^2.11.0",
-    "debug": "^2.6.1",
     "ini-extended": "github:garronej/ini-extended",
     "logger": "github:garronej/logger",
     "node-persist": "^2.1.0",
-    "npm": "^6.0.0",
-    "rejection-tracker": "github:garronej/rejection-tracker",
     "run-exclusive": "github:garronej/run-exclusive",
     "scripting-tools": "github:garronej/scripting-tools",
     "sqlite-custom": "github:garronej/sqlite-custom",
@@ -36,13 +34,10 @@
     "ts-ami": "github:garronej/ts-ami",
     "ts-events-extended": "garronej/ts-events-extended",
     "ts-gsm-modem": "git+https://206e4c24cb9a1e4a8d42b7ac86e4a026b02cee42:x-oauth-basic@github.com/garronej/ts-gsm-modem.git",
-    "ts-sip": "github:garronej/ts-sip",
-    "winston": "^3.0.0-rc4"
+    "ts-sip": "github:garronej/ts-sip"
   },
   "devDependencies": {
-    "@types/chai": "^3.4.34",
     "@types/colors": "^1.2.1",
-    "@types/debug": "0.0.29",
     "@types/node": "^8.9.1",
     "@types/node-persist": "0.0.31",
     "typescript": "^2.9.1"

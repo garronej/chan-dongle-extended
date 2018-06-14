@@ -17,7 +17,7 @@ const srv_name = "chan_dongle";
 const module_dir_path = path.join(__dirname, "..", "..");
 const [cli_js_path, main_js_path] = [
     "cli.js", "main.js"
-].map(f => path.join(module_dir_path, "dist", "bin", f));
+].map(name => path.join(path.dirname(__filename), name));
 export const working_directory_path = path.join(module_dir_path, "working_directory");
 const start_sh_path = path.join(working_directory_path, "start.sh");
 const node_path = path.join(module_dir_path, "node");
@@ -32,7 +32,8 @@ const to_distribute_rel_paths= [
     `res/${path.basename(db_path)}`, 
     "dist", 
     "node_modules", 
-    "package.json"
+    "package.json",
+    path.basename(node_path)
 ];
 
 Astdirs.dir_path = working_directory_path;
@@ -81,7 +82,7 @@ for (let key in InstallOptions.defaults) {
 
 _install.action(async options => {
 
-        console.log("---Installing chan-dongle-extended---");
+        console.log(`---Installing ${srv_name}---`);
 
         if (
             fs.existsSync(uninstaller_link_default_path) &&
@@ -156,8 +157,69 @@ program
     });
 
 program
+    .command("update")
+    .option(`--path [{path}]`)
+    .action(async options => {
+
+        scriptLib.enableCmdTrace();
+
+        stopService();
+
+        const _module_dir_path = options["path"];
+
+        const [db_schema_path, _db_schema_path] = [module_dir_path, _module_dir_path].map(v => path.join(v, "res", path.basename(db_path)));
+
+        if (!scriptLib.fs_areSame(db_schema_path, _db_schema_path)) {
+
+            scriptLib.fs_move("COPY", _db_schema_path, db_path);
+
+        }
+
+        const [
+            node_python_messaging_dir_path,
+            _node_python_messaging_dir_path
+        ] = [module_dir_path, _module_dir_path].map(v => scriptLib.find_module_path("node-python-messaging", v));
+
+        if (
+            path.relative(module_dir_path, node_python_messaging_dir_path)
+            ===
+            path.relative(_module_dir_path, _node_python_messaging_dir_path)
+        ) {
+
+            scriptLib.fs_move("MOVE", node_python_messaging_dir_path, _node_python_messaging_dir_path);
+
+        }
+
+        if (scriptLib.fs_areSame(node_path, path.join(_module_dir_path, path.basename(node_path)))) {
+
+            const [
+                udev_dir_path,
+                _udev_dir_path
+            ] = [module_dir_path, _module_dir_path].map(v => scriptLib.find_module_path("udev", v));
+
+            scriptLib.fs_move("MOVE", udev_dir_path, _udev_dir_path);
+
+        }
+
+        for (const name of to_distribute_rel_paths) {
+            scriptLib.fs_move("MOVE", _module_dir_path, module_dir_path, name);
+        }
+
+        rebuild_node_modules();
+
+        scriptLib.execSync(`systemctl start ${srv_name}`);
+
+        console.log("update success");
+
+    });
+
+program
     .command("tarball")
     .action(async () => {
+
+        if (!fs.existsSync(node_path)) {
+            throw new Error(`Missing node`);
+        }
 
         scriptLib.enableCmdTrace();
 
@@ -169,11 +231,10 @@ program
             scriptLib.fs_move("COPY", module_dir_path, _module_dir_path, name);
         }
 
-        scriptLib.execSyncTrace(`cp $(readlink -e ${process.argv[0]}) ${path.join(_module_dir_path, path.basename(node_path))}`);
 
         const _node_modules_path = path.join(_module_dir_path, "node_modules");
 
-        for (const name of ["@types", "typescript" ]) {
+        for (const name of ["@types", "typescript"]) {
 
             scriptLib.execSyncTrace(`rm -r ${path.join(_node_modules_path, name)}`);
 
@@ -182,11 +243,11 @@ program
         scriptLib.execSyncTrace([
             "rm -r",
             path.join(
-                scriptLib.find_module_path("node-python-messaging", _module_dir_path), 
+                scriptLib.find_module_path("node-python-messaging", _module_dir_path),
                 "dist", "virtual"
             ),
             path.join(
-                scriptLib.find_module_path("udev", _module_dir_path), 
+                scriptLib.find_module_path("udev", _module_dir_path),
                 "build"
             )
         ].join(" "));
@@ -239,17 +300,19 @@ async function install(options: Partial<InstallOptions>) {
 
     InstallOptions.set(options);
 
-    if( getIsProd() ){
+    if (getIsProd()) {
 
         await install_prereq();
 
         await rebuild_node_modules();
 
-    }else{
+    } else {
+
+        if (!fs.existsSync(node_path)) {
+            throw new Error("Missing copy of node");
+        }
 
         scriptLib.enableCmdTrace();
-
-        scriptLib.execSync(`cp $(readlink -e ${process.argv[0]}) ${node_path}`);
 
     }
 
@@ -338,19 +401,19 @@ function uninstall(verbose?: "VERBOSE" | undefined) {
 
 function stopService() {
 
-    if( !stopService.isRunning() ){
+    if (!stopService.isRunning()) {
 
         return;
 
-    }else if( fs.existsSync(pid_file_path) ){
+    } else if (fs.existsSync(pid_file_path)) {
 
         try { scriptLib.execSyncQuiet(stopService.getCmd()); } catch{ }
 
-        let count= 0;
+        let count = 0;
 
-        while( count++ < 3  ){
+        while (count++ < 3) {
 
-            if( !stopService.isRunning() ){
+            if (!stopService.isRunning()) {
                 return;
             }
 
@@ -362,13 +425,13 @@ function stopService() {
 
         return stopService();
 
-    }else{
+    } else {
 
-        try{ scriptLib.execSyncQuiet(`systemctl stop ${srv_name}`) } catch{}
+        try { scriptLib.execSyncQuiet(`systemctl stop ${srv_name}`) } catch{ }
 
         try { scriptLib.execSyncQuiet(`pkill -u ${unix_user}`); } catch{ }
 
-        while( stopService.isRunning() ){
+        while (stopService.isRunning()) {
 
             scriptLib.execSync(`sleep 1`);
         }
@@ -399,7 +462,7 @@ namespace stopService {
 
     }
 
-    export function isRunning(): boolean{
+    export function isRunning(): boolean {
 
         return scriptLib.sh_if(`ps -u ${unix_user}`) || fs.existsSync(pid_file_path);
 
@@ -700,6 +763,7 @@ namespace workingDirectory {
     }
 
 }
+
 namespace unixUser {
 
     export function create() {
@@ -817,7 +881,6 @@ namespace shellScripts {
 
 }
 
-
 namespace systemd {
 
     const service_file_path = path.join("/etc/systemd/system", `${srv_name}.service`);
@@ -873,7 +936,7 @@ namespace systemd {
 
 }
 
-export namespace asterisk_manager {
+namespace asterisk_manager {
 
     const ami_conf_back_path = path.join(working_directory_path, "manager.conf.back");
     const get_ami_conf_path = () => path.join(Astdirs.get().astetcdir, "manager.conf");
@@ -1270,7 +1333,7 @@ async function rebuild_node_modules() {
         await exec(
             [
                 `PATH=${path.join(module_dir_path)}:$PATH`,
-                `node ${path.join(pre_gyp_dir_path, "bin", "node-pre-gyp")} install`,
+                `${path.basename(node_path)} ${path.join(pre_gyp_dir_path, "bin", "node-pre-gyp")} install`,
                 "--fallback-to-build"
             ].join(" "),
             { "cwd": udev_dir_path }

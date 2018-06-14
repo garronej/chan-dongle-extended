@@ -45,6 +45,7 @@ var pidfile_path = "./chan_dongle.pid";
 var logfile_path = "./current.log";
 logger.file.enable(logfile_path, 900000);
 fs.writeFileSync(pidfile_path, Buffer.from(process.pid.toString(), "utf8"));
+var exitCode = 1;
 process.once("SIGUSR2", function () {
     logger.log("Stop script called (SIGUSR2)");
     exitCode = 0;
@@ -60,7 +61,6 @@ process.once("unhandledRejection", function (error) {
     logger.log(error);
     process.emit("beforeExit", NaN);
 });
-var exitCode = 1;
 process.once("beforeExit", function () { return __awaiter(_this, void 0, void 0, function () {
     var prCleanLog, evtDone, _a, _b;
     return __generator(this, function (_c) {

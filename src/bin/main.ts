@@ -11,6 +11,8 @@ logger.file.enable(logfile_path, 900000);
 
 fs.writeFileSync(pidfile_path, Buffer.from(process.pid.toString(), "utf8"));
 
+let exitCode = 1;
+
 process.once("SIGUSR2", () => {
 
     logger.log("Stop script called (SIGUSR2)");
@@ -40,8 +42,6 @@ process.once("unhandledRejection", error => {
     process.emit("beforeExit", NaN);
 
 });
-
-let exitCode = 1;
 
 process.once("beforeExit", async () => {
 
