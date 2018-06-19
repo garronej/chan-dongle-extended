@@ -191,40 +191,49 @@ program
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
     var e_1, _a, _module_dir_path, _b, db_schema_path, _db_schema_path, _c, node_python_messaging_dir_path, _node_python_messaging_dir_path, _d, udev_dir_path, _udev_dir_path, to_distribute_rel_paths_1, to_distribute_rel_paths_1_1, name;
     return __generator(this, function (_e) {
-        scriptLib.enableCmdTrace();
-        stopService();
-        _module_dir_path = options["path"];
-        _b = __read([module_dir_path, _module_dir_path].map(function (v) { return path.join(v, "res", path.basename(exports.db_path)); }), 2), db_schema_path = _b[0], _db_schema_path = _b[1];
-        if (!scriptLib.fs_areSame(db_schema_path, _db_schema_path)) {
-            scriptLib.fs_move("COPY", _db_schema_path, exports.db_path);
+        switch (_e.label) {
+            case 0:
+                if (!getIsProd()) {
+                    console.log(scriptLib.colorize("Should not update prod", "RED"));
+                    process.exit(1);
+                }
+                stopService();
+                scriptLib.enableCmdTrace();
+                _module_dir_path = options["path"];
+                _b = __read([module_dir_path, _module_dir_path].map(function (v) { return path.join(v, "res", path.basename(exports.db_path)); }), 2), db_schema_path = _b[0], _db_schema_path = _b[1];
+                if (!scriptLib.fs_areSame(db_schema_path, _db_schema_path)) {
+                    scriptLib.fs_move("COPY", _db_schema_path, exports.db_path);
+                }
+                _c = __read([module_dir_path, _module_dir_path].map(function (v) { return scriptLib.find_module_path("node-python-messaging", v); }), 2), node_python_messaging_dir_path = _c[0], _node_python_messaging_dir_path = _c[1];
+                if (path.relative(module_dir_path, node_python_messaging_dir_path)
+                    ===
+                        path.relative(_module_dir_path, _node_python_messaging_dir_path)) {
+                    scriptLib.fs_move("MOVE", node_python_messaging_dir_path, _node_python_messaging_dir_path);
+                }
+                if (scriptLib.fs_areSame(node_path, path.join(_module_dir_path, path.basename(node_path)))) {
+                    _d = __read([module_dir_path, _module_dir_path].map(function (v) { return scriptLib.find_module_path("udev", v); }), 2), udev_dir_path = _d[0], _udev_dir_path = _d[1];
+                    scriptLib.fs_move("MOVE", udev_dir_path, _udev_dir_path);
+                }
+                try {
+                    for (to_distribute_rel_paths_1 = __values(to_distribute_rel_paths), to_distribute_rel_paths_1_1 = to_distribute_rel_paths_1.next(); !to_distribute_rel_paths_1_1.done; to_distribute_rel_paths_1_1 = to_distribute_rel_paths_1.next()) {
+                        name = to_distribute_rel_paths_1_1.value;
+                        scriptLib.fs_move("MOVE", _module_dir_path, module_dir_path, name);
+                    }
+                }
+                catch (e_1_1) { e_1 = { error: e_1_1 }; }
+                finally {
+                    try {
+                        if (to_distribute_rel_paths_1_1 && !to_distribute_rel_paths_1_1.done && (_a = to_distribute_rel_paths_1.return)) _a.call(to_distribute_rel_paths_1);
+                    }
+                    finally { if (e_1) throw e_1.error; }
+                }
+                return [4 /*yield*/, rebuild_node_modules()];
+            case 1:
+                _e.sent();
+                scriptLib.execSync("systemctl start " + srv_name);
+                console.log(scriptLib.colorize("Update success", "GREEN"));
+                return [2 /*return*/];
         }
-        _c = __read([module_dir_path, _module_dir_path].map(function (v) { return scriptLib.find_module_path("node-python-messaging", v); }), 2), node_python_messaging_dir_path = _c[0], _node_python_messaging_dir_path = _c[1];
-        if (path.relative(module_dir_path, node_python_messaging_dir_path)
-            ===
-                path.relative(_module_dir_path, _node_python_messaging_dir_path)) {
-            scriptLib.fs_move("MOVE", node_python_messaging_dir_path, _node_python_messaging_dir_path);
-        }
-        if (scriptLib.fs_areSame(node_path, path.join(_module_dir_path, path.basename(node_path)))) {
-            _d = __read([module_dir_path, _module_dir_path].map(function (v) { return scriptLib.find_module_path("udev", v); }), 2), udev_dir_path = _d[0], _udev_dir_path = _d[1];
-            scriptLib.fs_move("MOVE", udev_dir_path, _udev_dir_path);
-        }
-        try {
-            for (to_distribute_rel_paths_1 = __values(to_distribute_rel_paths), to_distribute_rel_paths_1_1 = to_distribute_rel_paths_1.next(); !to_distribute_rel_paths_1_1.done; to_distribute_rel_paths_1_1 = to_distribute_rel_paths_1.next()) {
-                name = to_distribute_rel_paths_1_1.value;
-                scriptLib.fs_move("MOVE", _module_dir_path, module_dir_path, name);
-            }
-        }
-        catch (e_1_1) { e_1 = { error: e_1_1 }; }
-        finally {
-            try {
-                if (to_distribute_rel_paths_1_1 && !to_distribute_rel_paths_1_1.done && (_a = to_distribute_rel_paths_1.return)) _a.call(to_distribute_rel_paths_1);
-            }
-            finally { if (e_1) throw e_1.error; }
-        }
-        rebuild_node_modules();
-        scriptLib.execSync("systemctl start " + srv_name);
-        console.log("update success");
-        return [2 /*return*/];
     });
 }); });
 program

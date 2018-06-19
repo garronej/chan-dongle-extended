@@ -110,7 +110,7 @@ _install.action(async options => {
             uninstall();
 
             if( getIsProd() ){
-
+                
                 scriptLib.execSync(`rm -r ${module_dir_path}`);
 
             }
@@ -161,9 +161,14 @@ program
     .option(`--path [{path}]`)
     .action(async options => {
 
-        scriptLib.enableCmdTrace();
+        if( !getIsProd() ){
+            console.log(scriptLib.colorize("Should not update prod", "RED"));
+            process.exit(1);
+        }
 
         stopService();
+
+        scriptLib.enableCmdTrace();
 
         const _module_dir_path = options["path"];
 
@@ -205,11 +210,11 @@ program
             scriptLib.fs_move("MOVE", _module_dir_path, module_dir_path, name);
         }
 
-        rebuild_node_modules();
+        await rebuild_node_modules();
 
         scriptLib.execSync(`systemctl start ${srv_name}`);
 
-        console.log("update success");
+        console.log(scriptLib.colorize("Update success", "GREEN"));
 
     });
 
