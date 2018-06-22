@@ -531,8 +531,6 @@ namespace tty0tty {
 
             const { onError, onSuccess } = scriptLib.start_long_running_process("Downloading raspberrypi linux headers");
 
-            const wget = (url: string) => scriptLib.exec(`wget ${url} -O ${h_deb_path}`);
-
             try {
 
                 const firmware_release = scriptLib.execSync("zcat /usr/share/doc/raspberrypi-bootloader/changelog.Debian.gz | head")
@@ -544,7 +542,7 @@ namespace tty0tty {
                     `raspberrypi-kernel-headers_${firmware_release}_armhf.deb`
                 ].join("");
 
-                await wget(url);
+                await scriptLib.web_get(url, h_deb_path);
 
                 downloaded_from = "OFFICIAL";
 
@@ -557,7 +555,7 @@ namespace tty0tty {
                         `linux-headers-${kernel_release}_${kernel_release}-2_armhf.deb`
                     ].join("");
 
-                    await wget(url);
+                    await scriptLib.web_get(url, h_deb_path);
 
                     downloaded_from = "MHIIENKA";
 

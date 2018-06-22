@@ -51,8 +51,8 @@ process.once("beforeExit", async () => {
     process.removeAllListeners("uncaughtException");
     process.on("uncaughtException", ()=> { });
 
-    //log do not throw synchronously
-    const prCleanLog= logger.log("---end---");
+    //TODO: set timeout?
+    const prTerminateLog= logger.file.terminate();
 
     const evtDone = new VoidSyncEvent();
 
@@ -66,7 +66,7 @@ process.once("beforeExit", async () => {
 
     } catch{ }
 
-    try{ await prCleanLog; }catch{}
+    await prTerminateLog; 
 
     if(  exitCode !== 0 ){
 

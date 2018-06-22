@@ -14,8 +14,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -62,53 +62,46 @@ process.once("unhandledRejection", function (error) {
     process.emit("beforeExit", NaN);
 });
 process.once("beforeExit", function () { return __awaiter(_this, void 0, void 0, function () {
-    var prCleanLog, evtDone, _a, _b;
-    return __generator(this, function (_c) {
-        switch (_c.label) {
+    var prTerminateLog, evtDone, _a;
+    return __generator(this, function (_b) {
+        switch (_b.label) {
             case 0:
                 process.removeAllListeners("unhandledRejection");
                 process.on("unhandledRejection", function () { });
                 process.removeAllListeners("uncaughtException");
                 process.on("uncaughtException", function () { });
-                prCleanLog = logger.log("---end---");
+                prTerminateLog = logger.file.terminate();
                 evtDone = new ts_events_extended_1.VoidSyncEvent();
-                _c.label = 1;
+                _b.label = 1;
             case 1:
-                _c.trys.push([1, 3, , 4]);
+                _b.trys.push([1, 3, , 4]);
                 launch_1.beforeExit()
                     .then(function () { return evtDone.post(); })
                     .catch(function () { return evtDone.post(); });
                 return [4 /*yield*/, evtDone.waitFor(2000)];
             case 2:
-                _c.sent();
+                _b.sent();
                 return [3 /*break*/, 4];
             case 3:
-                _a = _c.sent();
+                _a = _b.sent();
                 return [3 /*break*/, 4];
-            case 4:
-                _c.trys.push([4, 6, , 7]);
-                return [4 /*yield*/, prCleanLog];
+            case 4: return [4 /*yield*/, prTerminateLog];
             case 5:
-                _c.sent();
-                return [3 /*break*/, 7];
-            case 6:
-                _b = _c.sent();
-                return [3 /*break*/, 7];
-            case 7:
+                _b.sent();
                 if (exitCode !== 0) {
                     try {
                         scriptLib.execSync("cp " + logfile_path + " ./previous_crash.log");
                     }
-                    catch (_d) { }
+                    catch (_c) { }
                 }
                 try {
                     fs.unlinkSync(logfile_path);
                 }
-                catch (_e) { }
+                catch (_d) { }
                 try {
                     fs.unlinkSync(pidfile_path);
                 }
-                catch (_f) { }
+                catch (_e) { }
                 process.exit(exitCode);
                 return [2 /*return*/];
         }

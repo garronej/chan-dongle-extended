@@ -15,8 +15,8 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     function step(op) {
         if (f) throw new TypeError("Generator is already executing.");
         while (_) try {
-            if (f = 1, y && (t = y[op[0] & 2 ? "return" : op[0] ? "throw" : "next"]) && !(t = t.call(y, op[1])).done) return t;
-            if (y = 0, t) op = [0, t.value];
+            if (f = 1, y && (t = op[0] & 2 ? y["return"] : op[0] ? y["throw"] || ((t = y["return"]) && t.call(y), 0) : y.next) && !(t = t.call(y, op[1])).done) return t;
+            if (y = 0, t) op = [op[0] & 2, t.value];
             switch (op[0]) {
                 case 0: case 1: t = op; break;
                 case 4: _.label++; return { value: op[1], done: false };
@@ -496,12 +496,11 @@ var tty0tty;
                         h_deb_path = path.join(exports.working_directory_path, "linux-headers.deb");
                         return [4 /*yield*/, (function download_deb() {
                                 return __awaiter(this, void 0, void 0, function () {
-                                    var _a, onError, onSuccess, wget, firmware_release, url, _b, url, _c;
+                                    var _a, onError, onSuccess, firmware_release, url, _b, url, _c;
                                     return __generator(this, function (_d) {
                                         switch (_d.label) {
                                             case 0:
                                                 _a = scriptLib.start_long_running_process("Downloading raspberrypi linux headers"), onError = _a.onError, onSuccess = _a.onSuccess;
-                                                wget = function (url) { return scriptLib.exec("wget " + url + " -O " + h_deb_path); };
                                                 _d.label = 1;
                                             case 1:
                                                 _d.trys.push([1, 3, , 8]);
@@ -511,7 +510,7 @@ var tty0tty;
                                                     "https://archive.raspberrypi.org/debian/pool/main/r/raspberrypi-firmware/",
                                                     "raspberrypi-kernel-headers_" + firmware_release + "_armhf.deb"
                                                 ].join("");
-                                                return [4 /*yield*/, wget(url)];
+                                                return [4 /*yield*/, scriptLib.web_get(url, h_deb_path)];
                                             case 2:
                                                 _d.sent();
                                                 downloaded_from = "OFFICIAL";
@@ -525,7 +524,7 @@ var tty0tty;
                                                     "https://www.niksula.hut.fi/~mhiienka/Rpi/linux-headers-rpi" + (kernel_release[0] === "3" ? "/3.x.x/" : "/"),
                                                     "linux-headers-" + kernel_release + "_" + kernel_release + "-2_armhf.deb"
                                                 ].join("");
-                                                return [4 /*yield*/, wget(url)];
+                                                return [4 /*yield*/, scriptLib.web_get(url, h_deb_path)];
                                             case 5:
                                                 _d.sent();
                                                 downloaded_from = "MHIIENKA";
