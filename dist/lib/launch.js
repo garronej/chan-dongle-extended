@@ -42,13 +42,11 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var trackable_map_1 = require("trackable-map");
 var AmiCredential_1 = require("./AmiCredential");
 var ts_ami_1 = require("ts-ami");
-var repl = require("./repl");
 var dialplan = require("./dialplan");
 var api = require("./api");
 var atBridge = require("./atBridge");
@@ -60,10 +58,13 @@ var InstallOptions_1 = require("./InstallOptions");
 var debug = logger.debugFactory();
 var modems = new trackable_map_1.TrackableMap();
 var evtScheduleRetry = new ts_events_extended_1.SyncEvent();
-//TODO: check if we can update this.
-exports.beforeExit = function () { return __awaiter(_this, void 0, void 0, function () { return __generator(this, function (_a) {
-    return [2 /*return*/];
-}); }); };
+function beforeExit() {
+    return beforeExit.impl();
+}
+exports.beforeExit = beforeExit;
+(function (beforeExit) {
+    beforeExit.impl = function () { return Promise.resolve(); };
+})(beforeExit = exports.beforeExit || (exports.beforeExit = {}));
 function launch() {
     return __awaiter(this, void 0, void 0, function () {
         var installOptions, ami, chanDongleConfManagerApi, defaults, monitor;
@@ -73,12 +74,13 @@ function launch() {
                     installOptions = InstallOptions_1.InstallOptions.get();
                     ami = ts_ami_1.Ami.getInstance(AmiCredential_1.AmiCredential.get());
                     ami.evtTcpConnectionClosed.attachOnce(function () {
-                        throw new Error("Asterisk TCP connection closed");
+                        debug("TCP connection with Asterisk manager closed, reboot");
+                        process.emit("beforeExit", process.exitCode = 0);
                     });
                     return [4 /*yield*/, confManager.getApi(ami)];
                 case 1:
                     chanDongleConfManagerApi = _a.sent();
-                    exports.beforeExit = function () { return chanDongleConfManagerApi.reset(); };
+                    beforeExit.impl = function () { return chanDongleConfManagerApi.reset(); };
                     return [4 /*yield*/, db.launch()];
                 case 2:
                     _a.sent();
@@ -92,10 +94,6 @@ function launch() {
                     return [4 /*yield*/, api.launch(modems, chanDongleConfManagerApi.staticModuleConfiguration)];
                 case 4:
                     _a.sent();
-                    if (process.env["NODE_ENV"] !== "production") {
-                        debug("Enabling repl");
-                        repl.start(modems);
-                    }
                     debug("Started");
                     monitor = ts_gsm_modem_1.ConnectionMonitor.getInstance(logger.log);
                     monitor.evtModemConnect.attach(function (accessPoint) { return createModem(accessPoint); });

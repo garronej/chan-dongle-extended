@@ -91,7 +91,7 @@ export async function getApi(ami: Ami): Promise<Api> {
         ()=> loadChanDongleSo(ami)
     );
 
-    let dongle_conf_path = path.join(Astdirs.get().astetcdir, "dongle.conf");
+    const dongle_conf_path = path.join(Astdirs.get().astetcdir, "dongle.conf");
 
     const staticModuleConfiguration: dcTypes.StaticModuleConfiguration = (() => {
 
@@ -162,6 +162,8 @@ export async function getApi(ami: Ami): Promise<Api> {
                 }
 
                 await update();
+
+                debug("reset complete");
 
             }
         ),

@@ -16,7 +16,7 @@ export function init(
 
     atBridge.confManagerApi=chanDongleConfManagerApi;
 
-    let tty0ttyFactory = Tty0tty.makeFactory();
+    const tty0ttyFactory = Tty0tty.makeFactory();
 
     modems.evtCreate.attach(([modem, accessPoint]) => {
 
@@ -43,7 +43,7 @@ async function atBridge(
         "audio": accessPoint.audioIfPath
     });
 
-    let portVirtual = new SerialPortExt(
+    const portVirtual = new SerialPortExt(
         tty0tty.leftEnd,
         {
             "baudRate": 115200,

@@ -11,10 +11,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var path = require("path");
 var fs = require("fs");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
+var installer_1 = require("../bin/installer");
 var InstallOptions;
 (function (InstallOptions) {
-    InstallOptions.dir_path = ".";
-    InstallOptions.file_name = "install_options.json";
+    InstallOptions.file_path = path.join(installer_1.working_directory_path, "install_options.json");
     InstallOptions.defaults = {
         "asterisk_main_conf": "/etc/asterisk/asterisk.conf",
         "bind_addr": "127.0.0.1",
@@ -31,12 +31,12 @@ var InstallOptions;
         for (var key in InstallOptions.defaults) {
             _options[key] = options[key];
         }
-        fs.writeFileSync(path.join(InstallOptions.dir_path, InstallOptions.file_name), Buffer.from(JSON.stringify(_options, null, 2), "utf8"));
+        fs.writeFileSync(InstallOptions.file_path, Buffer.from(JSON.stringify(_options, null, 2), "utf8"));
     }
     InstallOptions.set = set;
     function get() {
         if (!_options) {
-            _options = JSON.parse(fs.readFileSync(path.join(InstallOptions.dir_path, InstallOptions.file_name)).toString("utf8"));
+            _options = require(InstallOptions.file_path);
         }
         var installOptions = __assign({}, InstallOptions.defaults);
         for (var key in InstallOptions.defaults) {

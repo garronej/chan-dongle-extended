@@ -4,7 +4,7 @@ export class Tty0tty {
 
     public static makeFactory(): (() => Tty0tty) {
 
-        let store: Tty0tty[] = (() => {
+        const store: Tty0tty[] = (() => {
 
             //should return 24
             let pairCount = (child_process.execSync("ls /dev")

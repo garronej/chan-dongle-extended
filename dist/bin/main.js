@@ -34,77 +34,126 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __read = (this && this.__read) || function (o, n) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator];
+    if (!m) return o;
+    var i = m.call(o), r, ar = [], e;
+    try {
+        while ((n === void 0 || n-- > 0) && !(r = i.next()).done) ar.push(r.value);
+    }
+    catch (error) { e = { error: error }; }
+    finally {
+        try {
+            if (r && !r.done && (m = i["return"])) m.call(i);
+        }
+        finally { if (e) throw e.error; }
+    }
+    return ar;
+};
 var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
-var fs = require("fs");
-var launch_1 = require("../lib/launch");
-var ts_events_extended_1 = require("ts-events-extended");
 var scriptLib = require("scripting-tools");
-var logger = require("logger");
-var pidfile_path = "./chan_dongle.pid";
-var logfile_path = "./current.log";
-logger.file.enable(logfile_path, 900000);
-fs.writeFileSync(pidfile_path, Buffer.from(process.pid.toString(), "utf8"));
-var exitCode = 1;
-process.once("SIGUSR2", function () {
-    logger.log("Stop script called (SIGUSR2)");
-    exitCode = 0;
-    process.emit("beforeExit", NaN);
+scriptLib.createService({
+    "rootProcess": function () { return __awaiter(_this, void 0, void 0, function () {
+        var _a, _b, build_ast_cmdline, node_path, pidfile_path, unix_user, child_process, logger, debug;
+        var _this = this;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0: return [4 /*yield*/, Promise.all([
+                        Promise.resolve().then(function () { return require("./installer"); }),
+                        Promise.resolve().then(function () { return require("child_process"); }),
+                        Promise.resolve().then(function () { return require("logger"); })
+                    ])];
+                case 1:
+                    _a = __read.apply(void 0, [_c.sent(), 3]), _b = _a[0], build_ast_cmdline = _b.build_ast_cmdline, node_path = _b.node_path, pidfile_path = _b.pidfile_path, unix_user = _b.unix_user, child_process = _a[1], logger = _a[2];
+                    debug = logger.debugFactory();
+                    return [2 /*return*/, {
+                            pidfile_path: pidfile_path,
+                            "assert_unix_user": "root",
+                            "daemon_unix_user": unix_user,
+                            "daemon_node_path": node_path,
+                            "preForkTask": function (terminateChildProcesses) { return __awaiter(_this, void 0, void 0, function () {
+                                var isAsteriskFullyBooted;
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            if (!true) return [3 /*break*/, 3];
+                                            debug("Checking whether asterisk is fully booted...");
+                                            return [4 /*yield*/, new Promise(function (resolve) {
+                                                    var childProcess = child_process.exec(build_ast_cmdline() + " -rx \"core waitfullybooted\"");
+                                                    childProcess.once("error", function () { return resolve(false); })
+                                                        .once("close", function (code) { return (code === 0) ? resolve(true) : resolve(false); });
+                                                    terminateChildProcesses.impl = function () { return new Promise(function (resolve_) {
+                                                        resolve = function () { return resolve_(); };
+                                                        childProcess.kill("SIGKILL");
+                                                    }); };
+                                                })];
+                                        case 1:
+                                            isAsteriskFullyBooted = _a.sent();
+                                            if (isAsteriskFullyBooted) {
+                                                return [3 /*break*/, 3];
+                                            }
+                                            debug("... asterisk is not running");
+                                            return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 10000); })];
+                                        case 2:
+                                            _a.sent();
+                                            return [3 /*break*/, 0];
+                                        case 3:
+                                            debug("...Asterisk is fully booted!");
+                                            return [2 /*return*/];
+                                    }
+                                });
+                            }); }
+                        }];
+            }
+        });
+    }); },
+    "daemonProcess": function () { return __awaiter(_this, void 0, void 0, function () {
+        var _a, path, fs, working_directory_path, logger, _b, launch, beforeExit, logfile_path;
+        var _this = this;
+        return __generator(this, function (_c) {
+            switch (_c.label) {
+                case 0: return [4 /*yield*/, Promise.all([
+                        Promise.resolve().then(function () { return require("path"); }),
+                        Promise.resolve().then(function () { return require("fs"); }),
+                        Promise.resolve().then(function () { return require("./installer"); }),
+                        Promise.resolve().then(function () { return require("logger"); }),
+                        Promise.resolve().then(function () { return require("../lib/launch"); })
+                    ])];
+                case 1:
+                    _a = __read.apply(void 0, [_c.sent(), 5]), path = _a[0], fs = _a[1], working_directory_path = _a[2].working_directory_path, logger = _a[3], _b = _a[4], launch = _b.launch, beforeExit = _b.beforeExit;
+                    logfile_path = path.join(working_directory_path, "log");
+                    return [2 /*return*/, {
+                            "launch": function () {
+                                logger.file.enable(logfile_path);
+                                launch();
+                            },
+                            "beforeExitTask": function (error) { return __awaiter(_this, void 0, void 0, function () {
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0:
+                                            if (!!error) {
+                                                logger.log(error);
+                                            }
+                                            return [4 /*yield*/, Promise.all([
+                                                    logger.file.terminate().then(function () {
+                                                        if (!!error) {
+                                                            scriptLib.execSync("mv " + logfile_path + " " + path.join(path.dirname(logfile_path), "previous_crash.log"));
+                                                        }
+                                                        else {
+                                                            fs.unlinkSync(logfile_path);
+                                                        }
+                                                    }),
+                                                    beforeExit()
+                                                ])];
+                                        case 1:
+                                            _a.sent();
+                                            return [2 /*return*/];
+                                    }
+                                });
+                            }); }
+                        }];
+            }
+        });
+    }); }
 });
-process.removeAllListeners("uncaughtException");
-process.once("uncaughtException", function (error) {
-    logger.log(error);
-    process.emit("beforeExit", NaN);
-});
-process.removeAllListeners("unhandledRejection");
-process.once("unhandledRejection", function (error) {
-    logger.log(error);
-    process.emit("beforeExit", NaN);
-});
-process.once("beforeExit", function () { return __awaiter(_this, void 0, void 0, function () {
-    var prTerminateLog, evtDone, _a;
-    return __generator(this, function (_b) {
-        switch (_b.label) {
-            case 0:
-                process.removeAllListeners("unhandledRejection");
-                process.on("unhandledRejection", function () { });
-                process.removeAllListeners("uncaughtException");
-                process.on("uncaughtException", function () { });
-                prTerminateLog = logger.file.terminate();
-                evtDone = new ts_events_extended_1.VoidSyncEvent();
-                _b.label = 1;
-            case 1:
-                _b.trys.push([1, 3, , 4]);
-                launch_1.beforeExit()
-                    .then(function () { return evtDone.post(); })
-                    .catch(function () { return evtDone.post(); });
-                return [4 /*yield*/, evtDone.waitFor(2000)];
-            case 2:
-                _b.sent();
-                return [3 /*break*/, 4];
-            case 3:
-                _a = _b.sent();
-                return [3 /*break*/, 4];
-            case 4: return [4 /*yield*/, prTerminateLog];
-            case 5:
-                _b.sent();
-                if (exitCode !== 0) {
-                    try {
-                        scriptLib.execSync("cp " + logfile_path + " ./previous_crash.log");
-                    }
-                    catch (_c) { }
-                }
-                try {
-                    fs.unlinkSync(logfile_path);
-                }
-                catch (_d) { }
-                try {
-                    fs.unlinkSync(pidfile_path);
-                }
-                catch (_e) { }
-                process.exit(exitCode);
-                return [2 /*return*/];
-        }
-    });
-}); });
-launch_1.launch();

@@ -192,6 +192,7 @@ function getApi(ami) {
                                         return [4 /*yield*/, update()];
                                     case 1:
                                         _d.sent();
+                                        debug("reset complete");
                                         return [2 /*return*/];
                                 }
                             });

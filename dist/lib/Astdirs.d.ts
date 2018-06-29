@@ -1,6 +1,5 @@
 export declare type Astdirs = typeof Astdirs.phony;
 export declare namespace Astdirs {
-    let dir_path: string;
     const phony: {
         "astetcdir": string;
         "astmoddir": string;

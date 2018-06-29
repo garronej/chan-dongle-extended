@@ -1,85 +1,123 @@
-import * as fs from "fs";
-import { launch, beforeExit } from "../lib/launch";
-import { VoidSyncEvent } from "ts-events-extended";
 import * as scriptLib from "scripting-tools";
-import * as logger from "logger";
 
-const pidfile_path= "./chan_dongle.pid";
-const logfile_path= "./current.log";
+scriptLib.createService({
+    "rootProcess": async () => {
 
-logger.file.enable(logfile_path, 900000);
+        const [
+            { build_ast_cmdline, node_path, pidfile_path, unix_user },
+            child_process,
+            logger,
+        ]= await Promise.all([
+            import("./installer"),
+            import("child_process"),
+            import("logger")
+        ]);
 
-fs.writeFileSync(pidfile_path, Buffer.from(process.pid.toString(), "utf8"));
+        const debug = logger.debugFactory();
 
-let exitCode = 1;
+        return {
+            pidfile_path,
+            "assert_unix_user": "root",
+            "daemon_unix_user": unix_user,
+            "daemon_node_path": node_path,
+            "preForkTask": async terminateChildProcesses => {
 
-process.once("SIGUSR2", () => {
+                while (true) {
 
-    logger.log("Stop script called (SIGUSR2)");
+                    debug("Checking whether asterisk is fully booted...");
 
-    exitCode= 0;
+                    const isAsteriskFullyBooted = await new Promise<boolean>(resolve => {
 
-    process.emit("beforeExit", NaN);
+                        const childProcess = child_process.exec(`${build_ast_cmdline()} -rx "core waitfullybooted"`);
 
-});
+                        childProcess.once("error", () => resolve(false))
+                            .once("close", code => (code === 0) ? resolve(true) : resolve(false))
+                            ;
 
-process.removeAllListeners("uncaughtException");
+                        terminateChildProcesses.impl = () => new Promise(resolve_ => {
 
-process.once("uncaughtException", error => {
+                            resolve = () => resolve_();
 
-    logger.log(error);
+                            childProcess.kill("SIGKILL");
 
-    process.emit("beforeExit", NaN);
+                        });
 
-});
+                    });
 
-process.removeAllListeners("unhandledRejection");
+                    if (isAsteriskFullyBooted) {
 
-process.once("unhandledRejection", error => {
+                        break;
 
-    logger.log(error);
+                    }
 
-    process.emit("beforeExit", NaN);
+                    debug("... asterisk is not running");
 
-});
+                    await new Promise(resolve => setTimeout(resolve, 10000));
 
-process.once("beforeExit", async () => {
 
-    process.removeAllListeners("unhandledRejection");
-    process.on("unhandledRejection", ()=> { });
+                }
 
-    process.removeAllListeners("uncaughtException");
-    process.on("uncaughtException", ()=> { });
+                debug("...Asterisk is fully booted!");
 
-    //TODO: set timeout?
-    const prTerminateLog= logger.file.terminate();
+            }
+        };
 
-    const evtDone = new VoidSyncEvent();
+    },
+    "daemonProcess": async () => {
 
-    try {
+        const [
+            path,
+            fs,
+            { working_directory_path },
+            logger,
+            { launch, beforeExit }
+        ] = await Promise.all([
+            import("path"),
+            import("fs"),
+            import("./installer"),
+            import("logger"),
+            import("../lib/launch")
+        ]);
 
-        beforeExit()
-            .then(() => evtDone.post())
-            .catch(() => evtDone.post());
+        const logfile_path = path.join(working_directory_path, "log");
 
-        await evtDone.waitFor(2000);
+        return {
+            "launch": () => {
 
-    } catch{ }
+                logger.file.enable(logfile_path);
 
-    await prTerminateLog; 
+                launch();
 
-    if(  exitCode !== 0 ){
+            },
+            "beforeExitTask": async error => {
 
-        try{ scriptLib.execSync(`cp ${logfile_path} ./previous_crash.log`); }catch{}
+                if (!!error) {
+
+                    logger.log(error);
+
+                }
+
+                await Promise.all([
+                    logger.file.terminate().then(() => {
+
+                        if (!!error) {
+
+                            scriptLib.execSync(`mv ${logfile_path} ${path.join(path.dirname(logfile_path), "previous_crash.log")}`);
+
+                        } else {
+
+                            fs.unlinkSync(logfile_path);
+
+                        }
+
+                    }),
+                    beforeExit()
+                ]);
+
+            }
+        };
 
     }
-
-    try{ fs.unlinkSync(logfile_path); }catch{}
-
-    try{ fs.unlinkSync(pidfile_path); }catch{}
-
-    process.exit(exitCode);
-
 });
 
-launch();
+

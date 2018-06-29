@@ -36,10 +36,9 @@ jspm_packages
 # Optional REPL history
 .node_repl_history
 
-dist/test
-.vscode
-.node-persist
-working_directory
-pkg_installed.json
-node
-dongle_*.tar.gz
+/dist/test
+/.vscode
+/working_directory
+/pkg_installed.json
+/node
+/dongle_*.tar.gz

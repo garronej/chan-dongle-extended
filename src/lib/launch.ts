@@ -5,7 +5,6 @@ import {
 import { TrackableMap } from "trackable-map";
 import { AmiCredential } from "./AmiCredential";
 import { Ami } from "ts-ami";
-import * as repl from "./repl";
 import * as dialplan from "./dialplan";
 import * as api from "./api";
 import * as atBridge from "./atBridge";
@@ -21,8 +20,13 @@ const debug = logger.debugFactory();
 const modems: types.Modems = new TrackableMap();
 const evtScheduleRetry = new SyncEvent<AccessPoint>();
 
-//TODO: check if we can update this.
-export let beforeExit: ()=> Promise<void> = async ()=> {};
+export function beforeExit() {
+    return beforeExit.impl();
+}
+
+export namespace beforeExit {
+    export let impl= ()=> Promise.resolve();
+}
 
 export async function launch() {
 
@@ -32,13 +36,15 @@ export async function launch() {
 
     ami.evtTcpConnectionClosed.attachOnce(()=>{ 
 
-        throw new Error("Asterisk TCP connection closed"); 
+        debug("TCP connection with Asterisk manager closed, reboot");
+
+        process.emit("beforeExit", process.exitCode= 0);
 
     });
 
     const chanDongleConfManagerApi = await confManager.getApi(ami);
 
-    beforeExit= ()=> chanDongleConfManagerApi.reset();
+    beforeExit.impl= ()=> chanDongleConfManagerApi.reset();
 
     await db.launch();
 
@@ -53,14 +59,6 @@ export async function launch() {
     await atBridge.init(modems, chanDongleConfManagerApi);
 
     await api.launch(modems, chanDongleConfManagerApi.staticModuleConfiguration);
-
-    if (process.env["NODE_ENV"] !== "production") {
-
-        debug("Enabling repl");
-
-        repl.start(modems);
-
-    }
 
     debug("Started");
 

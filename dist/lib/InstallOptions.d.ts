@@ -1,7 +1,6 @@
 export declare type InstallOptions = typeof InstallOptions.defaults;
 export declare namespace InstallOptions {
-    let dir_path: string;
-    const file_name = "install_options.json";
+    const file_path: string;
     const defaults: {
         "asterisk_main_conf": string;
         "bind_addr": string;

@@ -1,11 +1,10 @@
 import * as path from "path";
 import * as fs from "fs";
+import { working_directory_path } from "../bin/installer";
 
 export type Astdirs = typeof Astdirs.phony;
 
 export namespace Astdirs {
-
-    export let dir_path= ".";
 
     export const phony = {
         "astetcdir": "",
@@ -21,15 +20,15 @@ export namespace Astdirs {
         "astsbindir": ""
     };
 
-    const file_name= "astdirs.json"
+    const file_path= path.join(working_directory_path, "astdirs.json");
 
     let instance: Astdirs | undefined= undefined;
 
     export function set(asterisk_main_config_file_path: string): void{
 
-        let raw = fs.readFileSync(asterisk_main_config_file_path).toString("utf8");
+        const raw = fs.readFileSync(asterisk_main_config_file_path).toString("utf8");
 
-        let astdirs: Astdirs= {...Astdirs.phony };
+        const astdirs: Astdirs= {...Astdirs.phony };
 
         for (let key in Astdirs.phony ) {
 
@@ -38,7 +37,7 @@ export namespace Astdirs {
         }
 
         fs.writeFileSync(
-            path.join(dir_path, file_name),
+            file_path,
             Buffer.from(JSON.stringify(astdirs, null, 2), "utf8")
         );
 
@@ -52,13 +51,9 @@ export namespace Astdirs {
             return instance;
         }
 
-        instance = JSON.parse(
-            fs.readFileSync(
-                path.join(dir_path, file_name)
-            ).toString("utf8")
-        );
+        instance = require(file_path);
 
-        return instance!;
+        return get();
 
     }
 

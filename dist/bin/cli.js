@@ -47,7 +47,7 @@ require("colors");
 program
     .command("list")
     .description("List dongles")
-    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
+    .action(function () { return __awaiter(_this, void 0, void 0, function () {
     var dc;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -405,7 +405,6 @@ var selected_dongle;
     selected_dongle.set = set;
 })(selected_dongle || (selected_dongle = {}));
 if (require.main === module) {
-    process.removeAllListeners("unhandledRejection");
     process.once("unhandledRejection", function (error) { throw error; });
     program.parse(process.argv);
 }

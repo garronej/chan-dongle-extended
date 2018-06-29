@@ -11,7 +11,7 @@ import "colors";
 program
     .command("list")
     .description("List dongles")
-    .action(async options => {
+    .action(async () => {
 
         let dc = await getDcInstance();
 
@@ -357,7 +357,9 @@ namespace selected_dongle {
 }
 
 if (require.main === module) {
-    process.removeAllListeners("unhandledRejection");
+
     process.once("unhandledRejection", error => { throw error; });
+
     program.parse(process.argv);
+
 }

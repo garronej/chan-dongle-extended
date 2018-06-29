@@ -2,14 +2,13 @@
 import * as path from "path";
 import * as fs from "fs";
 import { misc as dcMisc } from "../chan-dongle-extended-client";
+import { working_directory_path } from "../bin/installer";
 
 export type InstallOptions = typeof InstallOptions.defaults;
 
 export namespace InstallOptions {
 
-    export let dir_path= ".";
-
-    export const file_name = "install_options.json";
+    export const file_path = path.join(working_directory_path,"install_options.json");
 
     export const defaults = {
         "asterisk_main_conf": "/etc/asterisk/asterisk.conf",
@@ -33,7 +32,7 @@ export namespace InstallOptions {
         }
 
         fs.writeFileSync(
-            path.join(dir_path, file_name),
+            file_path,
             Buffer.from(JSON.stringify(_options, null, 2), "utf8")
         );
 
@@ -43,11 +42,7 @@ export namespace InstallOptions {
 
         if (!_options) {
 
-            _options = JSON.parse(
-                fs.readFileSync(
-                    path.join(dir_path, file_name)
-                ).toString("utf8")
-            ) as Partial<InstallOptions>;
+            _options = require(file_path) as Partial<InstallOptions>;
 
         }
 
