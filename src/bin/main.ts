@@ -4,45 +4,39 @@ scriptLib.createService({
     "rootProcess": async () => {
 
         const [
-            { build_ast_cmdline, node_path, pidfile_path, unix_user },
+            { build_ast_cmdline, node_path, pidfile_path, srv_name },
+            { InstallOptions },
             child_process,
             logger,
+            os
         ]= await Promise.all([
             import("./installer"),
+            import("../lib/InstallOptions"),
             import("child_process"),
-            import("logger")
+            import("logger"),
+            import("os")
         ]);
 
         const debug = logger.debugFactory();
 
-        return {
+        const config=  {
             pidfile_path,
-            "assert_unix_user": "root",
-            "daemon_unix_user": unix_user,
+            srv_name,
+            "isQuiet": true,
+            "daemon_unix_user": InstallOptions.get().unix_user,
             "daemon_node_path": node_path,
-            "preForkTask": async terminateChildProcesses => {
+            "daemon_restart_after_crash_delay": 5000,
+            "preForkTask": async () => {
 
                 while (true) {
 
                     debug("Checking whether asterisk is fully booted...");
 
-                    const isAsteriskFullyBooted = await new Promise<boolean>(resolve => {
-
-                        const childProcess = child_process.exec(`${build_ast_cmdline()} -rx "core waitfullybooted"`);
-
-                        childProcess.once("error", () => resolve(false))
+                    const isAsteriskFullyBooted = await new Promise<boolean>(resolve =>
+                        child_process.exec(`${build_ast_cmdline()} -rx "core waitfullybooted"`)
+                            .once("error", () => resolve(false))
                             .once("close", code => (code === 0) ? resolve(true) : resolve(false))
-                            ;
-
-                        terminateChildProcesses.impl = () => new Promise(resolve_ => {
-
-                            resolve = () => resolve_();
-
-                            childProcess.kill("SIGKILL");
-
-                        });
-
-                    });
+                    );
 
                     if (isAsteriskFullyBooted) {
 
@@ -50,10 +44,9 @@ scriptLib.createService({
 
                     }
 
-                    debug("... asterisk is not running");
+                    debug("... asterisk is yet running ...");
 
                     await new Promise(resolve => setTimeout(resolve, 10000));
-
 
                 }
 
@@ -61,6 +54,20 @@ scriptLib.createService({
 
             }
         };
+
+        if( os.userInfo().username === InstallOptions.get().unix_user ){
+
+            config.daemon_restart_after_crash_delay= -1;
+
+            delete config.preForkTask;
+
+        }else{
+
+            scriptLib.exit_if_not_root();
+
+        }
+
+        return config;
 
     },
     "daemonProcess": async () => {

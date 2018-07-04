@@ -55,56 +55,64 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var scriptLib = require("scripting-tools");
 scriptLib.createService({
     "rootProcess": function () { return __awaiter(_this, void 0, void 0, function () {
-        var _a, _b, build_ast_cmdline, node_path, pidfile_path, unix_user, child_process, logger, debug;
+        var _a, _b, build_ast_cmdline, node_path, pidfile_path, srv_name, InstallOptions, child_process, logger, os, debug, config;
         var _this = this;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0: return [4 /*yield*/, Promise.all([
                         Promise.resolve().then(function () { return require("./installer"); }),
+                        Promise.resolve().then(function () { return require("../lib/InstallOptions"); }),
                         Promise.resolve().then(function () { return require("child_process"); }),
-                        Promise.resolve().then(function () { return require("logger"); })
+                        Promise.resolve().then(function () { return require("logger"); }),
+                        Promise.resolve().then(function () { return require("os"); })
                     ])];
                 case 1:
-                    _a = __read.apply(void 0, [_c.sent(), 3]), _b = _a[0], build_ast_cmdline = _b.build_ast_cmdline, node_path = _b.node_path, pidfile_path = _b.pidfile_path, unix_user = _b.unix_user, child_process = _a[1], logger = _a[2];
+                    _a = __read.apply(void 0, [_c.sent(), 5]), _b = _a[0], build_ast_cmdline = _b.build_ast_cmdline, node_path = _b.node_path, pidfile_path = _b.pidfile_path, srv_name = _b.srv_name, InstallOptions = _a[1].InstallOptions, child_process = _a[2], logger = _a[3], os = _a[4];
                     debug = logger.debugFactory();
-                    return [2 /*return*/, {
-                            pidfile_path: pidfile_path,
-                            "assert_unix_user": "root",
-                            "daemon_unix_user": unix_user,
-                            "daemon_node_path": node_path,
-                            "preForkTask": function (terminateChildProcesses) { return __awaiter(_this, void 0, void 0, function () {
-                                var isAsteriskFullyBooted;
-                                return __generator(this, function (_a) {
-                                    switch (_a.label) {
-                                        case 0:
-                                            if (!true) return [3 /*break*/, 3];
-                                            debug("Checking whether asterisk is fully booted...");
-                                            return [4 /*yield*/, new Promise(function (resolve) {
-                                                    var childProcess = child_process.exec(build_ast_cmdline() + " -rx \"core waitfullybooted\"");
-                                                    childProcess.once("error", function () { return resolve(false); })
-                                                        .once("close", function (code) { return (code === 0) ? resolve(true) : resolve(false); });
-                                                    terminateChildProcesses.impl = function () { return new Promise(function (resolve_) {
-                                                        resolve = function () { return resolve_(); };
-                                                        childProcess.kill("SIGKILL");
-                                                    }); };
-                                                })];
-                                        case 1:
-                                            isAsteriskFullyBooted = _a.sent();
-                                            if (isAsteriskFullyBooted) {
-                                                return [3 /*break*/, 3];
-                                            }
-                                            debug("... asterisk is not running");
-                                            return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 10000); })];
-                                        case 2:
-                                            _a.sent();
-                                            return [3 /*break*/, 0];
-                                        case 3:
-                                            debug("...Asterisk is fully booted!");
-                                            return [2 /*return*/];
-                                    }
-                                });
-                            }); }
-                        }];
+                    config = {
+                        pidfile_path: pidfile_path,
+                        srv_name: srv_name,
+                        "isQuiet": true,
+                        "daemon_unix_user": InstallOptions.get().unix_user,
+                        "daemon_node_path": node_path,
+                        "daemon_restart_after_crash_delay": 5000,
+                        "preForkTask": function () { return __awaiter(_this, void 0, void 0, function () {
+                            var isAsteriskFullyBooted;
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0:
+                                        if (!true) return [3 /*break*/, 3];
+                                        debug("Checking whether asterisk is fully booted...");
+                                        return [4 /*yield*/, new Promise(function (resolve) {
+                                                return child_process.exec(build_ast_cmdline() + " -rx \"core waitfullybooted\"")
+                                                    .once("error", function () { return resolve(false); })
+                                                    .once("close", function (code) { return (code === 0) ? resolve(true) : resolve(false); });
+                                            })];
+                                    case 1:
+                                        isAsteriskFullyBooted = _a.sent();
+                                        if (isAsteriskFullyBooted) {
+                                            return [3 /*break*/, 3];
+                                        }
+                                        debug("... asterisk is yet running ...");
+                                        return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 10000); })];
+                                    case 2:
+                                        _a.sent();
+                                        return [3 /*break*/, 0];
+                                    case 3:
+                                        debug("...Asterisk is fully booted!");
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); }
+                    };
+                    if (os.userInfo().username === InstallOptions.get().unix_user) {
+                        config.daemon_restart_after_crash_delay = -1;
+                        delete config.preForkTask;
+                    }
+                    else {
+                        scriptLib.exit_if_not_root();
+                    }
+                    return [2 /*return*/, config];
             }
         });
     }); },

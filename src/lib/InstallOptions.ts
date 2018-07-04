@@ -2,7 +2,7 @@
 import * as path from "path";
 import * as fs from "fs";
 import { misc as dcMisc } from "../chan-dongle-extended-client";
-import { working_directory_path } from "../bin/installer";
+import { working_directory_path, unix_user_default } from "../bin/installer";
 
 export type InstallOptions = typeof InstallOptions.defaults;
 
@@ -18,7 +18,9 @@ export namespace InstallOptions {
         "ast_include_dir_path": "/usr/include",
         "enable_ast_ami_on_port": 5038,
         "assume_chan_dongle_installed": false,
-        "ld_library_path_for_asterisk": ""
+        "ld_library_path_for_asterisk": "",
+        "do_not_create_systemd_conf": false,
+        "unix_user": unix_user_default
     };
 
     let _options: Partial<InstallOptions> | undefined = undefined;

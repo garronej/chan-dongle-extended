@@ -67,8 +67,8 @@ var path = require("path");
 var scriptLib = require("scripting-tools");
 var readline = require("readline");
 var ini_extended_1 = require("ini-extended");
-exports.unix_user = "chan_dongle";
-var srv_name = "chan_dongle";
+exports.unix_user_default = "chan_dongle";
+exports.srv_name = "chan_dongle";
 var module_dir_path = path.join(__dirname, "..", "..");
 var cli_js_path = path.join(__dirname, "cli.js");
 exports.working_directory_path = path.join(module_dir_path, "working_directory");
@@ -107,7 +107,7 @@ function program_action_install(options) {
         return __generator(this, function (_b) {
             switch (_b.label) {
                 case 0:
-                    console.log("---Installing " + srv_name + "---");
+                    console.log("---Installing " + exports.srv_name + "---");
                     if (fs.existsSync(uninstaller_link_default_path) &&
                         path.dirname(scriptLib.sh_eval("readlink -f " + uninstaller_link_default_path)) !== exports.working_directory_path) {
                         process.stdout.write(scriptLib.colorize("Uninstalling previous instal found in other location... ", "YELLOW"));
@@ -143,7 +143,7 @@ function program_action_install(options) {
 function program_action_uninstall() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
-            console.log("---Uninstalling " + srv_name + "---");
+            console.log("---Uninstalling " + exports.srv_name + "---");
             uninstall("VERBOSE");
             console.log("---DONE---");
             if (fs.existsSync(installed_pkg_record_path)) {
@@ -204,7 +204,9 @@ function program_action_update(options) {
                     return [4 /*yield*/, rebuild_node_modules()];
                 case 1:
                     _e.sent();
-                    scriptLib.execSync("systemctl start " + srv_name);
+                    if (!InstallOptions_1.InstallOptions.get().do_not_create_systemd_conf) {
+                        scriptLib.execSync("systemctl start " + exports.srv_name);
+                    }
                     console.log(scriptLib.colorize("Update success", "GREEN"));
                     return [2 /*return*/];
             }
@@ -289,12 +291,22 @@ function program_action_tarball() {
 }
 function install(options) {
     return __awaiter(this, void 0, void 0, function () {
+        var unix_user;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    scriptLib.unixUser.create(exports.unix_user, exports.working_directory_path);
-                    workingDirectory.create();
+                    scriptLib.execSync("mkdir " + exports.working_directory_path);
                     InstallOptions_1.InstallOptions.set(options);
+                    unix_user = InstallOptions_1.InstallOptions.get().unix_user;
+                    if (unix_user === exports.unix_user_default) {
+                        scriptLib.unixUser.create(unix_user, exports.working_directory_path);
+                    }
+                    else {
+                        if (!scriptLib.sh_if("id -u " + unix_user)) {
+                            throw new Error("Unix user " + unix_user + " does not exist");
+                        }
+                    }
+                    scriptLib.execSync("chown " + unix_user + ":" + unix_user + " " + exports.working_directory_path);
                     if (!getIsProd()) return [3 /*break*/, 3];
                     return [4 /*yield*/, install_prereq()];
                 case 1:
@@ -305,7 +317,7 @@ function install(options) {
                     return [3 /*break*/, 4];
                 case 3:
                     if (!fs.existsSync(exports.node_path)) {
-                        throw new Error("Missing copy of node");
+                        throw new Error(exports.node_path + " is missing");
                     }
                     scriptLib.enableCmdTrace();
                     _a.label = 4;
@@ -333,8 +345,10 @@ function install(options) {
                     _a.sent();
                     shellScripts.create();
                     asterisk_manager.enable();
-                    scriptLib.execSync("cp " + path.join(module_dir_path, "res", path.basename(exports.db_path)) + " " + exports.db_path, { "uid": scriptLib.get_uid(exports.unix_user), "gid": scriptLib.get_gid(exports.unix_user) });
-                    scriptLib.systemd.createConfigFile(srv_name, path.join(__dirname, "main.js"), exports.node_path, "ENABLE", "START");
+                    scriptLib.execSync("cp " + path.join(module_dir_path, "res", path.basename(exports.db_path)) + " " + exports.db_path, { "uid": scriptLib.get_uid(unix_user), "gid": scriptLib.get_gid(unix_user) });
+                    if (!InstallOptions_1.InstallOptions.get().do_not_create_systemd_conf) {
+                        scriptLib.systemd.createConfigFile(exports.srv_name, path.join(__dirname, "main.js"), exports.node_path, "ENABLE", "START");
+                    }
                     return [2 /*return*/];
             }
         });
@@ -361,14 +375,14 @@ function uninstall(verbose) {
         });
     }); };
     runRecover("Stopping running instance ... ", function () { return scriptLib.stopProcessSync(exports.pidfile_path, "SIGUSR2"); });
-    runRecover("Removing systemd service ... ", function () { return scriptLib.systemd.deleteConfigFile(srv_name); });
+    runRecover("Removing systemd config file ... ", function () { return scriptLib.systemd.deleteConfigFile(exports.srv_name); });
     runRecover("Uninstalling chan_dongle.so ... ", function () { return chan_dongle.remove(); });
     runRecover("Restoring asterisk manager ... ", function () { return asterisk_manager.restore(); });
     runRecover("Removing binary symbolic links ... ", function () { return shellScripts.remove_symbolic_links(); });
     runRecover("Removing udev rules ... ", function () { return udevRules.remove(); });
     runRecover("Removing tty0tty kernel module ...", function () { return tty0tty.remove(); });
-    runRecover("Removing app working directory ... ", function () { return workingDirectory.remove(); });
-    runRecover("Deleting unix user ... ", function () { return scriptLib.unixUser.remove(exports.unix_user); });
+    runRecover("Removing app working directory ... ", function () { return scriptLib.execSyncQuiet("rm -r " + exports.working_directory_path); });
+    runRecover("Deleting " + exports.unix_user_default + " unix user ... ", function () { return scriptLib.unixUser.remove(exports.unix_user_default); });
     runRecover("Re enabling ModemManager if present...", function () { return modemManager.enable_and_start(); });
 }
 var tty0tty;
@@ -605,7 +619,10 @@ var chan_dongle;
         var dongle_loc_path = path.join(exports.working_directory_path, "dongle.conf");
         scriptLib.execSync("touch " + dongle_etc_path);
         scriptLib.execSync("mv " + dongle_etc_path + " " + dongle_loc_path);
-        scriptLib.execSync("chown " + exports.unix_user + ":" + exports.unix_user + " " + dongle_loc_path);
+        (function () {
+            var unix_user = InstallOptions_1.InstallOptions.get().unix_user;
+            scriptLib.execSync("chown " + unix_user + ":" + unix_user + " " + dongle_loc_path);
+        })();
         scriptLib.execSync("ln -s " + dongle_loc_path + " " + dongle_etc_path);
         scriptLib.execSync("chmod u+rw,g+r,o+r " + dongle_loc_path);
     }
@@ -660,20 +677,28 @@ var chan_dongle;
     }
     chan_dongle.remove = remove;
 })(chan_dongle || (chan_dongle = {}));
-var workingDirectory;
-(function (workingDirectory) {
-    function create() {
-        process.stdout.write("Creating app working directory '" + exports.working_directory_path + "' ... ");
-        scriptLib.execSync("mkdir " + exports.working_directory_path);
-        scriptLib.execSync("chown " + exports.unix_user + ":" + exports.unix_user + " " + exports.working_directory_path);
+/*
+namespace workingDirectory {
+
+    export function create(unix_user) {
+
+        process.stdout.write(`Creating app working directory '${working_directory_path}' ... `);
+
+        scriptLib.execSync(`mkdir ${working_directory_path}`);
+
+        scriptLib.execSync(`chown ${unix_user_default}:${unix_user_default} ${working_directory_path}`);
+
         console.log(scriptLib.colorize("OK", "GREEN"));
     }
-    workingDirectory.create = create;
-    function remove() {
-        scriptLib.execSyncQuiet("rm -r " + exports.working_directory_path);
+
+    export function remove() {
+
+        scriptLib.execSyncQuiet(`rm -r ${working_directory_path}`);
+
     }
-    workingDirectory.remove = remove;
-})(workingDirectory || (workingDirectory = {}));
+
+}
+*/
 var shellScripts;
 (function (shellScripts) {
     var get_uninstaller_link_path = function () { return path.join(Astdirs_1.Astdirs.get().astsbindir, path.basename(uninstaller_link_default_path)); };
@@ -805,10 +830,10 @@ var asterisk_manager;
 })(asterisk_manager || (asterisk_manager = {}));
 var udevRules;
 (function (udevRules) {
-    var rules_path = path.join("/etc/udev/rules.d", "98-" + srv_name + ".rules");
+    var rules_path = path.join("/etc/udev/rules.d", "98-" + exports.srv_name + ".rules");
     function create() {
         return __awaiter(this, void 0, void 0, function () {
-            var e_6, _a, _b, recordIfNum, ConnectionMonitor, vendorIds, rules, vendorIds_1, vendorIds_1_1, vendorId;
+            var e_6, _a, unix_user, _b, recordIfNum, ConnectionMonitor, vendorIds, rules, vendorIds_1, vendorIds_1_1, vendorId;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, scriptLib.apt_get_install("usb-modeswitch")];
@@ -817,6 +842,7 @@ var udevRules;
                         //NOTE: we could grant access only to "dongle" group as asterisk is added to this group but need restart ast...
                         process.stdout.write("Creating udev rules " + rules_path + " ... ");
                         scriptLib.execSync("mkdir -p " + path.dirname(rules_path));
+                        unix_user = InstallOptions_1.InstallOptions.get().unix_user;
                         return [4 /*yield*/, Promise.resolve().then(function () { return require("ts-gsm-modem"); })];
                     case 2:
                         _b = _c.sent(), recordIfNum = _b.recordIfNum, ConnectionMonitor = _b.ConnectionMonitor;
@@ -831,7 +857,7 @@ var udevRules;
                                     "ENV{SUBSYSTEM}==\"tty\"",
                                     "ENV{ID_USB_INTERFACE_NUM}==\"[0-9]*\"",
                                     "MODE=\"0666\"",
-                                    "GROUP=\"" + exports.unix_user + "\""
+                                    "GROUP=\"" + unix_user + "\""
                                 ].join(", ") + "\n";
                                 rules += [
                                     "ACTION==\"add\"",
@@ -853,19 +879,19 @@ var udevRules;
                             "ACTION==\"add\"",
                             "ENV{DEVPATH}==\"/devices/virtual/tty/tnt[0-9]*\"",
                             "MODE=\"0666\"",
-                            "GROUP=\"" + exports.unix_user + "\""
+                            "GROUP=\"" + unix_user + "\""
                         ].join(", ") + "\n";
                         fs.writeFileSync(rules_path, rules);
                         scriptLib.execSync("systemctl restart udev.service");
                         console.log(scriptLib.colorize("OK", "GREEN"));
-                        scriptLib.execSync("chown " + exports.unix_user + ":" + exports.unix_user + " " + rules_path);
+                        scriptLib.execSync("chown " + unix_user + ":" + unix_user + " " + rules_path);
                         return [4 /*yield*/, (function applying_rules() {
                                 return __awaiter(this, void 0, void 0, function () {
                                     var e_7, _a, e_8, _b, monitor, _c, _d, accessPoint, _e, _f, device_path;
                                     return __generator(this, function (_g) {
                                         switch (_g.label) {
                                             case 0:
-                                                scriptLib.execSync("chown root:" + exports.unix_user + " /dev/tnt*");
+                                                scriptLib.execSync("chown root:" + unix_user + " /dev/tnt*");
                                                 scriptLib.execSync("chmod u+rw,g+rw,o+rw /dev/tnt*");
                                                 monitor = ConnectionMonitor.getInstance();
                                                 console.log("Detecting currently connected modems ... ");
@@ -881,7 +907,7 @@ var udevRules;
                                                         try {
                                                             for (_e = __values([accessPoint.audioIfPath, accessPoint.dataIfPath]), _f = _e.next(); !_f.done; _f = _e.next()) {
                                                                 device_path = _f.value;
-                                                                scriptLib.execSync("chown root:" + exports.unix_user + " " + device_path);
+                                                                scriptLib.execSync("chown root:" + unix_user + " " + device_path);
                                                                 scriptLib.execSync("chmod u+rw,g+rw,o+rw " + device_path);
                                                             }
                                                         }

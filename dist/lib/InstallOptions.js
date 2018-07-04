@@ -23,7 +23,9 @@ var InstallOptions;
         "ast_include_dir_path": "/usr/include",
         "enable_ast_ami_on_port": 5038,
         "assume_chan_dongle_installed": false,
-        "ld_library_path_for_asterisk": ""
+        "ld_library_path_for_asterisk": "",
+        "do_not_create_systemd_conf": false,
+        "unix_user": installer_1.unix_user_default
     };
     var _options = undefined;
     function set(options) {

@@ -5,8 +5,8 @@ import * as scriptLib from "scripting-tools";
 import * as readline from "readline";
 import { ini } from "ini-extended";
 
-export const unix_user = "chan_dongle";
-const srv_name = "chan_dongle";
+export const unix_user_default = "chan_dongle";
+export const srv_name = "chan_dongle";
 
 const module_dir_path = path.join(__dirname, "..", "..");
 const cli_js_path = path.join(__dirname, "cli.js");
@@ -173,7 +173,11 @@ async function program_action_update(options) {
 
     await rebuild_node_modules();
 
-    scriptLib.execSync(`systemctl start ${srv_name}`);
+    if( !InstallOptions.get().do_not_create_systemd_conf ){
+
+        scriptLib.execSync(`systemctl start ${srv_name}`);
+
+    }
 
     console.log(scriptLib.colorize("Update success", "GREEN"));
 }
@@ -256,11 +260,27 @@ async function program_action_tarball() {
 
 async function install(options: Partial<InstallOptions>) {
 
-    scriptLib.unixUser.create(unix_user, working_directory_path);
-
-    workingDirectory.create();
+    scriptLib.execSync(`mkdir ${working_directory_path}`);
 
     InstallOptions.set(options);
+
+    const unix_user= InstallOptions.get().unix_user;
+
+    if( unix_user === unix_user_default ){
+
+        scriptLib.unixUser.create(unix_user, working_directory_path);
+
+    }else{
+
+        if( !scriptLib.sh_if(`id -u ${unix_user}`)){
+
+            throw new Error(`Unix user ${unix_user} does not exist`);
+
+        }
+
+    }
+
+    scriptLib.execSync(`chown ${unix_user}:${unix_user} ${working_directory_path}`);
 
     if (getIsProd()) {
 
@@ -271,7 +291,7 @@ async function install(options: Partial<InstallOptions>) {
     } else {
 
         if (!fs.existsSync(node_path)) {
-            throw new Error("Missing copy of node");
+            throw new Error(`${node_path} is missing`);
         }
 
         scriptLib.enableCmdTrace();
@@ -312,9 +332,13 @@ async function install(options: Partial<InstallOptions>) {
         { "uid": scriptLib.get_uid(unix_user), "gid": scriptLib.get_gid(unix_user) }
     );
 
-    scriptLib.systemd.createConfigFile(
-        srv_name, path.join(__dirname, "main.js"), node_path, "ENABLE", "START"
-    );
+    if ( !InstallOptions.get().do_not_create_systemd_conf ) {
+
+        scriptLib.systemd.createConfigFile(
+            srv_name, path.join(__dirname, "main.js"), node_path, "ENABLE", "START"
+        );
+
+    }
 
 }
 
@@ -343,7 +367,7 @@ function uninstall(verbose: false | "VERBOSE" = false) {
     }
     runRecover("Stopping running instance ... ", () => scriptLib.stopProcessSync(pidfile_path, "SIGUSR2"));
 
-    runRecover("Removing systemd service ... ", () => scriptLib.systemd.deleteConfigFile(srv_name));
+    runRecover("Removing systemd config file ... ", () => scriptLib.systemd.deleteConfigFile(srv_name));
 
     runRecover("Uninstalling chan_dongle.so ... ", () => chan_dongle.remove());
 
@@ -355,9 +379,9 @@ function uninstall(verbose: false | "VERBOSE" = false) {
 
     runRecover("Removing tty0tty kernel module ...", () => tty0tty.remove());
 
-    runRecover("Removing app working directory ... ", () => workingDirectory.remove());
+    runRecover("Removing app working directory ... ", () => scriptLib.execSyncQuiet(`rm -r ${working_directory_path}`));
 
-    runRecover("Deleting unix user ... ", () => scriptLib.unixUser.remove(unix_user));
+    runRecover(`Deleting ${unix_user_default} unix user ... `, () => scriptLib.unixUser.remove(unix_user_default));
 
     runRecover("Re enabling ModemManager if present...", () => modemManager.enable_and_start());
 
@@ -578,7 +602,14 @@ namespace chan_dongle {
 
         scriptLib.execSync(`mv ${dongle_etc_path} ${dongle_loc_path}`);
 
-        scriptLib.execSync(`chown ${unix_user}:${unix_user} ${dongle_loc_path}`);
+        (()=>{
+
+            const unix_user= InstallOptions.get().unix_user;
+
+            scriptLib.execSync(`chown ${unix_user}:${unix_user} ${dongle_loc_path}`);
+
+        })();
+
 
         scriptLib.execSync(`ln -s ${dongle_loc_path} ${dongle_etc_path}`);
 
@@ -639,15 +670,16 @@ namespace chan_dongle {
 
 }
 
+/*
 namespace workingDirectory {
 
-    export function create() {
+    export function create(unix_user) {
 
         process.stdout.write(`Creating app working directory '${working_directory_path}' ... `);
 
         scriptLib.execSync(`mkdir ${working_directory_path}`);
 
-        scriptLib.execSync(`chown ${unix_user}:${unix_user} ${working_directory_path}`);
+        scriptLib.execSync(`chown ${unix_user_default}:${unix_user_default} ${working_directory_path}`);
 
         console.log(scriptLib.colorize("OK", "GREEN"));
     }
@@ -659,6 +691,7 @@ namespace workingDirectory {
     }
 
 }
+*/
 
 namespace shellScripts {
 
@@ -862,6 +895,7 @@ namespace udevRules {
 
         scriptLib.execSync(`mkdir -p ${path.dirname(rules_path)}`);
 
+        const unix_user= InstallOptions.get().unix_user;
         const { recordIfNum, ConnectionMonitor } = await import("ts-gsm-modem");
         const vendorIds = Object.keys(recordIfNum);
 
@@ -1168,7 +1202,6 @@ if (require.main === module) {
 
     scriptLib.apt_get_install.onInstallSuccess = package_name =>
         scriptLib.apt_get_install.record_installed_package(installed_pkg_record_path, package_name);
-
 
     import("commander").then(program => {
 
