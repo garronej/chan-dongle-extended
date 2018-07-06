@@ -118,7 +118,9 @@ scriptLib.createService({
                         }
 
                     }),
-                    beforeExit()
+                    (async ()=>{
+                        try{ await beforeExit(); }catch{}
+                    })()
                 ]);
 
             }
