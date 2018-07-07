@@ -2,8 +2,19 @@ import { apiDeclaration } from "../chan-dongle-extended-client";
 import { Message } from "ts-gsm-modem";
 import * as sqliteCustom from "sqlite-custom";
 import { db_path } from "../bin/installer";
+import * as logger from "logger";
+
+const debug= logger.debugFactory();
 
 export let _: sqliteCustom.Api;
+
+export function beforeExit() {
+    return beforeExit.impl();
+}
+
+export namespace beforeExit {
+    export let impl= ()=> Promise.resolve();
+}
 
 /** Must be called and awaited before use */
 export async function launch(): Promise<void> {
@@ -12,7 +23,16 @@ export async function launch(): Promise<void> {
         db_path, "HANDLE STRING ENCODING"
     );
 
+    beforeExit.impl= ()=> { 
+
+        debug("Closed");
+
+        return _.close(); 
+
+    };
+
 }
+
 
 /** Debug only */
 export async function flush(){

@@ -47,6 +47,15 @@ var __values = (this && this.__values) || function (o) {
 Object.defineProperty(exports, "__esModule", { value: true });
 var sqliteCustom = require("sqlite-custom");
 var installer_1 = require("../bin/installer");
+var logger = require("logger");
+var debug = logger.debugFactory();
+function beforeExit() {
+    return beforeExit.impl();
+}
+exports.beforeExit = beforeExit;
+(function (beforeExit) {
+    beforeExit.impl = function () { return Promise.resolve(); };
+})(beforeExit = exports.beforeExit || (exports.beforeExit = {}));
 /** Must be called and awaited before use */
 function launch() {
     return __awaiter(this, void 0, void 0, function () {
@@ -55,6 +64,10 @@ function launch() {
                 case 0: return [4 /*yield*/, sqliteCustom.connectAndGetApi(installer_1.db_path, "HANDLE STRING ENCODING")];
                 case 1:
                     exports._ = _a.sent();
+                    beforeExit.impl = function () {
+                        debug("Closed");
+                        return exports._.close();
+                    };
                     return [2 /*return*/];
             }
         });

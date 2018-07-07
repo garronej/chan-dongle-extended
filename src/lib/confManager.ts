@@ -82,6 +82,14 @@ async function loadChanDongleSo(ami: Ami): Promise<void> {
 
 }
 
+export function beforeExit() {
+    return beforeExit.impl();
+}
+
+export namespace beforeExit{
+    export let impl= ()=> Promise.resolve();
+}
+
 export async function getApi(ami: Ami): Promise<Api> {
 
     await loadChanDongleSo(ami);
@@ -191,6 +199,8 @@ export async function getApi(ami: Ami): Promise<Api> {
         )
 
     };
+
+    beforeExit.impl= ()=> api.reset();
 
     api.reset();
 

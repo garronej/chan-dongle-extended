@@ -6,6 +6,7 @@ import { Api as ConfManagerApi } from "./confManager";
 import { Tty0tty } from "./Tty0tty";
 import * as logger from "logger";
 import * as types from "./types";
+import { VoidSyncEvent } from "ts-events-extended";
 
 const debug= logger.debugFactory();
 
@@ -31,9 +32,27 @@ export function init(
 }
 
 
+export function waitForTerminate(): Promise<void> {
+
+    if (waitForTerminate.ports.size === 0) {
+        return Promise.resolve();
+    }
+
+    return waitForTerminate.evtAllClosed.waitFor();
+
+}
+
+export namespace waitForTerminate {
+
+    export const ports = new Set<SerialPortExt>();
+
+    export const evtAllClosed = new VoidSyncEvent();
+
+}
+
 async function atBridge(
-    accessPoint: AccessPoint, 
-    modem: Modem, 
+    accessPoint: AccessPoint,
+    modem: Modem,
     tty0tty: Tty0tty
 ) {
 
@@ -50,6 +69,21 @@ async function atBridge(
             "parser": SerialPortExt.parsers.readline("\r")
         }
     );
+
+    waitForTerminate.ports.add(portVirtual);
+
+    portVirtual.once("close", () => {
+
+        waitForTerminate.ports.delete(portVirtual);
+
+        if (waitForTerminate.ports.size === 0) {
+
+            debug("All virtual serial ports closed");
+
+            waitForTerminate.evtAllClosed.post();
+        }
+
+    });
 
     modem.evtTerminate.attachOnce(
         async () => {
@@ -139,7 +173,7 @@ async function atBridge(
             "recoverable": true,
             "reportMode": AtMessage.ReportMode.NO_DEBUG_INFO,
             "retryOnErrors": false
-        }).then(({ raw })=> forwardResp(raw));
+        }).then(({ raw }) => forwardResp(raw));
 
     });
 

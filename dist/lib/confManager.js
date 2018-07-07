@@ -124,6 +124,13 @@ function loadChanDongleSo(ami) {
         });
     });
 }
+function beforeExit() {
+    return beforeExit.impl();
+}
+exports.beforeExit = beforeExit;
+(function (beforeExit) {
+    beforeExit.impl = function () { return Promise.resolve(); };
+})(beforeExit = exports.beforeExit || (exports.beforeExit = {}));
 function getApi(ami) {
     return __awaiter(this, void 0, void 0, function () {
         var dongle_conf_path, staticModuleConfiguration, state, update, groupRef, api;
@@ -227,6 +234,7 @@ function getApi(ami) {
                             });
                         }); })
                     };
+                    beforeExit.impl = function () { return api.reset(); };
                     api.reset();
                     return [2 /*return*/, api];
             }

@@ -55,16 +55,50 @@ var confManager = require("./confManager");
 var logger = require("logger");
 var db = require("./db");
 var InstallOptions_1 = require("./InstallOptions");
+var scripting_tools_1 = require("scripting-tools");
 var debug = logger.debugFactory();
 var modems = new trackable_map_1.TrackableMap();
 var evtScheduleRetry = new ts_events_extended_1.SyncEvent();
 function beforeExit() {
-    return beforeExit.impl();
+    return __awaiter(this, void 0, void 0, function () {
+        var _this = this;
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    debug("Start before exit...");
+                    if (ts_gsm_modem_1.ConnectionMonitor.hasInstance) {
+                        ts_gsm_modem_1.ConnectionMonitor.getInstance().stop();
+                    }
+                    return [4 /*yield*/, Promise.all([
+                            scripting_tools_1.safePr(db.beforeExit()),
+                            scripting_tools_1.safePr(api.beforeExit()),
+                            scripting_tools_1.safePr(atBridge.waitForTerminate()),
+                            Promise.all(Array.from(modems.values())
+                                .map(function (modem) { return scripting_tools_1.safePr(modem.terminate()); })),
+                            (function () { return __awaiter(_this, void 0, void 0, function () {
+                                return __generator(this, function (_a) {
+                                    switch (_a.label) {
+                                        case 0: return [4 /*yield*/, scripting_tools_1.safePr(confManager.beforeExit(), 1500)];
+                                        case 1:
+                                            _a.sent();
+                                            if (!ts_ami_1.Ami.hasInstance) return [3 /*break*/, 3];
+                                            return [4 /*yield*/, ts_ami_1.Ami.getInstance().disconnect()];
+                                        case 2:
+                                            _a.sent();
+                                            _a.label = 3;
+                                        case 3: return [2 /*return*/];
+                                    }
+                                });
+                            }); })()
+                        ])];
+                case 1:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    });
 }
 exports.beforeExit = beforeExit;
-(function (beforeExit) {
-    beforeExit.impl = function () { return Promise.resolve(); };
-})(beforeExit = exports.beforeExit || (exports.beforeExit = {}));
 function launch() {
     return __awaiter(this, void 0, void 0, function () {
         var installOptions, ami, chanDongleConfManagerApi, defaults, monitor;
@@ -80,7 +114,6 @@ function launch() {
                     return [4 /*yield*/, confManager.getApi(ami)];
                 case 1:
                     chanDongleConfManagerApi = _a.sent();
-                    beforeExit.impl = function () { return chanDongleConfManagerApi.reset(); };
                     return [4 /*yield*/, db.launch()];
                 case 2:
                     _a.sent();
@@ -124,8 +157,8 @@ function createModem(accessPoint) {
                     _a.trys.push([1, 3, , 4]);
                     return [4 /*yield*/, ts_gsm_modem_1.Modem.create({
                             "dataIfPath": accessPoint.dataIfPath,
-                            "unlock": function (modemInfo, iccid, pinState, tryLeft, performUnlock) {
-                                return onLockedModem(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock);
+                            "unlock": function (modemInfo, iccid, pinState, tryLeft, performUnlock, terminate) {
+                                return onLockedModem(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock, terminate);
                             },
                             "log": logger.log
                         })];
@@ -150,7 +183,7 @@ function onModemInitializationFailed(accessPoint, message, modemInfos) {
         evtScheduleRetry.post(accessPoint);
     }
 }
-function onLockedModem(accessPoint, modemInfos, iccid, pinState, tryLeft, performUnlock) {
+function onLockedModem(accessPoint, modemInfos, iccid, pinState, tryLeft, performUnlock, terminate) {
     return __awaiter(this, void 0, void 0, function () {
         var associatedTo, pin, unlockResult, lockedModem;
         var _this = this;
@@ -228,7 +261,8 @@ function onLockedModem(accessPoint, modemInfos, iccid, pinState, tryLeft, perfor
                                     }
                                 });
                             });
-                        }
+                        },
+                        terminate: terminate
                     };
                     modems.set(accessPoint, lockedModem);
                     return [2 /*return*/];
@@ -240,7 +274,7 @@ function onModem(accessPoint, modem) {
     debug("Modem successfully initialized".green);
     modem.evtTerminate.attachOnce(function (error) {
         modems.delete(accessPoint);
-        debug("Terminate... " + (error ? error.message : "No internal error"));
+        debug("Modem terminate... " + (error ? error.message : "No internal error"));
         evtScheduleRetry.post(accessPoint);
     });
     modems.set(accessPoint, modem);

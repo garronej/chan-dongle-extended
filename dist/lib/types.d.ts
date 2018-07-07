@@ -9,6 +9,7 @@ export declare type LockedModem = {
     pinState: AtMessage.LockedPinState;
     tryLeft: number;
     performUnlock: PerformUnlock;
+    terminate: () => Promise<void>;
 };
 export declare namespace LockedModem {
     function match(modem: any): modem is LockedModem;

@@ -11,10 +11,19 @@ import { isVoid, Void } from "trackable-map";
 import * as sipLibrary from "ts-sip";
 import { VoidSyncEvent } from "ts-events-extended";
 import * as db from "./db";
-
 import * as net from "net";
 
+const debug= logger.debugFactory();
+
 const sockets = new Set<sipLibrary.Socket>();
+
+export async function beforeExit(){
+    return beforeExit.impl();
+}
+
+export namespace beforeExit {
+    export let impl= ()=> Promise.resolve();
+}
 
 export function launch(
     modems: types.Modems,
@@ -32,9 +41,11 @@ export function launch(
         })
     );
 
-    let evtListening = new VoidSyncEvent();
+    const evtListening = new VoidSyncEvent();
 
-    net.createServer()
+    const netServer = net.createServer();
+
+    netServer
         .once("error", error => { throw error; })
         .on("connection", async netSocket => {
 
@@ -65,7 +76,27 @@ export function launch(
 
 
         })
-        .once("listening", () => evtListening.post())
+        .once("listening", () => {
+
+            beforeExit.impl = () => new Promise<void>(resolve => {
+
+                netServer.close(() => {
+
+                    debug("Terminated!");
+
+                    resolve();
+
+                });
+
+                for (const socket of sockets.values()) {
+                    socket.destroy();
+                }
+
+            });
+
+            evtListening.post();
+
+        })
         .listen(port, bind_addr)
         ;
 
@@ -219,8 +250,8 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
                 try {
 
-                    sendDate= await performModemAction(
-                        modem, ()=> modem.sendMessage(toNumber, text)
+                    sendDate = await performModemAction(
+                        modem, () => modem.sendMessage(toNumber, text)
                     );
 
                 } catch {
@@ -325,8 +356,8 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
                 try {
 
-                    contact = await performModemAction(modem, 
-                        ()=> modem.createContact(number, name)
+                    contact = await performModemAction(modem,
+                        () => modem.createContact(number, name)
                     );
 
                 } catch{
@@ -366,8 +397,8 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
                 try {
 
-                    contact = await performModemAction(modem, 
-                        ()=> modem.updateContact(
+                    contact = await performModemAction(modem,
+                        () => modem.updateContact(
                             index, { "name": new_name, "number": new_number }
                         )
                     );
@@ -407,7 +438,7 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
                 try {
 
-                    await performModemAction(modem, 
+                    await performModemAction(modem,
                         () => modem.deleteContact(index)
                     );
 

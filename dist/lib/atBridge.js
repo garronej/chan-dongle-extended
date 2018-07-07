@@ -57,6 +57,7 @@ var ts_gsm_modem_1 = require("ts-gsm-modem");
 var Tty0tty_1 = require("./Tty0tty");
 var logger = require("logger");
 var types = require("./types");
+var ts_events_extended_1 = require("ts-events-extended");
 var debug = logger.debugFactory();
 function init(modems, chanDongleConfManagerApi) {
     atBridge.confManagerApi = chanDongleConfManagerApi;
@@ -70,6 +71,17 @@ function init(modems, chanDongleConfManagerApi) {
     });
 }
 exports.init = init;
+function waitForTerminate() {
+    if (waitForTerminate.ports.size === 0) {
+        return Promise.resolve();
+    }
+    return waitForTerminate.evtAllClosed.waitFor();
+}
+exports.waitForTerminate = waitForTerminate;
+(function (waitForTerminate) {
+    waitForTerminate.ports = new Set();
+    waitForTerminate.evtAllClosed = new ts_events_extended_1.VoidSyncEvent();
+})(waitForTerminate = exports.waitForTerminate || (exports.waitForTerminate = {}));
 function atBridge(accessPoint, modem, tty0tty) {
     return __awaiter(this, void 0, void 0, function () {
         var portVirtual, serviceProviderShort, forwardResp;
@@ -85,6 +97,14 @@ function atBridge(accessPoint, modem, tty0tty) {
                     portVirtual = new ts_gsm_modem_1.SerialPortExt(tty0tty.leftEnd, {
                         "baudRate": 115200,
                         "parser": ts_gsm_modem_1.SerialPortExt.parsers.readline("\r")
+                    });
+                    waitForTerminate.ports.add(portVirtual);
+                    portVirtual.once("close", function () {
+                        waitForTerminate.ports.delete(portVirtual);
+                        if (waitForTerminate.ports.size === 0) {
+                            debug("All virtual serial ports closed");
+                            waitForTerminate.evtAllClosed.post();
+                        }
                     });
                     modem.evtTerminate.attachOnce(function () { return __awaiter(_this, void 0, void 0, function () {
                         return __generator(this, function (_a) {

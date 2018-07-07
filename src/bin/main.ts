@@ -109,7 +109,11 @@ scriptLib.createService({
 
                         if (!!error) {
 
-                            scriptLib.execSync(`mv ${logfile_path} ${path.join(path.dirname(logfile_path), "previous_crash.log")}`);
+                            scriptLib.execSync([
+                                "mv",
+                                logfile_path,
+                                path.join(path.dirname(logfile_path), "previous_crash.log")
+                            ].join(" "));
 
                         } else {
 
@@ -118,9 +122,7 @@ scriptLib.createService({
                         }
 
                     }),
-                    (async ()=>{
-                        try{ await beforeExit(); }catch{}
-                    })()
+                    beforeExit()
                 ]);
 
             }

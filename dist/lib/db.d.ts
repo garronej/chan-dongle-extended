@@ -2,6 +2,10 @@ import { apiDeclaration } from "../chan-dongle-extended-client";
 import { Message } from "ts-gsm-modem";
 import * as sqliteCustom from "sqlite-custom";
 export declare let _: sqliteCustom.Api;
+export declare function beforeExit(): Promise<void>;
+export declare namespace beforeExit {
+    let impl: () => Promise<void>;
+}
 /** Must be called and awaited before use */
 export declare function launch(): Promise<void>;
 /** Debug only */

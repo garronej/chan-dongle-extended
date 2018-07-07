@@ -15,42 +15,66 @@ import * as logger from "logger";
 import * as db from "./db";
 import { InstallOptions } from "./InstallOptions";
 
+import { safePr } from "scripting-tools";
+
 const debug = logger.debugFactory();
 
 const modems: types.Modems = new TrackableMap();
 const evtScheduleRetry = new SyncEvent<AccessPoint>();
 
-export function beforeExit() {
-    return beforeExit.impl();
-}
+export async function beforeExit() {
 
-export namespace beforeExit {
-    export let impl= ()=> Promise.resolve();
+    debug("Start before exit...");
+
+    if (ConnectionMonitor.hasInstance) {
+        ConnectionMonitor.getInstance().stop();
+    }
+
+    await Promise.all([
+        safePr(db.beforeExit()),
+        safePr(api.beforeExit()),
+        safePr(atBridge.waitForTerminate()),
+        Promise.all(
+            Array.from(modems.values())
+                .map(modem => safePr(modem.terminate()))
+        ),
+        (async () => {
+
+            await safePr(confManager.beforeExit(), 1500);
+
+            if (Ami.hasInstance) {
+                await Ami.getInstance().disconnect();
+            }
+
+        })()
+    ]);
+
 }
 
 export async function launch() {
 
-    const installOptions= InstallOptions.get();
+    const installOptions = InstallOptions.get();
 
     const ami = Ami.getInstance(AmiCredential.get());
 
-    ami.evtTcpConnectionClosed.attachOnce(()=>{ 
+    ami.evtTcpConnectionClosed.attachOnce(() => {
 
         debug("TCP connection with Asterisk manager closed, reboot");
 
-        process.emit("beforeExit", process.exitCode= 0);
+        process.emit("beforeExit", process.exitCode = 0);
 
     });
 
     const chanDongleConfManagerApi = await confManager.getApi(ami);
 
-    beforeExit.impl= ()=> chanDongleConfManagerApi.reset();
+
 
     await db.launch();
 
+
     if (!installOptions.disable_sms_dialplan) {
 
-        let { defaults } = chanDongleConfManagerApi.staticModuleConfiguration;
+        const { defaults } = chanDongleConfManagerApi.staticModuleConfiguration;
 
         dialplan.init(modems, ami, defaults["context"], defaults["exten"]);
 
@@ -91,8 +115,8 @@ async function createModem(accessPoint: AccessPoint) {
 
         modem = await Modem.create({
             "dataIfPath": accessPoint.dataIfPath,
-            "unlock": (modemInfo, iccid, pinState, tryLeft, performUnlock) =>
-                onLockedModem(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock),
+            "unlock": (modemInfo, iccid, pinState, tryLeft, performUnlock, terminate) =>
+                onLockedModem(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock, terminate),
             "log": logger.log
         });
 
@@ -139,7 +163,8 @@ async function onLockedModem(
     iccid: string | undefined,
     pinState: AtMessage.LockedPinState,
     tryLeft: number,
-    performUnlock: PerformUnlock
+    performUnlock: PerformUnlock,
+    terminate: () => Promise<void>
 ) {
 
     debug("onLockedModem", { ...modemInfos, iccid, pinState, tryLeft });
@@ -170,7 +195,7 @@ async function onLockedModem(
     }
 
 
-    let lockedModem: types.LockedModem = {
+    const lockedModem: types.LockedModem = {
         "imei": modemInfos.imei,
         "manufacturer": modemInfos.manufacturer,
         "model": modemInfos.model,
@@ -201,13 +226,13 @@ async function onLockedModem(
 
             }
 
-            if( unlockResult.success ){
+            if (unlockResult.success) {
 
                 debug(`Persistent storing of pin: ${pin}`);
 
                 await db.pin.save(pin, associatedTo);
 
-            }else{
+            } else {
 
                 await db.pin.save(undefined, associatedTo);
 
@@ -220,7 +245,8 @@ async function onLockedModem(
 
             return unlockResult;
 
-        }
+        },
+        terminate
     };
 
     modems.set(accessPoint, lockedModem);
@@ -239,7 +265,7 @@ function onModem(
 
             modems.delete(accessPoint);
 
-            debug(`Terminate... ${error ? error.message : "No internal error"}`);
+            debug(`Modem terminate... ${error ? error.message : "No internal error"}`);
 
             evtScheduleRetry.post(accessPoint);
 

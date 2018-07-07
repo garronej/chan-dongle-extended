@@ -11,4 +11,8 @@ export declare type Api = {
     addDongle(dongleConf: DongleConf): Promise<void>;
     removeDongle(dongleName: string): Promise<void>;
 };
+export declare function beforeExit(): Promise<void>;
+export declare namespace beforeExit {
+    let impl: () => Promise<void>;
+}
 export declare function getApi(ami: Ami): Promise<Api>;

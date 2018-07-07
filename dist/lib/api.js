@@ -34,6 +34,16 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
+var __values = (this && this.__values) || function (o) {
+    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
+    if (m) return m.call(o);
+    return {
+        next: function () {
+            if (o && i >= o.length) o = void 0;
+            return { value: o && o[i++], done: !o };
+        }
+    };
+};
 var __read = (this && this.__read) || function (o, n) {
     var m = typeof Symbol === "function" && o[Symbol.iterator];
     if (!m) return o;
@@ -50,16 +60,6 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
-var __values = (this && this.__values) || function (o) {
-    var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
-    if (m) return m.call(o);
-    return {
-        next: function () {
-            if (o && i >= o.length) o = void 0;
-            return { value: o && o[i++], done: !o };
-        }
-    };
-};
 Object.defineProperty(exports, "__esModule", { value: true });
 var types = require("./types");
 var InstallOptions_1 = require("./InstallOptions");
@@ -72,7 +72,19 @@ var sipLibrary = require("ts-sip");
 var ts_events_extended_1 = require("ts-events-extended");
 var db = require("./db");
 var net = require("net");
+var debug = logger.debugFactory();
 var sockets = new Set();
+function beforeExit() {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            return [2 /*return*/, beforeExit.impl()];
+        });
+    });
+}
+exports.beforeExit = beforeExit;
+(function (beforeExit) {
+    beforeExit.impl = function () { return Promise.resolve(); };
+})(beforeExit = exports.beforeExit || (exports.beforeExit = {}));
 function launch(modems, staticModuleConfiguration) {
     var _this = this;
     var _a = InstallOptions_1.InstallOptions.get(), bind_addr = _a.bind_addr, port = _a.port;
@@ -82,7 +94,8 @@ function launch(modems, staticModuleConfiguration) {
         "hideKeepAlive": true
     }));
     var evtListening = new ts_events_extended_1.VoidSyncEvent();
-    net.createServer()
+    var netServer = net.createServer();
+    netServer
         .once("error", function (error) { throw error; })
         .on("connection", function (netSocket) { return __awaiter(_this, void 0, void 0, function () {
         var socket;
@@ -101,7 +114,29 @@ function launch(modems, staticModuleConfiguration) {
             return [2 /*return*/];
         });
     }); })
-        .once("listening", function () { return evtListening.post(); })
+        .once("listening", function () {
+        beforeExit.impl = function () { return new Promise(function (resolve) {
+            var e_1, _a;
+            netServer.close(function () {
+                debug("Terminated!");
+                resolve();
+            });
+            try {
+                for (var _b = __values(sockets.values()), _c = _b.next(); !_c.done; _c = _b.next()) {
+                    var socket = _c.value;
+                    socket.destroy();
+                }
+            }
+            catch (e_1_1) { e_1 = { error: e_1_1 }; }
+            finally {
+                try {
+                    if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+                }
+                finally { if (e_1) throw e_1.error; }
+            }
+        }); };
+        evtListening.post();
+    })
         .listen(port, bind_addr);
     modems.evt.attach(function (_a) {
         var _b = __read(_a, 3), newModem = _b[0], _ = _b[1], oldModem = _b[2];
@@ -132,19 +167,19 @@ function launch(modems, staticModuleConfiguration) {
 }
 exports.launch = launch;
 function broadcastRequest(methodName, params) {
-    var e_1, _a;
+    var e_2, _a;
     try {
         for (var sockets_1 = __values(sockets), sockets_1_1 = sockets_1.next(); !sockets_1_1.done; sockets_1_1 = sockets_1.next()) {
             var socket = sockets_1_1.value;
             sipLibrary.api.client.sendRequest(socket, methodName, params).catch(function () { });
         }
     }
-    catch (e_1_1) { e_1 = { error: e_1_1 }; }
+    catch (e_2_1) { e_2 = { error: e_2_1 }; }
     finally {
         try {
             if (sockets_1_1 && !sockets_1_1.done && (_a = sockets_1.return)) _a.call(sockets_1);
         }
-        finally { if (e_1) throw e_1.error; }
+        finally { if (e_2) throw e_2.error; }
     }
 }
 function onNewModem(modem) {
@@ -158,7 +193,7 @@ function onNewModem(modem) {
                 case 0:
                     methodName = remoteApiDeclaration.notifyMessage.methodName;
                     return [4 /*yield*/, new Promise(function (resolve) {
-                            var e_2, _a;
+                            var e_3, _a;
                             var tasks = [];
                             var _loop_1 = function (socket) {
                                 tasks[tasks.length] = (function () { return __awaiter(_this, void 0, void 0, function () {
@@ -188,12 +223,12 @@ function onNewModem(modem) {
                                     _loop_1(socket);
                                 }
                             }
-                            catch (e_2_1) { e_2 = { error: e_2_1 }; }
+                            catch (e_3_1) { e_3 = { error: e_3_1 }; }
                             finally {
                                 try {
                                     if (sockets_2_1 && !sockets_2_1.done && (_a = sockets_2.return)) _a.call(sockets_2);
                                 }
-                                finally { if (e_2) throw e_2.error; }
+                                finally { if (e_3) throw e_3.error; }
                             }
                             Promise.all(tasks).then(function () { return resolve("SAVE MESSAGE"); });
                         })];

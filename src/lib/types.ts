@@ -17,6 +17,7 @@ export type LockedModem= {
     pinState: AtMessage.LockedPinState;
     tryLeft: number;
     performUnlock: PerformUnlock;
+    terminate: ()=> Promise<void>;
 };
 
 export namespace LockedModem {
