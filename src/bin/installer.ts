@@ -943,7 +943,7 @@ namespace udevRules {
 
             scriptLib.execSync("chmod u+rw,g+rw,o+rw /dev/tnt*");
 
-            let monitor = ConnectionMonitor.getInstance();
+            let monitor = ConnectionMonitor.getInstance(console.log.bind(console));
 
             console.log("Detecting currently connected modems ... ");
 

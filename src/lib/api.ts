@@ -320,6 +320,34 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
     })();
 
+    (()=>{
+
+        const methodName = localApiDeclaration.rebootDongle.methodName
+        type Params = localApiDeclaration.rebootDongle.Params;
+        type Response = localApiDeclaration.rebootDongle.Response;
+
+        const handler: sipLibrary.api.Server.Handler<Params, Response> = {
+            "handler": async ({ imei }) => {
+
+                const modem= Array.from(modems.values()).find(modem=> modem.imei === imei);
+
+                if( !modem ){
+
+                    return undefined;
+
+                }
+
+                await modem.terminate();
+
+                return undefined;
+
+            }
+        };
+
+        handlers[methodName] = handler;
+
+    })();
+
     (() => {
 
         const methodName = localApiDeclaration.getMessages.methodName;

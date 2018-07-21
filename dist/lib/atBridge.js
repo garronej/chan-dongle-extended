@@ -83,107 +83,98 @@ exports.waitForTerminate = waitForTerminate;
     waitForTerminate.evtAllClosed = new ts_events_extended_1.VoidSyncEvent();
 })(waitForTerminate = exports.waitForTerminate || (exports.waitForTerminate = {}));
 function atBridge(accessPoint, modem, tty0tty) {
-    return __awaiter(this, void 0, void 0, function () {
-        var portVirtual, serviceProviderShort, forwardResp;
-        var _this = this;
+    var _this = this;
+    atBridge.confManagerApi.addDongle({
+        "dongleName": accessPoint.friendlyId,
+        "data": tty0tty.rightEnd,
+        "audio": accessPoint.audioIfPath
+    });
+    var portVirtual = new ts_gsm_modem_1.SerialPortExt(tty0tty.leftEnd, {
+        "baudRate": 115200,
+        "parser": ts_gsm_modem_1.SerialPortExt.parsers.readline("\r")
+    });
+    waitForTerminate.ports.add(portVirtual);
+    portVirtual.once("close", function () {
+        waitForTerminate.ports.delete(portVirtual);
+        if (waitForTerminate.ports.size === 0) {
+            debug("All virtual serial ports closed");
+            waitForTerminate.evtAllClosed.post();
+        }
+    });
+    modem.evtTerminate.attachOnce(function () { return __awaiter(_this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    atBridge.confManagerApi.addDongle({
-                        "dongleName": accessPoint.friendlyId,
-                        "data": tty0tty.rightEnd,
-                        "audio": accessPoint.audioIfPath
-                    });
-                    portVirtual = new ts_gsm_modem_1.SerialPortExt(tty0tty.leftEnd, {
-                        "baudRate": 115200,
-                        "parser": ts_gsm_modem_1.SerialPortExt.parsers.readline("\r")
-                    });
-                    waitForTerminate.ports.add(portVirtual);
-                    portVirtual.once("close", function () {
-                        waitForTerminate.ports.delete(portVirtual);
-                        if (waitForTerminate.ports.size === 0) {
-                            debug("All virtual serial ports closed");
-                            waitForTerminate.evtAllClosed.post();
-                        }
-                    });
-                    modem.evtTerminate.attachOnce(function () { return __awaiter(_this, void 0, void 0, function () {
-                        return __generator(this, function (_a) {
-                            switch (_a.label) {
-                                case 0:
-                                    debug("Modem terminate => closing bridge");
-                                    return [4 /*yield*/, atBridge.confManagerApi.removeDongle(accessPoint.friendlyId)];
-                                case 1:
-                                    _a.sent();
-                                    if (!portVirtual.isOpen()) return [3 /*break*/, 3];
-                                    return [4 /*yield*/, new Promise(function (resolve) { return portVirtual.close(function () { return resolve(); }); })];
-                                case 2:
-                                    _a.sent();
-                                    _a.label = 3;
-                                case 3:
-                                    tty0tty.release();
-                                    return [2 /*return*/];
-                            }
-                        });
-                    }); });
-                    portVirtual.evtError.attach(function (serialPortError) {
-                        debug("uncaught error serialPortVirtual", serialPortError);
-                        modem.terminate();
-                    });
-                    serviceProviderShort = (modem.serviceProviderName || "Unknown SP").substring(0, 15);
-                    forwardResp = function (rawResp) {
-                        if (modem.runCommand_isRunning) {
-                            debug(("Newer command from chanDongle, dropping " + JSON.stringify(rawResp)).red);
-                            return;
-                        }
-                        logger.file.log("(AT) response: " + JSON.stringify(rawResp).blue);
-                        portVirtual.writeAndDrain(rawResp);
-                    };
-                    portVirtual.on("data", function (buff) {
-                        if (modem.isTerminated)
-                            return;
-                        var command = buff.toString("utf8") + "\r";
-                        logger.file.log("(AT) from ast-chan-dongle: " + JSON.stringify(command));
-                        var ok = "\r\nOK\r\n";
-                        if (command === "ATZ\r" ||
-                            command.match(/^AT\+CNMI=/)) {
-                            forwardResp(ok);
-                            return;
-                        }
-                        else if (command === "AT\r") {
-                            forwardResp(ok);
-                            modem.ping();
-                            return;
-                        }
-                        else if (command === "AT+COPS?\r") {
-                            forwardResp("\r\n+COPS: 0,0,\"" + serviceProviderShort + "\",0\r\n" + ok);
-                            return;
-                        }
-                        if (modem.runCommand_queuedCallCount) {
-                            debug([
-                                "a command is already running and",
-                                modem.runCommand_queuedCallCount + " command in stack",
-                                "flushing the pending command in stack"
-                            ].join("\n").yellow);
-                        }
-                        modem.runCommand_cancelAllQueuedCalls();
-                        modem.runCommand(command, {
-                            "recoverable": true,
-                            "reportMode": ts_gsm_modem_1.AtMessage.ReportMode.NO_DEBUG_INFO,
-                            "retryOnErrors": false
-                        }).then(function (_a) {
-                            var raw = _a.raw;
-                            return forwardResp(raw);
-                        });
-                    });
-                    return [4 /*yield*/, portVirtual.evtData.waitFor()];
+                    debug("Modem terminate => closing bridge");
+                    return [4 /*yield*/, atBridge.confManagerApi.removeDongle(accessPoint.friendlyId)];
                 case 1:
                     _a.sent();
-                    modem.evtUnsolicitedAtMessage.attach(function (urc) {
-                        logger.file.log("(AT) forwarding urc: " + JSON.stringify(urc.raw).blue);
-                        portVirtual.writeAndDrain(urc.raw);
-                    });
+                    if (!portVirtual.isOpen()) return [3 /*break*/, 3];
+                    return [4 /*yield*/, new Promise(function (resolve) { return portVirtual.close(function () { return resolve(); }); })];
+                case 2:
+                    _a.sent();
+                    _a.label = 3;
+                case 3:
+                    tty0tty.release();
                     return [2 /*return*/];
             }
+        });
+    }); });
+    portVirtual.evtError.attach(function (serialPortError) {
+        debug("uncaught error serialPortVirtual", serialPortError);
+        modem.terminate();
+    });
+    var serviceProviderShort = (modem.serviceProviderName || "Unknown SP").substring(0, 15);
+    var forwardResp = function (rawResp) {
+        if (modem.runCommand_isRunning) {
+            debug(("Newer command from chanDongle, dropping " + JSON.stringify(rawResp)).red);
+            return;
+        }
+        logger.file.log("(AT) response: " + JSON.stringify(rawResp).blue);
+        portVirtual.writeAndDrain(rawResp);
+    };
+    portVirtual.on("data", function (buff) {
+        if (!!modem.terminateState) {
+            return;
+        }
+        var command = buff.toString("utf8") + "\r";
+        logger.file.log("(AT) from ast-chan-dongle: " + JSON.stringify(command));
+        var ok = "\r\nOK\r\n";
+        if (command === "ATZ\r" ||
+            command.match(/^AT\+CNMI=/)) {
+            forwardResp(ok);
+            return;
+        }
+        else if (command === "AT\r") {
+            forwardResp(ok);
+            modem.ping();
+            return;
+        }
+        else if (command === "AT+COPS?\r") {
+            forwardResp("\r\n+COPS: 0,0,\"" + serviceProviderShort + "\",0\r\n" + ok);
+            return;
+        }
+        if (modem.runCommand_queuedCallCount) {
+            debug([
+                "a command is already running and",
+                modem.runCommand_queuedCallCount + " command in stack",
+                "flushing the pending command in stack"
+            ].join("\n").yellow);
+        }
+        modem.runCommand_cancelAllQueuedCalls();
+        modem.runCommand(command, {
+            "recoverable": true,
+            "reportMode": ts_gsm_modem_1.AtMessage.ReportMode.NO_DEBUG_INFO,
+            "retryOnErrors": false
+        }).then(function (_a) {
+            var raw = _a.raw;
+            return forwardResp(raw);
+        });
+    });
+    portVirtual.once("data", function () {
+        return modem.evtUnsolicitedAtMessage.attach(function (urc) {
+            logger.file.log("(AT) forwarding urc: " + JSON.stringify(urc.raw).blue);
+            portVirtual.writeAndDrain(urc.raw);
         });
     });
 }

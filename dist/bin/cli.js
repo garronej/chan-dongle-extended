@@ -154,6 +154,39 @@ program
     });
 }); });
 program
+    .command("reboot")
+    .description("Send AT command to reboot a dongle")
+    .option("-i, --imei [imei]", "IMEI of the dongle")
+    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
+    var imei, dc, error_2;
+    return __generator(this, function (_a) {
+        switch (_a.label) {
+            case 0: return [4 /*yield*/, selected_dongle.get(options)];
+            case 1:
+                imei = _a.sent();
+                return [4 /*yield*/, getDcInstance()];
+            case 2:
+                dc = _a.sent();
+                _a.label = 3;
+            case 3:
+                _a.trys.push([3, 5, , 6]);
+                return [4 /*yield*/, dc.rebootDongle(imei)];
+            case 4:
+                _a.sent();
+                return [3 /*break*/, 6];
+            case 5:
+                error_2 = _a.sent();
+                console.log(error_2.message.red);
+                process.exit(1);
+                return [2 /*return*/];
+            case 6:
+                console.log("OK".green);
+                process.exit(0);
+                return [2 /*return*/];
+        }
+    });
+}); });
+program
     .command("send")
     .description("Send SMS")
     .option("-i, --imei [imei]", "IMEI of the dongle")
@@ -161,7 +194,7 @@ program
     .option("-t, --text [text]", "Text of the message")
     .option("-T, --text-base64 [textBase64]", "Text Base64 encoded")
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var number, text, textBase64, imei, dc, st, sendMessageResult, error_2;
+    var number, text, textBase64, imei, dc, st, sendMessageResult, error_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -201,8 +234,8 @@ program
                 }
                 return [3 /*break*/, 8];
             case 7:
-                error_2 = _a.sent();
-                console.log(error_2.message.red);
+                error_3 = _a.sent();
+                console.log(error_3.message.red);
                 process.exit(1);
                 return [2 /*return*/];
             case 8: return [2 /*return*/];
@@ -214,7 +247,7 @@ program
     .description("Get received SMS")
     .option("-f, --flush", "Whether or not erasing retrieved messages")
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var flush, dc, messages, error_3;
+    var flush, dc, messages, error_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -232,8 +265,8 @@ program
                 process.exit(0);
                 return [3 /*break*/, 5];
             case 4:
-                error_3 = _a.sent();
-                console.log(error_3.message.red);
+                error_4 = _a.sent();
+                console.log(error_4.message.red);
                 process.exit(1);
                 return [2 /*return*/];
             case 5: return [2 /*return*/];
@@ -247,7 +280,7 @@ program
     .option("--name [name]", "Contact's name")
     .option("--number [number]", "Contact's number")
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var name, number, imei, dc, dongle, contact, error_4;
+    var name, number, imei, dc, dongle, contact, error_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -277,8 +310,8 @@ program
                 contact = _a.sent();
                 return [3 /*break*/, 6];
             case 5:
-                error_4 = _a.sent();
-                console.log(error_4.message.red);
+                error_5 = _a.sent();
+                console.log(error_5.message.red);
                 process.exit(1);
                 return [2 /*return*/];
             case 6:
@@ -294,7 +327,7 @@ program
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("--index [index]", "Contact's index")
     .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
-    var index, imei, dc, dongle, error_5;
+    var index, imei, dc, dongle, error_6;
     return __generator(this, function (_a) {
         switch (_a.label) {
             case 0:
@@ -324,8 +357,8 @@ program
                 _a.sent();
                 return [3 /*break*/, 6];
             case 5:
-                error_5 = _a.sent();
-                console.log(error_5.message.red);
+                error_6 = _a.sent();
+                console.log(error_6.message.red);
                 process.exit(1);
                 return [2 /*return*/];
             case 6:

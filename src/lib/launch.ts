@@ -20,7 +20,8 @@ import { safePr } from "scripting-tools";
 const debug = logger.debugFactory();
 
 const modems: types.Modems = new TrackableMap();
-const evtScheduleRetry = new SyncEvent<AccessPoint>();
+
+const evtScheduleRetry = new SyncEvent<AccessPoint["id"]>();
 
 export async function beforeExit() {
 
@@ -67,10 +68,7 @@ export async function launch() {
 
     const chanDongleConfManagerApi = await confManager.getApi(ami);
 
-
-
     await db.launch();
-
 
     if (!installOptions.disable_sms_dialplan) {
 
@@ -86,13 +84,25 @@ export async function launch() {
 
     debug("Started");
 
-    const monitor = ConnectionMonitor.getInstance(logger.log);
+    const monitor = ConnectionMonitor.getInstance();
 
-    monitor.evtModemConnect.attach(accessPoint => createModem(accessPoint));
+    monitor.evtModemConnect.attach(accessPoint => {
 
-    evtScheduleRetry.attach(accessPoint => {
+        debug(`(Monitor) Connect: ${accessPoint}`);
 
-        if (!monitor.connectedModems.has(accessPoint)) {
+        createModem(accessPoint)
+
+    });
+
+    monitor.evtModemDisconnect.attach(
+        accessPoint=> debug(`(Monitor) Disconnect: ${accessPoint}`)
+    );
+
+    evtScheduleRetry.attach(accessPointId => {
+
+        const accessPoint = Array.from(monitor.connectedModems).find(({ id })=> id === accessPointId);
+
+        if( !accessPoint ){
             return;
         }
 
@@ -147,7 +157,7 @@ function onModemInitializationFailed(
     modems.delete(accessPoint);
 
     if (modemInfos.hasSim !== false) {
-        evtScheduleRetry.post(accessPoint);
+        evtScheduleRetry.post(accessPoint.id);
     }
 
 }
@@ -267,7 +277,7 @@ function onModem(
 
             debug(`Modem terminate... ${error ? error.message : "No internal error"}`);
 
-            evtScheduleRetry.post(accessPoint);
+            evtScheduleRetry.post(accessPoint.id);
 
         }
     );

@@ -116,6 +116,34 @@ program
 
     });
 
+program
+    .command("reboot")
+    .description("Send AT command to reboot a dongle")
+    .option("-i, --imei [imei]", "IMEI of the dongle")
+    .action(async options => {
+
+        const imei = await selected_dongle.get(options);
+
+        const dc = await getDcInstance();
+
+        try {
+
+            await dc.rebootDongle(imei);
+
+        } catch (error) {
+
+            console.log(error.message.red);
+            process.exit(1);
+            return;
+
+        }
+
+        console.log("OK".green);
+
+        process.exit(0);
+
+    });
+
 
 program
     .command("send")

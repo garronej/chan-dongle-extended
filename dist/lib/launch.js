@@ -128,10 +128,18 @@ function launch() {
                 case 4:
                     _a.sent();
                     debug("Started");
-                    monitor = ts_gsm_modem_1.ConnectionMonitor.getInstance(logger.log);
-                    monitor.evtModemConnect.attach(function (accessPoint) { return createModem(accessPoint); });
-                    evtScheduleRetry.attach(function (accessPoint) {
-                        if (!monitor.connectedModems.has(accessPoint)) {
+                    monitor = ts_gsm_modem_1.ConnectionMonitor.getInstance();
+                    monitor.evtModemConnect.attach(function (accessPoint) {
+                        debug("(Monitor) Connect: " + accessPoint);
+                        createModem(accessPoint);
+                    });
+                    monitor.evtModemDisconnect.attach(function (accessPoint) { return debug("(Monitor) Disconnect: " + accessPoint); });
+                    evtScheduleRetry.attach(function (accessPointId) {
+                        var accessPoint = Array.from(monitor.connectedModems).find(function (_a) {
+                            var id = _a.id;
+                            return id === accessPointId;
+                        });
+                        if (!accessPoint) {
                             return;
                         }
                         monitor.evtModemDisconnect
@@ -180,7 +188,7 @@ function onModemInitializationFailed(accessPoint, message, modemInfos) {
     debug(("Modem initialization failed: " + message).red, modemInfos);
     modems.delete(accessPoint);
     if (modemInfos.hasSim !== false) {
-        evtScheduleRetry.post(accessPoint);
+        evtScheduleRetry.post(accessPoint.id);
     }
 }
 function onLockedModem(accessPoint, modemInfos, iccid, pinState, tryLeft, performUnlock, terminate) {
@@ -275,7 +283,7 @@ function onModem(accessPoint, modem) {
     modem.evtTerminate.attachOnce(function (error) {
         modems.delete(accessPoint);
         debug("Modem terminate... " + (error ? error.message : "No internal error"));
-        evtScheduleRetry.post(accessPoint);
+        evtScheduleRetry.post(accessPoint.id);
     });
     modems.set(accessPoint, modem);
 }

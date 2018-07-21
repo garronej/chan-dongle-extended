@@ -50,7 +50,7 @@ export namespace waitForTerminate {
 
 }
 
-async function atBridge(
+function atBridge(
     accessPoint: AccessPoint,
     modem: Modem,
     tty0tty: Tty0tty
@@ -128,9 +128,11 @@ async function atBridge(
 
     portVirtual.on("data", (buff: Buffer) => {
 
-        if (modem.isTerminated) return;
+        if (!!modem.terminateState) {
+            return;
+        }
 
-        let command = buff.toString("utf8") + "\r";
+        const command = buff.toString("utf8") + "\r";
 
         logger.file.log("(AT) from ast-chan-dongle: " + JSON.stringify(command));
 
@@ -177,15 +179,17 @@ async function atBridge(
 
     });
 
-    await portVirtual.evtData.waitFor();
+    portVirtual.once("data", () =>
+        modem.evtUnsolicitedAtMessage.attach(urc => {
 
-    modem.evtUnsolicitedAtMessage.attach(urc => {
+            logger.file.log(`(AT) forwarding urc: ${JSON.stringify(urc.raw).blue}`);
 
-        logger.file.log(`(AT) forwarding urc: ${JSON.stringify(urc.raw).blue}`);
+            portVirtual.writeAndDrain(urc.raw)
 
-        portVirtual.writeAndDrain(urc.raw)
+        })
+    );
 
-    });
+
 
 };
 

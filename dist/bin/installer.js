@@ -893,7 +893,7 @@ var udevRules;
                                             case 0:
                                                 scriptLib.execSync("chown root:" + unix_user + " /dev/tnt*");
                                                 scriptLib.execSync("chmod u+rw,g+rw,o+rw /dev/tnt*");
-                                                monitor = ConnectionMonitor.getInstance();
+                                                monitor = ConnectionMonitor.getInstance(console.log.bind(console));
                                                 console.log("Detecting currently connected modems ... ");
                                                 return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(function () { return resolve(); }, 4100); })];
                                             case 1:

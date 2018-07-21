@@ -326,6 +326,31 @@ function makeApiHandlers(modems) {
         handlers[methodName] = handler;
     })();
     (function () {
+        var methodName = localApiDeclaration.rebootDongle.methodName;
+        var handler = {
+            "handler": function (_a) {
+                var imei = _a.imei;
+                return __awaiter(_this, void 0, void 0, function () {
+                    var modem;
+                    return __generator(this, function (_b) {
+                        switch (_b.label) {
+                            case 0:
+                                modem = Array.from(modems.values()).find(function (modem) { return modem.imei === imei; });
+                                if (!modem) {
+                                    return [2 /*return*/, undefined];
+                                }
+                                return [4 /*yield*/, modem.terminate()];
+                            case 1:
+                                _b.sent();
+                                return [2 /*return*/, undefined];
+                        }
+                    });
+                });
+            }
+        };
+        handlers[methodName] = handler;
+    })();
+    (function () {
         var methodName = localApiDeclaration.getMessages.methodName;
         var handler = {
             "handler": function (params) { return db.messages.retrieve(params); }
