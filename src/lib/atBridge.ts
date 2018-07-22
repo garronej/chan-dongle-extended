@@ -8,22 +8,26 @@ import * as logger from "logger";
 import * as types from "./types";
 import { VoidSyncEvent } from "ts-events-extended";
 
-const debug= logger.debugFactory();
+const debug = logger.debugFactory();
 
 export function init(
-    modems: types.Modems, 
-    chanDongleConfManagerApi: ConfManagerApi 
+    modems: types.Modems,
+    chanDongleConfManagerApi: ConfManagerApi
 ) {
 
-    atBridge.confManagerApi=chanDongleConfManagerApi;
+    atBridge.confManagerApi = chanDongleConfManagerApi;
 
     const tty0ttyFactory = Tty0tty.makeFactory();
 
-    modems.evtCreate.attach(([modem, accessPoint]) => {
+    modems.evtCreate.attach(async ([modem, accessPoint]) => {
 
         if (types.LockedModem.match(modem)) {
             return;
         }
+
+        debug("Configure modem to reject call waiting");
+
+        await modem.runCommand("AT+CCWA=0,0,1\r");
 
         atBridge(accessPoint, modem, tty0ttyFactory());
 
@@ -32,13 +36,15 @@ export function init(
 }
 
 
-export function waitForTerminate(): Promise<void> {
+export async function waitForTerminate(): Promise<void> {
 
     if (waitForTerminate.ports.size === 0) {
         return Promise.resolve();
     }
 
-    return waitForTerminate.evtAllClosed.waitFor();
+    await waitForTerminate.evtAllClosed.waitFor();
+
+    debug("All virtual serial ports closed");
 
 }
 
@@ -48,6 +54,10 @@ export namespace waitForTerminate {
 
     export const evtAllClosed = new VoidSyncEvent();
 
+}
+
+function readableAt(raw: string): string{
+    return "`" + raw.replace(/\r/g, "\\r").replace(/\n/g,"\\n") + "`";
 }
 
 function atBridge(
@@ -77,8 +87,6 @@ function atBridge(
         waitForTerminate.ports.delete(portVirtual);
 
         if (waitForTerminate.ports.size === 0) {
-
-            debug("All virtual serial ports closed");
 
             waitForTerminate.evtAllClosed.post();
         }
@@ -112,15 +120,18 @@ function atBridge(
 
     const serviceProviderShort = (modem.serviceProviderName || "Unknown SP").substring(0, 15);
 
-    const forwardResp = (rawResp: string) => {
+    const forwardResp = (rawResp: string, isRespFromModem: boolean, isPing = false) => {
 
         if (modem.runCommand_isRunning) {
-            debug(`Newer command from chanDongle, dropping ${JSON.stringify(rawResp)}`.red);
+            debug(`Newer command from chanDongle, dropping response ${readableAt(rawResp)}`.red);
             return;
         }
 
-        logger.file.log("(AT) response: " + JSON.stringify(rawResp).blue);
+        if (!isPing) {
 
+            debug(`(AT) ${isRespFromModem ? "Modem" : "Internally generated"} response: ${readableAt(rawResp)}`);
+
+        }
 
         portVirtual.writeAndDrain(rawResp);
 
@@ -134,7 +145,11 @@ function atBridge(
 
         const command = buff.toString("utf8") + "\r";
 
-        logger.file.log("(AT) from ast-chan-dongle: " + JSON.stringify(command));
+        if (command !== "AT\r") {
+
+            debug(`(AT) command from ast-chan-dongle: ${readableAt(command)}`);
+
+        }
 
         const ok = "\r\nOK\r\n";
 
@@ -143,18 +158,18 @@ function atBridge(
             command.match(/^AT\+CNMI=/)
         ) {
 
-            forwardResp(ok);
+            forwardResp(ok, false);
             return;
 
         } else if (command === "AT\r") {
 
-            forwardResp(ok);
+            forwardResp(ok, false, true);
             modem.ping();
             return;
 
         } else if (command === "AT+COPS?\r") {
 
-            forwardResp(`\r\n+COPS: 0,0,"${serviceProviderShort}",0\r\n${ok}`);
+            forwardResp(`\r\n+COPS: 0,0,"${serviceProviderShort}",0\r\n${ok}`, false);
             return;
 
         }
@@ -175,18 +190,20 @@ function atBridge(
             "recoverable": true,
             "reportMode": AtMessage.ReportMode.NO_DEBUG_INFO,
             "retryOnErrors": false
-        }).then(({ raw }) => forwardResp(raw));
+        }).then(({ raw }) => forwardResp(raw, true));
 
     });
 
     portVirtual.once("data", () =>
-        modem.evtUnsolicitedAtMessage.attach(urc => {
+        modem.evtUnsolicitedAtMessage.attach(
+            ({ id }) => id !== "CX_BOOT_URC",
+            urc => {
 
-            logger.file.log(`(AT) forwarding urc: ${JSON.stringify(urc.raw).blue}`);
+                debug(`(AT) forwarding urc: ${readableAt(urc.raw)}`);
 
-            portVirtual.writeAndDrain(urc.raw)
+                portVirtual.writeAndDrain(urc.raw);
 
-        })
+            })
     );
 
 

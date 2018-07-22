@@ -60,28 +60,55 @@ var types = require("./types");
 var ts_events_extended_1 = require("ts-events-extended");
 var debug = logger.debugFactory();
 function init(modems, chanDongleConfManagerApi) {
+    var _this = this;
     atBridge.confManagerApi = chanDongleConfManagerApi;
     var tty0ttyFactory = Tty0tty_1.Tty0tty.makeFactory();
     modems.evtCreate.attach(function (_a) {
         var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];
-        if (types.LockedModem.match(modem)) {
-            return;
-        }
-        atBridge(accessPoint, modem, tty0ttyFactory());
+        return __awaiter(_this, void 0, void 0, function () {
+            return __generator(this, function (_c) {
+                switch (_c.label) {
+                    case 0:
+                        if (types.LockedModem.match(modem)) {
+                            return [2 /*return*/];
+                        }
+                        debug("Configure modem to reject call waiting");
+                        return [4 /*yield*/, modem.runCommand("AT+CCWA=0,0,1\r")];
+                    case 1:
+                        _c.sent();
+                        atBridge(accessPoint, modem, tty0ttyFactory());
+                        return [2 /*return*/];
+                }
+            });
+        });
     });
 }
 exports.init = init;
 function waitForTerminate() {
-    if (waitForTerminate.ports.size === 0) {
-        return Promise.resolve();
-    }
-    return waitForTerminate.evtAllClosed.waitFor();
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0:
+                    if (waitForTerminate.ports.size === 0) {
+                        return [2 /*return*/, Promise.resolve()];
+                    }
+                    return [4 /*yield*/, waitForTerminate.evtAllClosed.waitFor()];
+                case 1:
+                    _a.sent();
+                    debug("All virtual serial ports closed");
+                    return [2 /*return*/];
+            }
+        });
+    });
 }
 exports.waitForTerminate = waitForTerminate;
 (function (waitForTerminate) {
     waitForTerminate.ports = new Set();
     waitForTerminate.evtAllClosed = new ts_events_extended_1.VoidSyncEvent();
 })(waitForTerminate = exports.waitForTerminate || (exports.waitForTerminate = {}));
+function readableAt(raw) {
+    return "`" + raw.replace(/\r/g, "\\r").replace(/\n/g, "\\n") + "`";
+}
 function atBridge(accessPoint, modem, tty0tty) {
     var _this = this;
     atBridge.confManagerApi.addDongle({
@@ -97,7 +124,6 @@ function atBridge(accessPoint, modem, tty0tty) {
     portVirtual.once("close", function () {
         waitForTerminate.ports.delete(portVirtual);
         if (waitForTerminate.ports.size === 0) {
-            debug("All virtual serial ports closed");
             waitForTerminate.evtAllClosed.post();
         }
     });
@@ -125,12 +151,15 @@ function atBridge(accessPoint, modem, tty0tty) {
         modem.terminate();
     });
     var serviceProviderShort = (modem.serviceProviderName || "Unknown SP").substring(0, 15);
-    var forwardResp = function (rawResp) {
+    var forwardResp = function (rawResp, isRespFromModem, isPing) {
+        if (isPing === void 0) { isPing = false; }
         if (modem.runCommand_isRunning) {
-            debug(("Newer command from chanDongle, dropping " + JSON.stringify(rawResp)).red);
+            debug(("Newer command from chanDongle, dropping response " + readableAt(rawResp)).red);
             return;
         }
-        logger.file.log("(AT) response: " + JSON.stringify(rawResp).blue);
+        if (!isPing) {
+            debug("(AT) " + (isRespFromModem ? "Modem" : "Internally generated") + " response: " + readableAt(rawResp));
+        }
         portVirtual.writeAndDrain(rawResp);
     };
     portVirtual.on("data", function (buff) {
@@ -138,20 +167,22 @@ function atBridge(accessPoint, modem, tty0tty) {
             return;
         }
         var command = buff.toString("utf8") + "\r";
-        logger.file.log("(AT) from ast-chan-dongle: " + JSON.stringify(command));
+        if (command !== "AT\r") {
+            debug("(AT) command from ast-chan-dongle: " + readableAt(command));
+        }
         var ok = "\r\nOK\r\n";
         if (command === "ATZ\r" ||
             command.match(/^AT\+CNMI=/)) {
-            forwardResp(ok);
+            forwardResp(ok, false);
             return;
         }
         else if (command === "AT\r") {
-            forwardResp(ok);
+            forwardResp(ok, false, true);
             modem.ping();
             return;
         }
         else if (command === "AT+COPS?\r") {
-            forwardResp("\r\n+COPS: 0,0,\"" + serviceProviderShort + "\",0\r\n" + ok);
+            forwardResp("\r\n+COPS: 0,0,\"" + serviceProviderShort + "\",0\r\n" + ok, false);
             return;
         }
         if (modem.runCommand_queuedCallCount) {
@@ -168,12 +199,15 @@ function atBridge(accessPoint, modem, tty0tty) {
             "retryOnErrors": false
         }).then(function (_a) {
             var raw = _a.raw;
-            return forwardResp(raw);
+            return forwardResp(raw, true);
         });
     });
     portVirtual.once("data", function () {
-        return modem.evtUnsolicitedAtMessage.attach(function (urc) {
-            logger.file.log("(AT) forwarding urc: " + JSON.stringify(urc.raw).blue);
+        return modem.evtUnsolicitedAtMessage.attach(function (_a) {
+            var id = _a.id;
+            return id !== "CX_BOOT_URC";
+        }, function (urc) {
+            debug("(AT) forwarding urc: " + readableAt(urc.raw));
             portVirtual.writeAndDrain(urc.raw);
         });
     });
