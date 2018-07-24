@@ -435,7 +435,45 @@ namespace tty0tty {
 
         }
 
-        let h_deb_path = path.join(working_directory_path, "linux-headers.deb");
+        const h_deb_path = path.join(working_directory_path, "linux-headers.deb");
+
+        const web_get= async (url: string)=> {
+
+                let attemptRemaining = 10;
+
+                while (true) {
+
+                    attemptRemaining--;
+
+                    try {
+
+                        await scriptLib.web_get(url, h_deb_path);
+
+                    } catch (e) {
+
+                        const error: scriptLib.web_get.DownloadError = e;
+
+                        if (attemptRemaining !== 0 && error.cause !== "HTTP ERROR CODE") {
+
+                            console.log(`Error downloading ${url}, retrying`);
+
+                            await new Promise(resolve => setTimeout(resolve, 5000));
+
+                            continue;
+
+                        } else {
+
+                            throw error;
+
+                        }
+
+                    }
+
+                    break;
+
+                }
+
+        };
 
         let downloaded_from: "OFFICIAL" | "MHIIENKA";
 
@@ -454,7 +492,7 @@ namespace tty0tty {
                     `raspberrypi-kernel-headers_${firmware_release}_armhf.deb`
                 ].join("");
 
-                await scriptLib.web_get(url, h_deb_path);
+                await web_get(url);
 
                 downloaded_from = "OFFICIAL";
 
@@ -467,7 +505,7 @@ namespace tty0tty {
                         `linux-headers-${kernel_release}_${kernel_release}-2_armhf.deb`
                     ].join("");
 
-                    await scriptLib.web_get(url, h_deb_path);
+                    await web_get(url);
 
                     downloaded_from = "MHIIENKA";
 
@@ -602,9 +640,9 @@ namespace chan_dongle {
 
         scriptLib.execSync(`mv ${dongle_etc_path} ${dongle_loc_path}`);
 
-        (()=>{
+        (() => {
 
-            const unix_user= InstallOptions.get().unix_user;
+            const unix_user = InstallOptions.get().unix_user;
 
             scriptLib.execSync(`chown ${unix_user}:${unix_user} ${dongle_loc_path}`);
 
@@ -895,7 +933,7 @@ namespace udevRules {
 
         scriptLib.execSync(`mkdir -p ${path.dirname(rules_path)}`);
 
-        const unix_user= InstallOptions.get().unix_user;
+        const unix_user = InstallOptions.get().unix_user;
         const { recordIfNum, ConnectionMonitor } = await import("ts-gsm-modem");
         const vendorIds = Object.keys(recordIfNum);
 
