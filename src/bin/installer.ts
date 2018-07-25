@@ -173,7 +173,7 @@ async function program_action_update(options) {
 
     await rebuild_node_modules();
 
-    if( !InstallOptions.get().do_not_create_systemd_conf ){
+    if (!InstallOptions.get().do_not_create_systemd_conf) {
 
         scriptLib.execSync(`systemctl start ${srv_name}`);
 
@@ -264,15 +264,15 @@ async function install(options: Partial<InstallOptions>) {
 
     InstallOptions.set(options);
 
-    const unix_user= InstallOptions.get().unix_user;
+    const unix_user = InstallOptions.get().unix_user;
 
-    if( unix_user === unix_user_default ){
+    if (unix_user === unix_user_default) {
 
         scriptLib.unixUser.create(unix_user, working_directory_path);
 
-    }else{
+    } else {
 
-        if( !scriptLib.sh_if(`id -u ${unix_user}`)){
+        if (!scriptLib.sh_if(`id -u ${unix_user}`)) {
 
             throw new Error(`Unix user ${unix_user} does not exist`);
 
@@ -332,7 +332,7 @@ async function install(options: Partial<InstallOptions>) {
         { "uid": scriptLib.get_uid(unix_user), "gid": scriptLib.get_gid(unix_user) }
     );
 
-    if ( !InstallOptions.get().do_not_create_systemd_conf ) {
+    if (!InstallOptions.get().do_not_create_systemd_conf) {
 
         scriptLib.systemd.createConfigFile(
             srv_name, path.join(__dirname, "main.js"), node_path, "ENABLE", "START"
@@ -437,41 +437,53 @@ namespace tty0tty {
 
         const h_deb_path = path.join(working_directory_path, "linux-headers.deb");
 
-        const web_get= async (url: string)=> {
+        const web_get = async (url: string) => {
 
-                let attemptRemaining = 10;
+            let attemptRemaining = 10;
 
-                while (true) {
+            while (true) {
 
-                    attemptRemaining--;
+                attemptRemaining--;
 
-                    try {
+                try {
 
-                        await scriptLib.web_get(url, h_deb_path);
+                    await scriptLib.web_get(url, h_deb_path);
 
-                    } catch (e) {
+                } catch (e) {
 
-                        const error: scriptLib.web_get.DownloadError = e;
+                    const error: scriptLib.web_get.DownloadError = e;
 
-                        if (attemptRemaining !== 0 && error.cause !== "HTTP ERROR CODE") {
+                    if (attemptRemaining !== 0) {
 
-                            console.log(`Error downloading ${url}, retrying`);
+                        if (error.cause === "HTTP ERROR CODE") {
 
-                            await new Promise(resolve => setTimeout(resolve, 5000));
+                            const error: scriptLib.web_get.DownloadErrorHttpErrorCode = e;
 
-                            continue;
+                            if (error.code !== 503) {
 
-                        } else {
+                                throw error;
 
-                            throw error;
+                            }
 
                         }
 
+                        console.log(`Fail downloading ${url} ${error.message}, retrying`);
+
+                        await new Promise(resolve => setTimeout(resolve, 5000));
+
+                        continue;
+
+                    } else {
+
+                        throw error;
+
                     }
 
-                    break;
-
                 }
+
+                break;
+
+            }
 
         };
 
@@ -707,29 +719,6 @@ namespace chan_dongle {
     }
 
 }
-
-/*
-namespace workingDirectory {
-
-    export function create(unix_user) {
-
-        process.stdout.write(`Creating app working directory '${working_directory_path}' ... `);
-
-        scriptLib.execSync(`mkdir ${working_directory_path}`);
-
-        scriptLib.execSync(`chown ${unix_user_default}:${unix_user_default} ${working_directory_path}`);
-
-        console.log(scriptLib.colorize("OK", "GREEN"));
-    }
-
-    export function remove() {
-
-        scriptLib.execSyncQuiet(`rm -r ${working_directory_path}`);
-
-    }
-
-}
-*/
 
 namespace shellScripts {
 

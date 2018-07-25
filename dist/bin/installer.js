@@ -434,7 +434,7 @@ var tty0tty;
                     case 2:
                         h_deb_path = path.join(exports.working_directory_path, "linux-headers.deb");
                         web_get = function (url) { return __awaiter(_this, void 0, void 0, function () {
-                            var attemptRemaining, e_5, error;
+                            var attemptRemaining, e_5, error, error_1;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
@@ -453,8 +453,14 @@ var tty0tty;
                                     case 4:
                                         e_5 = _a.sent();
                                         error = e_5;
-                                        if (!(attemptRemaining !== 0 && error.cause !== "HTTP ERROR CODE")) return [3 /*break*/, 6];
-                                        console.log("Error downloading " + url + ", retrying");
+                                        if (!(attemptRemaining !== 0)) return [3 /*break*/, 6];
+                                        if (error.cause === "HTTP ERROR CODE") {
+                                            error_1 = e_5;
+                                            if (error_1.code !== 503) {
+                                                throw error_1;
+                                            }
+                                        }
+                                        console.log("Fail downloading " + url + " " + error.message + ", retrying");
                                         return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 5000); })];
                                     case 5:
                                         _a.sent();
@@ -711,28 +717,6 @@ var chan_dongle;
     }
     chan_dongle.remove = remove;
 })(chan_dongle || (chan_dongle = {}));
-/*
-namespace workingDirectory {
-
-    export function create(unix_user) {
-
-        process.stdout.write(`Creating app working directory '${working_directory_path}' ... `);
-
-        scriptLib.execSync(`mkdir ${working_directory_path}`);
-
-        scriptLib.execSync(`chown ${unix_user_default}:${unix_user_default} ${working_directory_path}`);
-
-        console.log(scriptLib.colorize("OK", "GREEN"));
-    }
-
-    export function remove() {
-
-        scriptLib.execSyncQuiet(`rm -r ${working_directory_path}`);
-
-    }
-
-}
-*/
 var shellScripts;
 (function (shellScripts) {
     var get_uninstaller_link_path = function () { return path.join(Astdirs_1.Astdirs.get().astsbindir, path.basename(uninstaller_link_default_path)); };
