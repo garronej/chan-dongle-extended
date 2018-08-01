@@ -139,6 +139,10 @@ async function program_action_update(options) {
 
         scriptLib.fs_move("COPY", _db_schema_path, db_path);
 
+        const unix_user= InstallOptions.get().unix_user;
+
+        scriptLib.execSync(`chown ${unix_user}:${unix_user} ${db_path}`);
+
     }
 
     const [
