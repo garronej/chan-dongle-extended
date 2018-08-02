@@ -144,7 +144,7 @@ function launch() {
                         }
                         monitor.evtModemDisconnect
                             .waitFor(function (ap) { return ap === accessPoint; }, 2000)
-                            .catch(function () { return createModem(accessPoint); });
+                            .catch(function () { return createModem(accessPoint, "REBOOT"); });
                     });
                     return [2 /*return*/];
             }
@@ -153,7 +153,7 @@ function launch() {
 }
 exports.launch = launch;
 ;
-function createModem(accessPoint) {
+function createModem(accessPoint, reboot) {
     return __awaiter(this, void 0, void 0, function () {
         var modem, error_1;
         return __generator(this, function (_a) {
@@ -168,7 +168,8 @@ function createModem(accessPoint) {
                             "unlock": function (modemInfo, iccid, pinState, tryLeft, performUnlock, terminate) {
                                 return onLockedModem(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock, terminate);
                             },
-                            "log": logger.log
+                            "log": logger.log,
+                            "rebootFirst": !!reboot
                         })];
                 case 2:
                     modem = _a.sent();

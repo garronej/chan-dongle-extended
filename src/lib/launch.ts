@@ -108,14 +108,14 @@ export async function launch() {
 
         monitor.evtModemDisconnect
             .waitFor(ap => ap === accessPoint, 2000)
-            .catch(() => createModem(accessPoint))
+            .catch(() => createModem(accessPoint, "REBOOT"))
             ;
 
     });
 
 };
 
-async function createModem(accessPoint: AccessPoint) {
+async function createModem(accessPoint: AccessPoint, reboot?: undefined | "REBOOT" ) {
 
     debug("Create Modem");
 
@@ -127,7 +127,8 @@ async function createModem(accessPoint: AccessPoint) {
             "dataIfPath": accessPoint.dataIfPath,
             "unlock": (modemInfo, iccid, pinState, tryLeft, performUnlock, terminate) =>
                 onLockedModem(accessPoint, modemInfo, iccid, pinState, tryLeft, performUnlock, terminate),
-            "log": logger.log
+            "log": logger.log,
+            "rebootFirst": !!reboot
         });
 
     } catch (error) {
