@@ -152,7 +152,12 @@ $ sudo apt-get install -y nodejs
 $ sudo npm install -g npm
 
 # Install dependencies needed to perform npm install
-# NOTE: At the time of writing these lines libudev-dev ( https://packages.debian.org/fr/jessie/libudev-dev )
+# UPDATE: The following note would be purposeful 
+# only if we decided on the future NOT to recompile
+# 'cheery/node-udev' on the client host but currently 
+# we do so the note can be ignored.
+# NOTE: 
+# At the time of writing these lines libudev-dev ( https://packages.debian.org/fr/jessie/libudev-dev )
 # is the development package targeting 'libudev1' for jessie, stretch and buster ( oldstable, stable and testing)
 # Make sure it is still the case when building a new release. 
 # Indeed 'cheery/node-udev' is not recompiled on client's host so if it happen that libudev1 is not available on a 

@@ -676,32 +676,29 @@ var chan_dongle;
                 switch (_b.label) {
                     case 0:
                         chan_dongle_dir_path = path.join(exports.working_directory_path, "asterisk-chan-dongle");
-                        return [4 /*yield*/, scriptLib.apt_get_install_if_missing("build-essential")];
-                    case 1:
-                        _b.sent();
                         return [4 /*yield*/, scriptLib.apt_get_install_if_missing("automake")];
-                    case 2:
+                    case 1:
                         _b.sent();
                         _a = scriptLib.start_long_running_process("Building and installing asterisk chan_dongle ( may take several minutes )"), exec = _a.exec, onSuccess = _a.onSuccess;
                         ast_ver = scriptLib.sh_eval(build_ast_cmdline() + " -V").match(/^Asterisk\s+([0-9\.]+)/)[1];
                         cdExec = function (cmd) { return exec(cmd, { "cwd": chan_dongle_dir_path }); };
                         return [4 /*yield*/, exec("git clone https://github.com/garronej/asterisk-chan-dongle " + chan_dongle_dir_path)];
-                    case 3:
+                    case 2:
                         _b.sent();
                         return [4 /*yield*/, cdExec("./bootstrap")];
-                    case 4:
+                    case 3:
                         _b.sent();
                         return [4 /*yield*/, cdExec("./configure --with-astversion=" + ast_ver + " --with-asterisk=" + InstallOptions_1.InstallOptions.get().ast_include_dir_path)];
-                    case 5:
+                    case 4:
                         _b.sent();
                         return [4 /*yield*/, cdExec("make")];
-                    case 6:
+                    case 5:
                         _b.sent();
                         return [4 /*yield*/, cdExec("cp chan_dongle.so " + Astdirs_1.Astdirs.get().astmoddir)];
-                    case 7:
+                    case 6:
                         _b.sent();
                         return [4 /*yield*/, exec("rm -r " + chan_dongle_dir_path)];
-                    case 8:
+                    case 7:
                         _b.sent();
                         linkDongleConfigFile();
                         onSuccess("OK");
@@ -1089,10 +1086,11 @@ function install_prereq() {
                         })()];
                 case 3:
                     _a.sent();
-                    //NOTE: No need to instal the dev package for running the module.
-                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("libudev1")];
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("build-essential")];
                 case 4:
-                    //NOTE: No need to instal the dev package for running the module.
+                    _a.sent();
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("libudev-dev")];
+                case 5:
                     _a.sent();
                     return [2 /*return*/];
             }
