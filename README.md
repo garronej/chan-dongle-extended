@@ -134,10 +134,21 @@ In order to reassemble the message you must decode each part then concatenate.
 
 * Releasing:
 ``` bash
-# Install node.js https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions
+
+# ==> Installing node.js, for armv6 only !
+# We can't install it from the repository so we have to download it manually:
+
+# ( The download link is on the download page of the node.js website )
+$ cd ~ && wget https://nodejs.org/dist/v8.12.0/node-v8.12.0-linux-armv6l.tar.xz
+$ tar xf node-v8.*-linux-armv6l.tar.xz
+# Add the path to node bin dir to the PATH, .bashrc:  export PATH=/home/pi/node-v8.12.0-linux-armv6l/bin:$PATH
+$ source ~/.bashrc
+# Make sure that we have node by typing node -v
+
+# Install node.js on a host that is not armv6
+# ( https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions )
 $ curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 $ sudo apt-get install -y nodejs
-# Update npm
 $ sudo npm install -g npm
 
 # Install dependencies needed to perform npm install
@@ -155,19 +166,17 @@ $ git clone https://github.com/garronej/chan-dongle-extended
 $ cd chan-dongle-extended
 $ npm install
 
-# (Optional) Performs tests.
-
 # Creating tarball, ( will generate a file dongle_[arch].tar.gz )
 # This file need to be uploaded in 'Latest' release here:
 # https://github.com/garronej/dongle/releases
 $ npm run tarball
+
 ```
 
-* Tests:
+* Testing the latest release:
 ``` bash
 
-# If not already done install install the module ( != npm install )
-$ sudo ./node dist/bin/installer install
+$ wget -nc -q -O - https://github.com/garronej/dongle/raw/master/install.sh | sudo bash
 
 # [ Plug a USB 3G dongle holding a sim card to the host. ]
 
@@ -191,13 +200,6 @@ $ dongle --help
 
 # Get details on how to use a particular command ( here example with the 'send' command )
 $ dongle send --help
-
-#[Uninstall the program]
-
-```
-
-* Uninstalling:
-```bash
 
 # Do not forget to read the output,
 # it will tell what packages are no longer needed and can be purged.
