@@ -100,7 +100,7 @@ function launch(modems, staticModuleConfiguration) {
         .on("connection", function (netSocket) { return __awaiter(_this, void 0, void 0, function () {
         var socket;
         return __generator(this, function (_a) {
-            socket = new sipLibrary.Socket(netSocket);
+            socket = new sipLibrary.Socket(netSocket, true);
             server.startListening(socket);
             sockets.add(socket);
             socket.evtClose.attachOnce(function () { return sockets.delete(socket); });

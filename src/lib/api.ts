@@ -49,7 +49,7 @@ export function launch(
         .once("error", error => { throw error; })
         .on("connection", async netSocket => {
 
-            let socket = new sipLibrary.Socket(netSocket);
+            let socket = new sipLibrary.Socket(netSocket, true);
 
             server.startListening(socket);
 

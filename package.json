@@ -1,6 +1,6 @@
 {
   "name": "chan-dongle-extended",
-  "version": "5.4.3",
+  "version": "5.4.4",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
@@ -24,7 +24,6 @@
     "commander": "^2.11.0",
     "ini-extended": "github:garronej/ini-extended",
     "logger": "github:garronej/logger",
-    "node-gyp": "^3.7.0",
     "node-persist": "^2.1.0",
     "run-exclusive": "github:garronej/run-exclusive",
     "scripting-tools": "github:garronej/scripting-tools",
@@ -40,6 +39,7 @@
     "@types/colors": "^1.2.1",
     "@types/node": "^8.9.1",
     "@types/node-persist": "0.0.31",
+    "node-gyp": "^3.7.0",
     "typescript": "^2.9.2"
   }
 }

@@ -675,6 +675,8 @@ namespace chan_dongle {
 
         const chan_dongle_dir_path = path.join(working_directory_path, "asterisk-chan-dongle");
 
+        await scriptLib.apt_get_install_if_missing("build-essential");
+
         await scriptLib.apt_get_install_if_missing("automake");
 
         const { exec, onSuccess } = scriptLib.start_long_running_process(
@@ -1152,9 +1154,8 @@ async function install_prereq() {
 
     })();
 
-    await scriptLib.apt_get_install_if_missing("build-essential");
-
-    await scriptLib.apt_get_install_if_missing("libudev-dev");
+    //NOTE: No need to instal the dev package for running the module.
+    await scriptLib.apt_get_install_if_missing("libudev1");
 
 };
 

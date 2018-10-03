@@ -130,25 +130,75 @@ it is to avoid asterisk buffer overflow. You can use the
 SMS_TEXT_SPLIT_COUNT=n and SMS_BASE64_PART_0..n-1 variables to retrieve very long SMS. 
 In order to reassemble the message you must decode each part then concatenate.
 
-# Install:
+# Note for dev ops:
 
-* Install
+* Releasing:
 ``` bash
+# Install node.js https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions
+$ curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
+$ sudo apt-get install -y nodejs
+
+# Install dependencies needed to perform npm install
+# NOTE: At the time of writing these lines libudev-dev ( https://packages.debian.org/fr/jessie/libudev-dev )
+# is the development package targeting 'libudev1' for jessie, stretch and buster ( oldstable, stable and testing)
+# Make sure it is still the case when building a new release. 
+# Indeed 'cheery/node-udev' is not recompiled on client's host so if it happen that libudev1 is not available on a 
+# resent release of debian or ubuntu it will not work.
+# In short make sure that we does not found ourselves in the situation of libssl-dev ( https://packages.debian.org/fr/jessie/libssl-dev )
+# Where the target is the packet 'libssl1.0.0' for jessie and 'libssl1.1' for stretch and buster.
+$ sudo apt-get install libudev-dev python python-pip
+$ sudo pip install virtualenv
+
 $ git clone https://github.com/garronej/chan-dongle-extended
 $ cd chan-dongle-extended
-#Require to install deps manually see installer install_prereq function.
 $ npm install
-#To see install option run: node dist/bin/installer install --help
+
+# (Optional) Performs tests.
+
+# Creating tarball, ( will generate a file dongle_[arch].tar.gz )
+# This file need to be uploaded in 'Latest' release here:
+# https://github.com/garronej/dongle/releases
+$ npm run tarball
+```
+
+* Tests:
+``` bash
+
+# If not already done install install the module ( != npm install )
 $ sudo ./node dist/bin/installer install
+
+# [ Plug a USB 3G dongle holding a sim card to the host. ]
+
+# A locked dongle should be listed, copy the IMSI
+$ dongle list 
+
+$ dongle select [imsi]
+
+$ dongle unlock -p 1234
+
+#Wait ~15s
+
+$ dongle send -t "foo bar baz" -n 0636786385
+
+# [ Checks that the message is well received ]
+
+#Optionally test the other functionalities: 
+
+# List the available commands:
+$ dongle --help 
+
+# Get details on how to use a particular command ( here example with the 'send' command )
+$ dongle send --help
+
+#[Uninstall the program]
+
 ```
-* Run
-``` bash
-#As service:
-$ sudo systemctl start dongle
-#Debug:
-$ npm start
-```
-* Uninstall
-``` bash
-$ sudo node dist/bin/installer uninstall
+
+* Uninstalling:
+```bash
+
+# Do not forget to read the output,
+# it will tell what packages are no longer needed and can be purged.
+$ sudo dongle_uninstaller run
+
 ```
