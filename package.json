@@ -6,11 +6,11 @@
   "types": "./dist/lib/index.d.ts",
   "scripts": {
     "postinstall": "cp $(readlink -e $(which node)) ./node",
-    "tsc": "node ./node_modules/typescript/bin/tsc -p ./tsconfig.json",
+    "tsc": "./node ./node_modules/typescript/bin/tsc -p ./tsconfig.json",
     "tsc-w": "node ./node_modules/typescript/bin/tsc -w -p ./tsconfig.json",
     "start": "sudo ./node ./dist/bin/main.js",
-    "tarball": "sudo node ./dist/bin/installer tarball",
-    "test": "sudo node ./dist/test/db"
+    "tarball": "sudo ./node ./dist/bin/installer tarball",
+    "test": "sudo ./node ./dist/test/db"
   },
   "repository": {
     "type": "git",
