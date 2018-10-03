@@ -137,6 +137,8 @@ In order to reassemble the message you must decode each part then concatenate.
 # Install node.js https://nodejs.org/en/download/package-manager/#debian-and-ubuntu-based-linux-distributions
 $ curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 $ sudo apt-get install -y nodejs
+# Update npm
+$ sudo npm install -g npm
 
 # Install dependencies needed to perform npm install
 # NOTE: At the time of writing these lines libudev-dev ( https://packages.debian.org/fr/jessie/libudev-dev )
