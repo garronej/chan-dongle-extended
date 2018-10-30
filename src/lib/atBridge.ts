@@ -194,10 +194,12 @@ function atBridge(
 
     });
 
+    //Wait! test this fist
     portVirtual.once("data", () =>
         modem.evtUnsolicitedAtMessage.attach(
-            ({ id }) => id !== "CX_BOOT_URC",
+            ({ id }) => id !== "CX_BOOT_URC" && id !== "CX_RSSI_URC",
             urc => {
+
 
                 debug(`(AT) forwarding urc: ${readableAt(urc.raw)}`);
 

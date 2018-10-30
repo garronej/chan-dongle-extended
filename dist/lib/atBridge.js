@@ -202,10 +202,11 @@ function atBridge(accessPoint, modem, tty0tty) {
             return forwardResp(raw, true);
         });
     });
+    //Wait! test this fist
     portVirtual.once("data", function () {
         return modem.evtUnsolicitedAtMessage.attach(function (_a) {
             var id = _a.id;
-            return id !== "CX_BOOT_URC";
+            return id !== "CX_BOOT_URC" && id !== "CX_RSSI_URC";
         }, function (urc) {
             debug("(AT) forwarding urc: " + readableAt(urc.raw));
             portVirtual.writeAndDrain(urc.raw);
