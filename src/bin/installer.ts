@@ -16,6 +16,7 @@ const installed_pkg_record_path = path.join(module_dir_path, "pkg_installed.json
 export const pidfile_path = path.join(working_directory_path, "pid");
 const uninstaller_link_default_path = `/usr/sbin/dongle_uninstaller`;
 
+
 export const db_path = path.join(working_directory_path, "app.db");
 const to_distribute_rel_paths = [
     "LICENSE",

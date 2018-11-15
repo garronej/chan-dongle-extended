@@ -12,6 +12,7 @@ export declare namespace InstallOptions {
         "ld_library_path_for_asterisk": string;
         "do_not_create_systemd_conf": boolean;
         "unix_user": string;
+        "allow_host_reboot_on_dongle_unrecoverable_crash": boolean;
     };
     function set(options: Partial<InstallOptions>): void;
     function get(): InstallOptions;

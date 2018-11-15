@@ -135,7 +135,6 @@ async function createModem(accessPoint: AccessPoint, reboot?: undefined | "REBOO
 
         onModemInitializationFailed(
             accessPoint,
-            error.message,
             (error as InitializationError).modemInfos
         );
 
@@ -149,17 +148,25 @@ async function createModem(accessPoint: AccessPoint, reboot?: undefined | "REBOO
 
 function onModemInitializationFailed(
     accessPoint: AccessPoint,
-    message: string,
     modemInfos: InitializationError["modemInfos"]
 ) {
 
-    debug(`Modem initialization failed: ${message}`.red, modemInfos);
 
     modems.delete(accessPoint);
 
-    if (modemInfos.hasSim !== false) {
-        evtScheduleRetry.post(accessPoint.id);
+    if ( modemInfos.haveFailedToReboot === true ){
+
+
+
+        process.emit("beforeExit", process.exitCode= 1);
+
     }
+
+    if( modemInfos.hasSim === false ){
+        return;
+    }
+
+    evtScheduleRetry.post(accessPoint.id);
 
 }
 

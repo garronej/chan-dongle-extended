@@ -25,7 +25,8 @@ var InstallOptions;
         "assume_chan_dongle_installed": false,
         "ld_library_path_for_asterisk": "",
         "do_not_create_systemd_conf": false,
-        "unix_user": installer_1.unix_user_default
+        "unix_user": installer_1.unix_user_default,
+        "allow_host_reboot_on_dongle_unrecoverable_crash": false
     };
     var _options = undefined;
     function set(options) {

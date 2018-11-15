@@ -20,7 +20,8 @@ export namespace InstallOptions {
         "assume_chan_dongle_installed": false,
         "ld_library_path_for_asterisk": "",
         "do_not_create_systemd_conf": false,
-        "unix_user": unix_user_default
+        "unix_user": unix_user_default,
+        "allow_host_reboot_on_dongle_unrecoverable_crash": false
     };
 
     let _options: Partial<InstallOptions> | undefined = undefined;
@@ -50,7 +51,7 @@ export namespace InstallOptions {
 
         const installOptions: InstallOptions = { ...InstallOptions.defaults };
 
-        for (let key in InstallOptions.defaults) {
+        for (const key in InstallOptions.defaults) {
 
             if (_options[key] !== undefined) {
                 installOptions[key] = _options[key];

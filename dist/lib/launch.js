@@ -176,7 +176,7 @@ function createModem(accessPoint, reboot) {
                     return [3 /*break*/, 4];
                 case 3:
                     error_1 = _a.sent();
-                    onModemInitializationFailed(accessPoint, error_1.message, error_1.modemInfos);
+                    onModemInitializationFailed(accessPoint, error_1.modemInfos);
                     return [2 /*return*/];
                 case 4:
                     onModem(accessPoint, modem);
@@ -185,12 +185,15 @@ function createModem(accessPoint, reboot) {
         });
     });
 }
-function onModemInitializationFailed(accessPoint, message, modemInfos) {
-    debug(("Modem initialization failed: " + message).red, modemInfos);
+function onModemInitializationFailed(accessPoint, modemInfos) {
     modems.delete(accessPoint);
-    if (modemInfos.hasSim !== false) {
-        evtScheduleRetry.post(accessPoint.id);
+    if (modemInfos.haveFailedToReboot === true) {
+        process.emit("beforeExit", process.exitCode = 1);
     }
+    if (modemInfos.hasSim === false) {
+        return;
+    }
+    evtScheduleRetry.post(accessPoint.id);
 }
 function onLockedModem(accessPoint, modemInfos, iccid, pinState, tryLeft, performUnlock, terminate) {
     return __awaiter(this, void 0, void 0, function () {
