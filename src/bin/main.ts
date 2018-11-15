@@ -6,12 +6,14 @@ scriptLib.createService({
         const [
             { build_ast_cmdline, node_path, pidfile_path, srv_name },
             { InstallOptions },
+            hostRebootScheduler,
             child_process,
             logger,
             os
         ]= await Promise.all([
             import("./installer"),
             import("../lib/InstallOptions"),
+            import("../lib/hostRebootScheduler"),
             import("child_process"),
             import("logger"),
             import("os")
@@ -27,6 +29,8 @@ scriptLib.createService({
             "daemon_node_path": node_path,
             "daemon_restart_after_crash_delay": 5000,
             "preForkTask": async () => {
+
+                await hostRebootScheduler.rebootIfScheduled();
 
                 while (true) {
 

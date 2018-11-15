@@ -14,6 +14,7 @@ import * as types from "./types";
 import * as logger from "logger";
 import * as db from "./db";
 import { InstallOptions } from "./InstallOptions";
+import * as hostRebootScheduler from "./hostRebootScheduler";
 
 import { safePr } from "scripting-tools";
 
@@ -151,19 +152,20 @@ function onModemInitializationFailed(
     modemInfos: InitializationError["modemInfos"]
 ) {
 
-
     modems.delete(accessPoint);
 
     if ( modemInfos.haveFailedToReboot === true ){
 
+        hostRebootScheduler.schedule();
 
-
-        process.emit("beforeExit", process.exitCode= 1);
+        return;
 
     }
 
     if( modemInfos.hasSim === false ){
+
         return;
+
     }
 
     evtScheduleRetry.post(accessPoint.id);
