@@ -1,6 +1,7 @@
 #!/bin/bash
 
 # TODO: Test if debian or ubuntu distribution comply to requirements.
+# to fetch only ( without installing, replace URL ) 'wget -q -O - $URL | sudo FETCH_ONLY=1 bash'
 
 INSTALL_PATH=/usr/share/dongle
 TARBALL_PATH=/tmp/dongle.tar.gz
@@ -22,7 +23,7 @@ if [ -d "$INSTALL_PATH" ]; then
 
 fi
 
-URL="https://github.com/garronej/dongle/releases/download/latest/dongle_"$(uname -m)".tar.gz"
+URL="https://garronej.github.io/chan-dongle-extended/releases/dongle_"$(uname -m)".tar.gz"
 
 wget $URL -q --show-progress -O $TARBALL_PATH
 
@@ -40,4 +41,3 @@ then
 else
         ./node dist/bin/installer install
 fi
-

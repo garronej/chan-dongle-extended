@@ -252,7 +252,7 @@ async function program_action_tarball() {
 
     scriptLib.execSyncTrace([
         "tar -czf",
-        path.join(module_dir_path, `dongle_${scriptLib.sh_eval("uname -m")}.tar.gz`),
+        path.join(module_dir_path, "docs", "releases", `dongle_${scriptLib.sh_eval("uname -m")}.tar.gz`),
         `-C ${_module_dir_path} .`
     ].join(" ")
     );
