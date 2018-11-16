@@ -32,7 +32,7 @@ System requirements:
 To install simply run this command:
 
 ````bash
-wget -nc -q -O - https://garronej.github.io/chan-dongle-extended/install.sh | sudo bash
+wget -nc -q -O - garronej.github.io/chan-dongle-extended/install.sh | sudo bash
 ````
 
 If ``Asterisk`` is not already installed it will be. ( From the repo ).  
