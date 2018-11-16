@@ -1,6 +1,3 @@
-
-![Logo](https://user-images.githubusercontent.com/6702424/48591262-78965980-e943-11e8-9e30-35aac27ae1c2.png)
-
 ## Motivations
 
 ``asterisk-chan-dongle`` let you use Huawei 3G dongles to place phone calls  
