@@ -65,12 +65,6 @@ the host when a dongle is unrecoverable crashed.
 To grant the permission edit ``/usr/share/dongle/working_directory/install_options.json``
 and set ``allow_host_reboot_on_dongle_unrecoverable_crash`` to ``true``
 
-## Screenshots
-
-
-
-
-
 ## API
 
 The service come bundled with a CLI tool ``dongle``
@@ -78,6 +72,10 @@ The service come bundled with a CLI tool ``dongle``
 ![image](https://user-images.githubusercontent.com/6702424/48590982-0709db80-e942-11e8-8456-af247c773fdf.png)
 
 ![image](https://user-images.githubusercontent.com/6702424/48590810-47b52500-e941-11e8-9fb0-7f54840cfd95.png)
+
+Once unlocked you can see that the modem is handled by ``asterisk-chan-dongle``
+
+![image](https://user-images.githubusercontent.com/6702424/48592557-3ec85180-e949-11e8-9fa3-44d07c1d7517.png)
 
 A npm module is available to interface the service programmatically: ``garronej/chan-dongle-extended-client`` ( not documented yet )
 
