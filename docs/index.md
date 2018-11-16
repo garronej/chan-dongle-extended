@@ -1,6 +1,5 @@
-# Chan-dongle-extended
 
-A a middleware between Huawei devices and ``asterisk-chan-dongle``
+![Logo](https://user-images.githubusercontent.com/6702424/48591262-78965980-e943-11e8-9e30-35aac27ae1c2.png)
 
 ## Motivations
 
@@ -11,21 +10,19 @@ setup and it is quite unstable.
 This project aim to automate the compilation/installation/configuration  
 of ``asterisk-chan-dongle`` alongside fixing bugs and providing many new features.
 
-NOTE: This work in progress the API is likely to change greatly.
-
 ## Features: 
 
-* PIN/PUK codes management:  
+* **PIN/PUK codes management**:  
     No need to disable LOCK anymore, list connected dongle that need to be  
     unlocked, provide a PIN or PUK, if the unlocking was successful the module  
     will save the code for the SIM so you don't have to provide it again.  
-* Multipart SMS:  
+* **Multipart SMS**:  
     Reliably Send and receive multipart SMS, fix all encoding problems.  
-* SMS status report:  
+* **SMS status report**:  
     Confirm that SMS have been successfully delivered.  
-* SIM phonebook:  
+* **SIM phonebook**:  
     Read and write contacts in SIM storage.  
-* Auto configuration of devices:  
+* **Auto configuration of devices**:  
     No need to configure devices in dongle.conf anymore,  
     when a supported device is connected it is automatically detected  
     by the module and instantiated for you.  
@@ -71,33 +68,21 @@ the host when a dongle is unrecoverable crashed.
 To grant the permission edit ``/usr/share/dongle/working_directory/install_options.json``
 and set ``allow_host_reboot_on_dongle_unrecoverable_crash`` to ``true``
 
+## Screenshots
+
+
+
+
+
 ## API
 
-* A dedicated JS client: ``garronej/chan-dongle-extended-client`` ( not documented yet )
-* A CLI tool ``dongle``
+The service come bundled with a CLI tool ``dongle``
 
-````bash
-$ dongle --help
+![image](https://user-images.githubusercontent.com/6702424/48590982-0709db80-e942-11e8-8456-af247c773fdf.png)
 
-Usage: dongle [options] [command]
+![image](https://user-images.githubusercontent.com/6702424/48590810-47b52500-e941-11e8-9fb0-7f54840cfd95.png)
 
-  Commands:
-
-    list                       List active dongle
-    list-locked                List PIN/PUK locked dongles
-    select [imei]              Select dongle for subsequent calls ( to avoid having to set --imei on each command)
-    unlock [options]           provide SIM PIN or PUK to unlock dongle
-    send [options]             Send SMS
-    phonebook [options]        Get SIM card phonebook
-    new-contact [options]      Store new contact in phonebook memory
-    update-number [options]    Re write subscriber phone number on SIM card
-    delete-contact [options]   Delete a contact from phonebook memory
-    messages [options]         Get all received SMS
-````
-
-More info on every command by typing e.g: `dongle unlock --help`
-
-The module is deigned to be interfaced via this client: `garronej/chan-dongle-extended-client`
+A npm module is available to interface the service programmatically: ``garronej/chan-dongle-extended-client`` ( not documented yet )
 
 ## Handling multi parts SMS via the dialplan.
 

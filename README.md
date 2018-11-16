@@ -77,6 +77,11 @@ See the options by running:
 $ sudo ./node dist/bin/installer install
 ````
 
+* Run
+````bash
+npm start
+````
+
 * Uninstall
 ```bash
 $ sudo dongle_uninstaller run

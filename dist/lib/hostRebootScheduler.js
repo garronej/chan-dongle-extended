@@ -40,12 +40,18 @@ var path = require("path");
 var fs = require("fs");
 var scriptTools = require("scripting-tools");
 var logger = require("logger");
+var InstallOptions_1 = require("./InstallOptions");
 var debug = logger.debugFactory();
 var file_path = path.join(i.working_directory_path, "reboot_scheduled");
 function schedule() {
-    debug("Scheduling host for reboot");
-    fs.writeFileSync(file_path, Buffer.from("1", "utf8"));
-    process.emit("beforeExit", process.exitCode = 1);
+    if (InstallOptions_1.InstallOptions.get().allow_host_reboot_on_dongle_unrecoverable_crash) {
+        debug("Scheduling host for reboot");
+        fs.writeFileSync(file_path, Buffer.from("1", "utf8"));
+        process.emit("beforeExit", process.exitCode = 1);
+    }
+    else {
+        debug("Install options does not stipulate that this program have permission to restart the host");
+    }
 }
 exports.schedule = schedule;
 function rebootIfScheduled() {

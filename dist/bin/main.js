@@ -55,19 +55,20 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var scriptLib = require("scripting-tools");
 scriptLib.createService({
     "rootProcess": function () { return __awaiter(_this, void 0, void 0, function () {
-        var _a, _b, build_ast_cmdline, node_path, pidfile_path, srv_name, InstallOptions, child_process, logger, os, debug, config;
+        var _a, _b, build_ast_cmdline, node_path, pidfile_path, srv_name, InstallOptions, hostRebootScheduler, child_process, logger, os, debug, config;
         var _this = this;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0: return [4 /*yield*/, Promise.all([
                         Promise.resolve().then(function () { return require("./installer"); }),
                         Promise.resolve().then(function () { return require("../lib/InstallOptions"); }),
+                        Promise.resolve().then(function () { return require("../lib/hostRebootScheduler"); }),
                         Promise.resolve().then(function () { return require("child_process"); }),
                         Promise.resolve().then(function () { return require("logger"); }),
                         Promise.resolve().then(function () { return require("os"); })
                     ])];
                 case 1:
-                    _a = __read.apply(void 0, [_c.sent(), 5]), _b = _a[0], build_ast_cmdline = _b.build_ast_cmdline, node_path = _b.node_path, pidfile_path = _b.pidfile_path, srv_name = _b.srv_name, InstallOptions = _a[1].InstallOptions, child_process = _a[2], logger = _a[3], os = _a[4];
+                    _a = __read.apply(void 0, [_c.sent(), 6]), _b = _a[0], build_ast_cmdline = _b.build_ast_cmdline, node_path = _b.node_path, pidfile_path = _b.pidfile_path, srv_name = _b.srv_name, InstallOptions = _a[1].InstallOptions, hostRebootScheduler = _a[2], child_process = _a[3], logger = _a[4], os = _a[5];
                     debug = logger.debugFactory();
                     config = {
                         pidfile_path: pidfile_path,
@@ -80,25 +81,29 @@ scriptLib.createService({
                             var isAsteriskFullyBooted;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
-                                    case 0:
-                                        if (!true) return [3 /*break*/, 3];
+                                    case 0: return [4 /*yield*/, hostRebootScheduler.rebootIfScheduled()];
+                                    case 1:
+                                        _a.sent();
+                                        _a.label = 2;
+                                    case 2:
+                                        if (!true) return [3 /*break*/, 5];
                                         debug("Checking whether asterisk is fully booted...");
                                         return [4 /*yield*/, new Promise(function (resolve) {
                                                 return child_process.exec(build_ast_cmdline() + " -rx \"core waitfullybooted\"")
                                                     .once("error", function () { return resolve(false); })
                                                     .once("close", function (code) { return (code === 0) ? resolve(true) : resolve(false); });
                                             })];
-                                    case 1:
+                                    case 3:
                                         isAsteriskFullyBooted = _a.sent();
                                         if (isAsteriskFullyBooted) {
-                                            return [3 /*break*/, 3];
+                                            return [3 /*break*/, 5];
                                         }
                                         debug("... asterisk is yet running ...");
                                         return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 10000); })];
-                                    case 2:
+                                    case 4:
                                         _a.sent();
-                                        return [3 /*break*/, 0];
-                                    case 3:
+                                        return [3 /*break*/, 2];
+                                    case 5:
                                         debug("...Asterisk is fully booted!");
                                         return [2 /*return*/];
                                 }

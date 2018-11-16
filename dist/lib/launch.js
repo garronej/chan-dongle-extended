@@ -55,6 +55,7 @@ var confManager = require("./confManager");
 var logger = require("logger");
 var db = require("./db");
 var InstallOptions_1 = require("./InstallOptions");
+var hostRebootScheduler = require("./hostRebootScheduler");
 var scripting_tools_1 = require("scripting-tools");
 var debug = logger.debugFactory();
 var modems = new trackable_map_1.TrackableMap();
@@ -188,7 +189,8 @@ function createModem(accessPoint, reboot) {
 function onModemInitializationFailed(accessPoint, modemInfos) {
     modems.delete(accessPoint);
     if (modemInfos.haveFailedToReboot === true) {
-        process.emit("beforeExit", process.exitCode = 1);
+        hostRebootScheduler.schedule();
+        return;
     }
     if (modemInfos.hasSim === false) {
         return;
