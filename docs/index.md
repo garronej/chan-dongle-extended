@@ -35,8 +35,8 @@ To install simply run this command:
 wget -nc -q -O - garronej.github.io/chan-dongle-extended/install.sh | sudo bash
 ````
 
-If ``Asterisk`` is not already installed it will be. ( From the repo ).  
-``wdoekes/asterisk-chan-dongle`` will be automatically compiled and installed.
+![image](https://user-images.githubusercontent.com/6702424/48592742-23117b00-e94a-11e8-80d4-a52142ad96fc.png)
+
 
 This program act as a system service to stop the service run: 
 ````bash
