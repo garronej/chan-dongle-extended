@@ -67,7 +67,11 @@ The only option in this case is to allow ``chan-dongle-extended`` to reboot
 the host when a dongle is unrecoverable crashed.
 
 To grant the permission edit ``/usr/share/dongle/working_directory/install_options.json``
-and set ``allow_host_reboot_on_dongle_unrecoverable_crash`` to ``true``
+````json
+{
+    "allow_host_reboot_on_dongle_unrecoverable_crash": true
+}
+````
 
 ## API
 
