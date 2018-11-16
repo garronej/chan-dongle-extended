@@ -1,3 +1,7 @@
+---
+title: chan-dongle-extended
+---
+
 ## Motivations
 
 ``asterisk-chan-dongle`` let you use Huawei 3G dongles to place phone calls  
