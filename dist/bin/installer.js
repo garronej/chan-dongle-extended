@@ -217,7 +217,7 @@ function program_action_update(options) {
 }
 function program_action_tarball() {
     return __awaiter(this, void 0, void 0, function () {
-        var e_2, _a, e_3, _b, e_4, _c, _module_dir_path, to_distribute_rel_paths_2, to_distribute_rel_paths_2_1, name, _node_modules_path, _d, _e, name, version, arch, build_tarball_file_name, tarball_file_name, releases_dir_path, alt_archs, _f, _g, alt_arch, alt_tarball_file_name;
+        var e_2, _a, e_3, _b, e_4, _c, _module_dir_path, to_distribute_rel_paths_2, to_distribute_rel_paths_2_1, name, _node_modules_path, _d, _e, name, version, arch, build_tarball_file_name, tarball_file_name, releases_dir_path, alt_archs, _loop_1, _f, _g, alt_arch;
         return __generator(this, function (_h) {
             if (!fs.existsSync(exports.node_path)) {
                 throw new Error("Missing node");
@@ -293,19 +293,26 @@ function program_action_tarball() {
             scriptLib.execSyncTrace("rm -r " + _module_dir_path);
             scriptLib.execSyncTrace("ln -sf " + tarball_file_name + " " + build_tarball_file_name("latest", arch), { "cwd": releases_dir_path });
             alt_archs = {
-                "i386": ["x86_64"],
+                "i686": ["x86_64"],
                 "armv6l": ["armv7l", "armv8l"],
                 "armv7l": ["armv8l"]
+            };
+            _loop_1 = function (alt_arch) {
+                var alt_tarball_file_name = build_tarball_file_name(version, alt_arch);
+                var should_proceed = (function () {
+                    var file_path = path.join(releases_dir_path, alt_tarball_file_name);
+                    return (!fs.existsSync(file_path) ||
+                        scriptLib.sh_if("test -h " + file_path));
+                })();
+                if (should_proceed) {
+                    scriptLib.execSyncTrace("ln -sf " + tarball_file_name + " " + alt_tarball_file_name, { "cwd": releases_dir_path });
+                    scriptLib.execSyncTrace("ln -sf " + build_tarball_file_name("latest", arch) + " " + build_tarball_file_name("latest", alt_arch), { "cwd": releases_dir_path });
+                }
             };
             try {
                 for (_f = __values(alt_archs[arch] || []), _g = _f.next(); !_g.done; _g = _f.next()) {
                     alt_arch = _g.value;
-                    alt_tarball_file_name = build_tarball_file_name(version, alt_arch);
-                    //TODO: if is not a symlink
-                    if (!fs.existsSync(path.join(releases_dir_path, alt_tarball_file_name))) {
-                        scriptLib.execSyncTrace("ln -sf " + tarball_file_name + " " + alt_tarball_file_name, { "cwd": releases_dir_path });
-                        scriptLib.execSyncTrace("ln -sf " + build_tarball_file_name("latest", arch) + " " + build_tarball_file_name("latest", alt_arch), { "cwd": releases_dir_path });
-                    }
+                    _loop_1(alt_arch);
                 }
             }
             catch (e_4_1) { e_4 = { error: e_4_1 }; }

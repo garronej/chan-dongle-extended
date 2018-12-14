@@ -277,7 +277,7 @@ async function program_action_tarball() {
     );
 
     const alt_archs = {
-        "i386": ["x86_64"],
+        "i686": ["x86_64"],
         "armv6l": ["armv7l", "armv8l"],
         "armv7l": ["armv8l"]
     };
