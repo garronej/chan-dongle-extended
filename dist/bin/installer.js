@@ -217,8 +217,8 @@ function program_action_update(options) {
 }
 function program_action_tarball() {
     return __awaiter(this, void 0, void 0, function () {
-        var e_2, _a, e_3, _b, _module_dir_path, to_distribute_rel_paths_2, to_distribute_rel_paths_2_1, name, _node_modules_path, _c, _d, name;
-        return __generator(this, function (_e) {
+        var e_2, _a, e_3, _b, e_4, _c, _module_dir_path, to_distribute_rel_paths_2, to_distribute_rel_paths_2_1, name, _node_modules_path, _d, _e, name, version, arch, build_tarball_file_name, tarball_file_name, releases_dir_path, alt_archs, _f, _g, alt_arch, alt_tarball_file_name;
+        return __generator(this, function (_h) {
             if (!fs.existsSync(exports.node_path)) {
                 throw new Error("Missing node");
             }
@@ -240,15 +240,15 @@ function program_action_tarball() {
             }
             _node_modules_path = path.join(_module_dir_path, "node_modules");
             try {
-                for (_c = __values(["@types", "typescript"]), _d = _c.next(); !_d.done; _d = _c.next()) {
-                    name = _d.value;
+                for (_d = __values(["@types", "typescript"]), _e = _d.next(); !_e.done; _e = _d.next()) {
+                    name = _e.value;
                     scriptLib.execSyncTrace("rm -r " + path.join(_node_modules_path, name));
                 }
             }
             catch (e_3_1) { e_3 = { error: e_3_1 }; }
             finally {
                 try {
-                    if (_d && !_d.done && (_b = _c.return)) _b.call(_c);
+                    if (_e && !_e.done && (_b = _d.return)) _b.call(_d);
                 }
                 finally { if (e_3) throw e_3.error; }
             }
@@ -259,7 +259,7 @@ function program_action_tarball() {
             ].join(" "));
             scriptLib.execSyncTrace("find " + _node_modules_path + " -type f -name \"*.ts\" -exec rm -rf {} \\;");
             (function hide_auth_token() {
-                var e_4, _a;
+                var e_5, _a;
                 var files = scriptLib.execSync("find . -name \"package-lock.json\" -o -name \"package.json\"", { "cwd": _module_dir_path })
                     .slice(0, -1)
                     .split("\n")
@@ -272,20 +272,49 @@ function program_action_tarball() {
                             .replace(/[0-9a-f]+:x-oauth-basic/g, "xxxxxxxxxxxxxxxx"), "utf8"));
                     }
                 }
-                catch (e_4_1) { e_4 = { error: e_4_1 }; }
+                catch (e_5_1) { e_5 = { error: e_5_1 }; }
                 finally {
                     try {
                         if (files_1_1 && !files_1_1.done && (_a = files_1.return)) _a.call(files_1);
                     }
-                    finally { if (e_4) throw e_4.error; }
+                    finally { if (e_5) throw e_5.error; }
                 }
             })();
+            version = require(path.join(module_dir_path, "package.json")).version;
+            arch = scriptLib.sh_eval("uname -m");
+            build_tarball_file_name = function (version, arch) { return "dongle_" + version + "_" + arch + ".tar.gz"; };
+            tarball_file_name = build_tarball_file_name(version, arch);
+            releases_dir_path = path.join(module_dir_path, "docs", "releases");
             scriptLib.execSyncTrace([
                 "tar -czf",
-                path.join(module_dir_path, "docs", "releases", "dongle_" + scriptLib.sh_eval("uname -m") + ".tar.gz"),
+                path.join(releases_dir_path, tarball_file_name),
                 "-C " + _module_dir_path + " ."
             ].join(" "));
             scriptLib.execSyncTrace("rm -r " + _module_dir_path);
+            scriptLib.execSyncTrace("ln -sf " + tarball_file_name + " " + build_tarball_file_name("latest", arch), { "cwd": releases_dir_path });
+            alt_archs = {
+                "i386": ["x86_64"],
+                "armv6l": ["armv7l", "armv8l"],
+                "armv7l": ["armv8l"]
+            };
+            try {
+                for (_f = __values(alt_archs[arch] || []), _g = _f.next(); !_g.done; _g = _f.next()) {
+                    alt_arch = _g.value;
+                    alt_tarball_file_name = build_tarball_file_name(version, alt_arch);
+                    //TODO: if is not a symlink
+                    if (!fs.existsSync(path.join(releases_dir_path, alt_tarball_file_name))) {
+                        scriptLib.execSyncTrace("ln -sf " + tarball_file_name + " " + alt_tarball_file_name, { "cwd": releases_dir_path });
+                        scriptLib.execSyncTrace("ln -sf " + build_tarball_file_name("latest", arch) + " " + build_tarball_file_name("latest", alt_arch), { "cwd": releases_dir_path });
+                    }
+                }
+            }
+            catch (e_4_1) { e_4 = { error: e_4_1 }; }
+            finally {
+                try {
+                    if (_g && !_g.done && (_c = _f.return)) _c.call(_f);
+                }
+                finally { if (e_4) throw e_4.error; }
+            }
             console.log("---DONE---");
             return [2 /*return*/];
         });
@@ -436,7 +465,7 @@ var tty0tty;
                     case 2:
                         h_deb_path = path.join(exports.working_directory_path, "linux-headers.deb");
                         web_get = function (url) { return __awaiter(_this, void 0, void 0, function () {
-                            var attemptRemaining, e_5, error, error_1;
+                            var attemptRemaining, e_6, error, error_1;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0:
@@ -453,11 +482,11 @@ var tty0tty;
                                         _a.sent();
                                         return [3 /*break*/, 8];
                                     case 4:
-                                        e_5 = _a.sent();
-                                        error = e_5;
+                                        e_6 = _a.sent();
+                                        error = e_6;
                                         if (!(attemptRemaining !== 0)) return [3 /*break*/, 6];
                                         if (error.cause === "HTTP ERROR CODE") {
-                                            error_1 = e_5;
+                                            error_1 = e_6;
                                             if (error_1.code !== 503) {
                                                 throw error_1;
                                             }
@@ -525,7 +554,7 @@ var tty0tty;
                         _a.sent();
                         return [4 /*yield*/, (function install_deb() {
                                 return __awaiter(this, void 0, void 0, function () {
-                                    var e_6, _a, _b, _c, pkg_name, e_6_1, _d, exec, onSuccess, build_dir_path;
+                                    var e_7, _a, _b, _c, pkg_name, e_7_1, _d, exec, onSuccess, build_dir_path;
                                     return __generator(this, function (_e) {
                                         switch (_e.label) {
                                             case 0:
@@ -547,14 +576,14 @@ var tty0tty;
                                                 return [3 /*break*/, 2];
                                             case 5: return [3 /*break*/, 8];
                                             case 6:
-                                                e_6_1 = _e.sent();
-                                                e_6 = { error: e_6_1 };
+                                                e_7_1 = _e.sent();
+                                                e_7 = { error: e_7_1 };
                                                 return [3 /*break*/, 8];
                                             case 7:
                                                 try {
                                                     if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
                                                 }
-                                                finally { if (e_6) throw e_6.error; }
+                                                finally { if (e_7) throw e_7.error; }
                                                 return [7 /*endfinally*/];
                                             case 8:
                                                 _d = scriptLib.start_long_running_process("Installing linux headers"), exec = _d.exec, onSuccess = _d.onSuccess;
@@ -853,7 +882,7 @@ var udevRules;
     var rules_path = path.join("/etc/udev/rules.d", "98-" + exports.srv_name + ".rules");
     function create() {
         return __awaiter(this, void 0, void 0, function () {
-            var e_7, _a, unix_user, _b, recordIfNum, ConnectionMonitor, vendorIds, rules, vendorIds_1, vendorIds_1_1, vendorId;
+            var e_8, _a, unix_user, _b, recordIfNum, ConnectionMonitor, vendorIds, rules, vendorIds_1, vendorIds_1_1, vendorId;
             return __generator(this, function (_c) {
                 switch (_c.label) {
                     case 0: return [4 /*yield*/, scriptLib.apt_get_install("usb-modeswitch")];
@@ -888,12 +917,12 @@ var udevRules;
                                 ].join(", ") + "\n";
                             }
                         }
-                        catch (e_7_1) { e_7 = { error: e_7_1 }; }
+                        catch (e_8_1) { e_8 = { error: e_8_1 }; }
                         finally {
                             try {
                                 if (vendorIds_1_1 && !vendorIds_1_1.done && (_a = vendorIds_1.return)) _a.call(vendorIds_1);
                             }
-                            finally { if (e_7) throw e_7.error; }
+                            finally { if (e_8) throw e_8.error; }
                         }
                         rules += [
                             "ACTION==\"add\"",
@@ -907,7 +936,7 @@ var udevRules;
                         scriptLib.execSync("chown " + unix_user + ":" + unix_user + " " + rules_path);
                         return [4 /*yield*/, (function applying_rules() {
                                 return __awaiter(this, void 0, void 0, function () {
-                                    var e_8, _a, e_9, _b, monitor, _c, _d, accessPoint, _e, _f, device_path;
+                                    var e_9, _a, e_10, _b, monitor, _c, _d, accessPoint, _e, _f, device_path;
                                     return __generator(this, function (_g) {
                                         switch (_g.label) {
                                             case 0:
@@ -931,21 +960,21 @@ var udevRules;
                                                                 scriptLib.execSync("chmod u+rw,g+rw,o+rw " + device_path);
                                                             }
                                                         }
-                                                        catch (e_9_1) { e_9 = { error: e_9_1 }; }
+                                                        catch (e_10_1) { e_10 = { error: e_10_1 }; }
                                                         finally {
                                                             try {
                                                                 if (_f && !_f.done && (_b = _e.return)) _b.call(_e);
                                                             }
-                                                            finally { if (e_9) throw e_9.error; }
+                                                            finally { if (e_10) throw e_10.error; }
                                                         }
                                                     }
                                                 }
-                                                catch (e_8_1) { e_8 = { error: e_8_1 }; }
+                                                catch (e_9_1) { e_9 = { error: e_9_1 }; }
                                                 finally {
                                                     try {
                                                         if (_d && !_d.done && (_a = _c.return)) _a.call(_c);
                                                     }
-                                                    finally { if (e_8) throw e_8.error; }
+                                                    finally { if (e_9) throw e_9.error; }
                                                 }
                                                 return [2 /*return*/];
                                         }
@@ -1113,7 +1142,7 @@ function rebuild_node_modules() {
                     _a = scriptLib.start_long_running_process("Building node_modules dependencies"), exec = _a.exec, onSuccess = _a.onSuccess;
                     return [4 /*yield*/, (function build_udev() {
                             return __awaiter(this, void 0, void 0, function () {
-                                var e_10, _a, udev_dir_path, pre_gyp_dir_path, _b, _c, _module_dir_path;
+                                var e_11, _a, udev_dir_path, pre_gyp_dir_path, _b, _c, _module_dir_path;
                                 return __generator(this, function (_d) {
                                     switch (_d.label) {
                                         case 0:
@@ -1132,12 +1161,12 @@ function rebuild_node_modules() {
                                                     catch (_e) { }
                                                 }
                                             }
-                                            catch (e_10_1) { e_10 = { error: e_10_1 }; }
+                                            catch (e_11_1) { e_11 = { error: e_11_1 }; }
                                             finally {
                                                 try {
                                                     if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
                                                 }
-                                                finally { if (e_10) throw e_10.error; }
+                                                finally { if (e_11) throw e_11.error; }
                                             }
                                             return [4 /*yield*/, exec([
                                                     "PATH=" + path.join(module_dir_path) + ":$PATH",
