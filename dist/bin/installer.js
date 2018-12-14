@@ -293,7 +293,6 @@ function program_action_tarball() {
             scriptLib.execSyncTrace("rm -r " + _module_dir_path);
             scriptLib.execSyncTrace("ln -sf " + tarball_file_name + " " + build_tarball_file_name("latest", arch), { "cwd": releases_dir_path });
             alt_archs = {
-                "i686": ["x86_64"],
                 "armv6l": ["armv7l", "armv8l"],
                 "armv7l": ["armv8l"]
             };
@@ -1069,12 +1068,15 @@ function install_prereq() {
     return __awaiter(this, void 0, void 0, function () {
         return __generator(this, function (_a) {
             switch (_a.label) {
-                case 0: return [4 /*yield*/, scriptLib.apt_get_install_if_missing("python", "python")];
+                case 0: return [4 /*yield*/, scriptLib.apt_get_install_if_missing("git", "git")];
                 case 1:
+                    _a.sent();
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("python", "python")];
+                case 2:
                     _a.sent();
                     //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
                     return [4 /*yield*/, scriptLib.apt_get_install_if_missing("python-pip", "pip")];
-                case 2:
+                case 3:
                     //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
                     _a.sent();
                     return [4 /*yield*/, (function installVirtualenv() {
@@ -1120,13 +1122,13 @@ function install_prereq() {
                                 });
                             });
                         })()];
-                case 3:
-                    _a.sent();
-                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("build-essential")];
                 case 4:
                     _a.sent();
-                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("libudev-dev")];
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("build-essential")];
                 case 5:
+                    _a.sent();
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("libudev-dev")];
+                case 6:
                     _a.sent();
                     return [2 /*return*/];
             }

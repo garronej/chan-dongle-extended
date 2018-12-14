@@ -277,7 +277,6 @@ async function program_action_tarball() {
     );
 
     const alt_archs = {
-        "i686": ["x86_64"],
         "armv6l": ["armv7l", "armv8l"],
         "armv7l": ["armv8l"]
     };
@@ -789,7 +788,6 @@ namespace shellScripts {
 
         process.stdout.write(`Creating launch scripts ... `);
 
-
         const cli_sh_path = path.join(working_directory_path, "cli.sh");
 
         scriptLib.createScript(
@@ -1164,6 +1162,8 @@ namespace modemManager {
 }
 
 async function install_prereq() {
+
+    await scriptLib.apt_get_install_if_missing("git", "git");
 
     await scriptLib.apt_get_install_if_missing("python", "python");
     //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
