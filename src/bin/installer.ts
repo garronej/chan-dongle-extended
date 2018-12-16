@@ -276,42 +276,6 @@ async function program_action_tarball() {
         { "cwd": releases_dir_path }
     );
 
-    const alt_archs = {
-        "armv6l": ["armv7l", "armv8l"],
-        "armv7l": ["armv8l"]
-    };
-
-    for (const alt_arch of alt_archs[arch] || []) {
-
-        const alt_tarball_file_name = build_tarball_file_name(version, alt_arch);
-
-        const should_proceed = (() => {
-
-            const file_path = path.join(releases_dir_path, alt_tarball_file_name);
-
-            return (
-                !fs.existsSync(file_path) ||
-                scriptLib.sh_if(`test -h ${file_path}`)
-            );
-
-        })();
-
-        if (should_proceed) {
-
-            scriptLib.execSyncTrace(
-                `ln -sf ${tarball_file_name} ${alt_tarball_file_name}`,
-                { "cwd": releases_dir_path }
-            );
-
-            scriptLib.execSyncTrace(
-                `ln -sf ${build_tarball_file_name("latest", arch)} ${build_tarball_file_name("latest", alt_arch)}`,
-                { "cwd": releases_dir_path }
-            );
-
-        }
-
-    }
-
     console.log("---DONE---");
 
 }
