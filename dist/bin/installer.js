@@ -341,15 +341,15 @@ function install(options) {
                     return [4 /*yield*/, tty0tty.install()];
                 case 7:
                     _a.sent();
-                    if (!InstallOptions_1.InstallOptions.get().assume_chan_dongle_installed) return [3 /*break*/, 8];
-                    chan_dongle.linkDongleConfigFile();
-                    return [3 /*break*/, 10];
-                case 8: return [4 /*yield*/, chan_dongle.install()];
-                case 9:
+                    if (!!InstallOptions_1.InstallOptions.get().assume_chan_dongle_installed) return [3 /*break*/, 9];
+                    return [4 /*yield*/, asterisk_chan_dongle.build(Astdirs_1.Astdirs.get().astmoddir, InstallOptions_1.InstallOptions.get().ast_include_dir_path, build_ast_cmdline())];
+                case 8:
                     _a.sent();
-                    _a.label = 10;
-                case 10: return [4 /*yield*/, udevRules.create()];
-                case 11:
+                    _a.label = 9;
+                case 9:
+                    asterisk_chan_dongle.linkDongleConfigFile();
+                    return [4 /*yield*/, udevRules.create()];
+                case 10:
                     _a.sent();
                     shellScripts.create();
                     asterisk_manager.enable();
@@ -384,7 +384,7 @@ function uninstall(verbose) {
     }); };
     runRecover("Stopping running instance ... ", function () { return scriptLib.stopProcessSync(exports.pidfile_path, "SIGUSR2"); });
     runRecover("Removing systemd config file ... ", function () { return scriptLib.systemd.deleteConfigFile(exports.srv_name); });
-    runRecover("Uninstalling chan_dongle.so ... ", function () { return chan_dongle.remove(); });
+    runRecover("Uninstalling chan_dongle.so ... ", function () { return asterisk_chan_dongle.remove(); });
     runRecover("Restoring asterisk manager ... ", function () { return asterisk_manager.restore(); });
     runRecover("Removing binary symbolic links ... ", function () { return shellScripts.remove_symbolic_links(); });
     runRecover("Removing udev rules ... ", function () { return udevRules.remove(); });
@@ -659,8 +659,8 @@ var tty0tty;
     }
     tty0tty.remove = remove;
 })(tty0tty || (tty0tty = {}));
-var chan_dongle;
-(function (chan_dongle) {
+var asterisk_chan_dongle;
+(function (asterisk_chan_dongle) {
     function linkDongleConfigFile() {
         var astetcdir = Astdirs_1.Astdirs.get().astetcdir;
         var dongle_etc_path = path.join(astetcdir, "dongle.conf");
@@ -674,46 +674,48 @@ var chan_dongle;
         scriptLib.execSync("ln -s " + dongle_loc_path + " " + dongle_etc_path);
         scriptLib.execSync("chmod u+rw,g+r,o+r " + dongle_loc_path);
     }
-    chan_dongle.linkDongleConfigFile = linkDongleConfigFile;
-    function install() {
+    asterisk_chan_dongle.linkDongleConfigFile = linkDongleConfigFile;
+    function build(dest_dir_path, ast_include_dir_path, ast_cmdline) {
         return __awaiter(this, void 0, void 0, function () {
-            var chan_dongle_dir_path, _a, exec, onSuccess, ast_ver, cdExec;
+            var src_dir_path, _a, exec, onSuccess, ast_ver, cdExec;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
-                        chan_dongle_dir_path = path.join(exports.working_directory_path, "asterisk-chan-dongle");
-                        return [4 /*yield*/, scriptLib.apt_get_install_if_missing("automake")];
+                        src_dir_path = path.join(dest_dir_path, "asterisk-chan-dongle");
+                        return [4 /*yield*/, scriptLib.apt_get_install_if_missing("git", "git")];
                     case 1:
                         _b.sent();
-                        _a = scriptLib.start_long_running_process("Building and installing asterisk chan_dongle ( may take several minutes )"), exec = _a.exec, onSuccess = _a.onSuccess;
-                        ast_ver = scriptLib.sh_eval(build_ast_cmdline() + " -V").match(/^Asterisk\s+([0-9\.]+)/)[1];
-                        cdExec = function (cmd) { return exec(cmd, { "cwd": chan_dongle_dir_path }); };
-                        return [4 /*yield*/, exec("git clone https://github.com/garronej/asterisk-chan-dongle " + chan_dongle_dir_path)];
+                        return [4 /*yield*/, scriptLib.apt_get_install_if_missing("automake")];
                     case 2:
                         _b.sent();
-                        return [4 /*yield*/, cdExec("./bootstrap")];
+                        _a = scriptLib.start_long_running_process("Building and installing asterisk chan_dongle ( may take several minutes )"), exec = _a.exec, onSuccess = _a.onSuccess;
+                        ast_ver = scriptLib.sh_eval(ast_cmdline + " -V").match(/^Asterisk\s+([0-9\.]+)/)[1];
+                        cdExec = function (cmd) { return exec(cmd, { "cwd": src_dir_path }); };
+                        return [4 /*yield*/, exec("git clone https://github.com/garronej/asterisk-chan-dongle " + src_dir_path)];
                     case 3:
                         _b.sent();
-                        return [4 /*yield*/, cdExec("./configure --with-astversion=" + ast_ver + " --with-asterisk=" + InstallOptions_1.InstallOptions.get().ast_include_dir_path)];
+                        return [4 /*yield*/, cdExec("./bootstrap")];
                     case 4:
                         _b.sent();
-                        return [4 /*yield*/, cdExec("make")];
+                        return [4 /*yield*/, cdExec("./configure --with-astversion=" + ast_ver + " --with-asterisk=" + ast_include_dir_path)];
                     case 5:
                         _b.sent();
-                        return [4 /*yield*/, cdExec("cp chan_dongle.so " + Astdirs_1.Astdirs.get().astmoddir)];
+                        return [4 /*yield*/, cdExec("make")];
                     case 6:
                         _b.sent();
-                        return [4 /*yield*/, exec("rm -r " + chan_dongle_dir_path)];
+                        return [4 /*yield*/, cdExec("mv chan_dongle.so " + dest_dir_path)];
                     case 7:
                         _b.sent();
-                        linkDongleConfigFile();
+                        return [4 /*yield*/, exec("rm -r " + src_dir_path)];
+                    case 8:
+                        _b.sent();
                         onSuccess("OK");
                         return [2 /*return*/];
                 }
             });
         });
     }
-    chan_dongle.install = install;
+    asterisk_chan_dongle.build = build;
     function remove() {
         var _a = Astdirs_1.Astdirs.get(), astmoddir = _a.astmoddir, astetcdir = _a.astetcdir;
         scriptLib.execSyncQuiet("rm -rf " + path.join(astetcdir, "dongle.conf"));
@@ -723,8 +725,8 @@ var chan_dongle;
         catch (_b) { }
         scriptLib.execSyncQuiet("rm -f " + path.join(astmoddir, "chan_dongle.so"));
     }
-    chan_dongle.remove = remove;
-})(chan_dongle || (chan_dongle = {}));
+    asterisk_chan_dongle.remove = remove;
+})(asterisk_chan_dongle || (asterisk_chan_dongle = {}));
 var shellScripts;
 (function (shellScripts) {
     var get_uninstaller_link_path = function () { return path.join(Astdirs_1.Astdirs.get().astsbindir, path.basename(uninstaller_link_default_path)); };
@@ -1109,10 +1111,19 @@ function install_prereq() {
 ;
 function build_ast_cmdline() {
     var _a = InstallOptions_1.InstallOptions.get(), ld_library_path_for_asterisk = _a.ld_library_path_for_asterisk, asterisk_main_conf = _a.asterisk_main_conf;
-    var astsbindir = Astdirs_1.Astdirs.get().astsbindir;
-    return "LD_LIBRARY_PATH=" + ld_library_path_for_asterisk + " " + path.join(astsbindir, "asterisk") + " -C " + asterisk_main_conf;
+    return build_ast_cmdline.build_from_args(ld_library_path_for_asterisk, asterisk_main_conf);
 }
 exports.build_ast_cmdline = build_ast_cmdline;
+(function (build_ast_cmdline) {
+    function build_from_args(ld_library_path_for_asterisk, asterisk_main_conf) {
+        return [
+            "LD_LIBRARY_PATH=" + ld_library_path_for_asterisk,
+            path.join(Astdirs_1.Astdirs.getStatic(asterisk_main_conf).astsbindir, "asterisk"),
+            "-C " + asterisk_main_conf
+        ].join(" ");
+    }
+    build_ast_cmdline.build_from_args = build_from_args;
+})(build_ast_cmdline = exports.build_ast_cmdline || (exports.build_ast_cmdline = {}));
 function rebuild_node_modules() {
     return __awaiter(this, void 0, void 0, function () {
         var _a, exec, onSuccess;
@@ -1195,22 +1206,24 @@ if (require.main === module) {
         return scriptLib.apt_get_install.record_installed_package(installed_pkg_record_path, package_name);
     };
     Promise.resolve().then(function () { return require("commander"); }).then(function (program) {
-        var _install = program.command("install");
-        for (var key in InstallOptions_1.InstallOptions.defaults) {
-            var value = InstallOptions_1.InstallOptions.defaults[key];
-            switch (typeof value) {
-                case "string":
-                    _install = _install.option("--" + key + " [{" + key + "}]", "default: " + value);
-                    break;
-                case "number":
-                    _install = _install.option("--" + key + " <{" + key + "}>", "default: " + value, parseInt);
-                    break;
-                case "boolean":
-                    _install = _install.option("--" + key, "default: " + value);
-                    break;
+        {
+            var _install = program.command("install");
+            for (var key in InstallOptions_1.InstallOptions.defaults) {
+                var value = InstallOptions_1.InstallOptions.defaults[key];
+                switch (typeof value) {
+                    case "string":
+                        _install = _install.option("--" + key + " [{" + key + "}]", "default: " + value);
+                        break;
+                    case "number":
+                        _install = _install.option("--" + key + " <{" + key + "}>", "default: " + value, parseInt);
+                        break;
+                    case "boolean":
+                        _install = _install.option("--" + key, "default: " + value);
+                        break;
+                }
             }
+            _install.action(function (options) { return program_action_install(options); });
         }
-        _install.action(function (options) { return program_action_install(options); });
         program
             .command("uninstall")
             .action(function () { return program_action_uninstall(); });
@@ -1221,6 +1234,14 @@ if (require.main === module) {
         program
             .command("tarball")
             .action(function () { return program_action_tarball(); });
+        program
+            .command("build-asterisk-chan-dongle")
+            .usage("Only generate ")
+            .option("--dest_dir [{dest_dir}]")
+            .option("--asterisk_main_conf [{asterisk_main_conf}]")
+            .option("--ast_include_dir_path [{ast_include_dir_path}]")
+            .option("--ld_library_path_for_asterisk [{ld_library_path_for_asterisk}]")
+            .action(function (options) { return asterisk_chan_dongle.build(options["dest_dir"] || process.cwd(), options["ast_include_dir_path"] || "/usr/include", build_ast_cmdline.build_from_args(options["ld_library_path_for_asterisk"] || "", options["asterisk_main_conf"] || "/etc/asterisk/asterisk.conf")); });
         program.parse(process.argv);
     });
 }

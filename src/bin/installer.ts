@@ -333,15 +333,17 @@ async function install(options: Partial<InstallOptions>) {
 
     await tty0tty.install();
 
-    if (InstallOptions.get().assume_chan_dongle_installed) {
+    if (!InstallOptions.get().assume_chan_dongle_installed) {
 
-        chan_dongle.linkDongleConfigFile();
-
-    } else {
-
-        await chan_dongle.install();
+        await asterisk_chan_dongle.build(
+            Astdirs.get().astmoddir,
+            InstallOptions.get().ast_include_dir_path,
+            build_ast_cmdline()
+        );
 
     }
+
+    asterisk_chan_dongle.linkDongleConfigFile();
 
     await udevRules.create();
 
@@ -391,7 +393,7 @@ function uninstall(verbose: false | "VERBOSE" = false) {
 
     runRecover("Removing systemd config file ... ", () => scriptLib.systemd.deleteConfigFile(srv_name));
 
-    runRecover("Uninstalling chan_dongle.so ... ", () => chan_dongle.remove());
+    runRecover("Uninstalling chan_dongle.so ... ", () => asterisk_chan_dongle.remove());
 
     runRecover("Restoring asterisk manager ... ", () => asterisk_manager.restore());
 
@@ -660,7 +662,7 @@ namespace tty0tty {
 
 }
 
-namespace chan_dongle {
+namespace asterisk_chan_dongle {
 
 
     export function linkDongleConfigFile(): void {
@@ -689,9 +691,15 @@ namespace chan_dongle {
 
     }
 
-    export async function install() {
+    export async function build(
+        dest_dir_path: string, 
+        ast_include_dir_path: string,
+        ast_cmdline: string
+    ){
 
-        const chan_dongle_dir_path = path.join(working_directory_path, "asterisk-chan-dongle");
+        const src_dir_path = path.join(dest_dir_path, "asterisk-chan-dongle");
+
+        await scriptLib.apt_get_install_if_missing("git", "git");
 
         await scriptLib.apt_get_install_if_missing("automake");
 
@@ -699,23 +707,21 @@ namespace chan_dongle {
             `Building and installing asterisk chan_dongle ( may take several minutes )`
         );
 
-        const ast_ver = scriptLib.sh_eval(`${build_ast_cmdline()} -V`).match(/^Asterisk\s+([0-9\.]+)/)![1];
+        const ast_ver = scriptLib.sh_eval(`${ast_cmdline} -V`).match(/^Asterisk\s+([0-9\.]+)/)![1];
 
-        const cdExec = (cmd: string) => exec(cmd, { "cwd": chan_dongle_dir_path });
+        const cdExec = (cmd: string) => exec(cmd, { "cwd": src_dir_path });
 
-        await exec(`git clone https://github.com/garronej/asterisk-chan-dongle ${chan_dongle_dir_path}`);
+        await exec(`git clone https://github.com/garronej/asterisk-chan-dongle ${src_dir_path}`);
 
         await cdExec("./bootstrap");
 
-        await cdExec(`./configure --with-astversion=${ast_ver} --with-asterisk=${InstallOptions.get().ast_include_dir_path}`);
+        await cdExec(`./configure --with-astversion=${ast_ver} --with-asterisk=${ast_include_dir_path}`);
 
         await cdExec("make");
 
-        await cdExec(`cp chan_dongle.so ${Astdirs.get().astmoddir}`);
+        await cdExec(`mv chan_dongle.so ${dest_dir_path}`);
 
-        await exec(`rm -r ${chan_dongle_dir_path}`);
-
-        linkDongleConfigFile();
+        await exec(`rm -r ${src_dir_path}`);
 
         onSuccess("OK");
 
@@ -1180,9 +1186,28 @@ async function install_prereq() {
 export function build_ast_cmdline(): string {
 
     const { ld_library_path_for_asterisk, asterisk_main_conf } = InstallOptions.get();
-    const { astsbindir } = Astdirs.get();
 
-    return `LD_LIBRARY_PATH=${ld_library_path_for_asterisk} ${path.join(astsbindir, "asterisk")} -C ${asterisk_main_conf}`;
+    return build_ast_cmdline.build_from_args(
+        ld_library_path_for_asterisk,
+        asterisk_main_conf
+    );
+
+}
+
+export namespace build_ast_cmdline {
+
+    export function build_from_args(
+        ld_library_path_for_asterisk: string,
+        asterisk_main_conf: string
+    ): string {
+
+        return [
+            `LD_LIBRARY_PATH=${ld_library_path_for_asterisk}`,
+            path.join(Astdirs.getStatic(asterisk_main_conf).astsbindir, "asterisk"),
+            `-C ${asterisk_main_conf}`
+        ].join(" ");
+
+    }
 
 }
 
@@ -1255,27 +1280,31 @@ if (require.main === module) {
 
     import("commander").then(program => {
 
-        let _install = program.command("install");
+        {
 
-        for (let key in InstallOptions.defaults) {
+            let _install = program.command("install");
 
-            let value = InstallOptions.defaults[key];
+            for (let key in InstallOptions.defaults) {
 
-            switch (typeof value) {
-                case "string":
-                    _install = _install.option(`--${key} [{${key}}]`, `default: ${value}`);
-                    break;
-                case "number":
-                    _install = _install.option(`--${key} <{${key}}>`, `default: ${value}`, parseInt);
-                    break;
-                case "boolean":
-                    _install = _install.option(`--${key}`, `default: ${value}`);
-                    break;
+                let value = InstallOptions.defaults[key];
+
+                switch (typeof value) {
+                    case "string":
+                        _install = _install.option(`--${key} [{${key}}]`, `default: ${value}`);
+                        break;
+                    case "number":
+                        _install = _install.option(`--${key} <{${key}}>`, `default: ${value}`, parseInt);
+                        break;
+                    case "boolean":
+                        _install = _install.option(`--${key}`, `default: ${value}`);
+                        break;
+                }
+
             }
 
-        }
+            _install.action(options => program_action_install(options));
 
-        _install.action(options => program_action_install(options));
+        }
 
         program
             .command("uninstall")
@@ -1293,6 +1322,22 @@ if (require.main === module) {
             .action(() => program_action_tarball())
             ;
 
+        program
+            .command("build-asterisk-chan-dongle")
+            .usage("Only generate ")
+            .option("--dest_dir [{dest_dir}]")
+            .option("--asterisk_main_conf [{asterisk_main_conf}]")
+            .option("--ast_include_dir_path [{ast_include_dir_path}]")
+            .option("--ld_library_path_for_asterisk [{ld_library_path_for_asterisk}]")
+            .action(options => asterisk_chan_dongle.build(
+                options["dest_dir"] || process.cwd(),
+                options["ast_include_dir_path"] || "/usr/include",
+                build_ast_cmdline.build_from_args(
+                    options["ld_library_path_for_asterisk"] || "",
+                    options["asterisk_main_conf"] || "/etc/asterisk/asterisk.conf"
+                )
+            ))
+            ;
 
         program.parse(process.argv);
 

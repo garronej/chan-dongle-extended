@@ -9,3 +9,6 @@ export declare namespace getIsProd {
     let value: boolean | undefined;
 }
 export declare function build_ast_cmdline(): string;
+export declare namespace build_ast_cmdline {
+    function build_from_args(ld_library_path_for_asterisk: string, asterisk_main_conf: string): string;
+}

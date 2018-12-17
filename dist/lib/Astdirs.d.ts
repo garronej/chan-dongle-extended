@@ -14,5 +14,6 @@ export declare namespace Astdirs {
         "astsbindir": string;
     };
     function set(asterisk_main_config_file_path: string): void;
+    function getStatic(asterisk_main_config_file_path: string): Astdirs;
     function get(): Astdirs;
 }

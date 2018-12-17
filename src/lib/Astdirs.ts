@@ -26,6 +26,19 @@ export namespace Astdirs {
 
     export function set(asterisk_main_config_file_path: string): void{
 
+        const astdirs=getStatic(asterisk_main_config_file_path);
+
+        fs.writeFileSync(
+            file_path,
+            Buffer.from(JSON.stringify(astdirs, null, 2), "utf8")
+        );
+
+        instance= astdirs;
+
+    }
+
+    export function getStatic(asterisk_main_config_file_path: string): Astdirs {
+
         const raw = fs.readFileSync(asterisk_main_config_file_path).toString("utf8");
 
         const astdirs: Astdirs= {...Astdirs.phony };
@@ -36,12 +49,7 @@ export namespace Astdirs {
 
         }
 
-        fs.writeFileSync(
-            file_path,
-            Buffer.from(JSON.stringify(astdirs, null, 2), "utf8")
-        );
-
-        instance= astdirs;
+        return astdirs;
 
     }
 
