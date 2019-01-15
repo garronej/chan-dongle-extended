@@ -158,7 +158,7 @@ function atBridge(accessPoint, modem, tty0tty) {
             return;
         }
         if (!isPing) {
-            debug("(AT) " + (isRespFromModem ? "Modem" : "Internally generated") + " response: " + readableAt(rawResp));
+            debug("(AT) " + (!isRespFromModem ? "( fake )" : "") + "modem response: " + readableAt(rawResp));
         }
         portVirtual.writeAndDrain(rawResp);
     };
@@ -168,7 +168,7 @@ function atBridge(accessPoint, modem, tty0tty) {
         }
         var command = buff.toString("utf8") + "\r";
         if (command !== "AT\r") {
-            debug("(AT) command from ast-chan-dongle: " + readableAt(command));
+            debug("(AT) command from asterisk-chan-dongle: " + readableAt(command));
         }
         var ok = "\r\nOK\r\n";
         if (command === "ATZ\r" ||
@@ -202,14 +202,15 @@ function atBridge(accessPoint, modem, tty0tty) {
             return forwardResp(raw, true);
         });
     });
-    //Wait! test this fist
     portVirtual.once("data", function () {
-        return modem.evtUnsolicitedAtMessage.attach(function (_a) {
-            var id = _a.id;
-            return id !== "CX_BOOT_URC" && id !== "CX_RSSI_URC";
-        }, function (urc) {
-            debug("(AT) forwarding urc: " + readableAt(urc.raw));
-            portVirtual.writeAndDrain(urc.raw);
+        return modem.evtUnsolicitedAtMessage.attach(function (urc) {
+            var doForward = (urc.id === "CX_BOOT_URC" ||
+                urc.id === "CX_RSSI_URC" ||
+                (urc instanceof ts_gsm_modem_1.AtMessage.P_CMTI_URC) && urc.index < 0);
+            if (doForward) {
+                portVirtual.writeAndDrain(urc.raw);
+            }
+            debug("(AT) urc: " + readableAt(urc.raw) + " ( " + (doForward ? "forwarded" : "NOT forwarded") + " to asterisk-chan-dongle )");
         });
     });
 }
