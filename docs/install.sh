@@ -10,8 +10,6 @@ if [[ $EUID -ne 0 ]]; then
     exit 1
 fi
 
-echo "We will now download and install chan-dongle-extended, it may take some time."
-
 if [ -d "$INSTALL_PATH" ]; then
 
     echo "Directory $INSTALL_PATH already exsist, uninstalling previous install"
@@ -22,16 +20,20 @@ if [ -d "$INSTALL_PATH" ]; then
 
 fi
 
-URL="https://garronej.github.io/chan-dongle-extended/releases/dongle_latest_"$(uname -m)".tar.gz"
+RELEASES=$(wget -qO- https://garronej.github.io/chan-dongle-extended/releases.json)
 
-wget $URL -q --show-progress -O $TARBALL_PATH
+VERSION=$(echo $RELEASES | grep -Po "\"$(uname -m)\": *\K\"[^\"]*\"")
+
+DL_URL=$(echo $RELEASES | grep -Po "$VERSION: *\K\"[^\"]*\"" | sed 's/^"\(.*\)"$/\1/')
+
+wget $DL_URL -q --show-progress -O $TARBALL_PATH
 
 mkdir $INSTALL_PATH
 
-tar -xzf $TARBALL_PATH -C $INSTALL_PATH
+printf "Extracting"
+
+tar -xzf $TARBALL_PATH -C $INSTALL_PATH --checkpoint=.100
 
 rm $TARBALL_PATH
 
-cd $INSTALL_PATH
-
-./node dist/bin/installer install
+cd $INSTALL_PATH && ./node dist/bin/installer install

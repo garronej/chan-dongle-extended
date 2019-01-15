@@ -50,6 +50,10 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
+var __spread = (this && this.__spread) || function () {
+    for (var ar = [], i = 0; i < arguments.length; i++) ar = ar.concat(__read(arguments[i]));
+    return ar;
+};
 var __values = (this && this.__values) || function (o) {
     var m = typeof Symbol === "function" && o[Symbol.iterator], i = 0;
     if (m) return m.call(o);
@@ -67,6 +71,7 @@ var path = require("path");
 var scriptLib = require("scripting-tools");
 var readline = require("readline");
 var ini_extended_1 = require("ini-extended");
+var crypto = require("crypto");
 exports.unix_user_default = "chan_dongle";
 exports.srv_name = "chan_dongle";
 var module_dir_path = path.join(__dirname, "..", "..");
@@ -82,9 +87,7 @@ var to_distribute_rel_paths = [
     "README.md",
     "res/" + path.basename(exports.db_path),
     "dist",
-    "node_modules",
-    "package.json",
-    path.basename(exports.node_path)
+    "package.json"
 ];
 //Must be after declaration of working_directory_path and unix_user
 var InstallOptions_1 = require("../lib/InstallOptions");
@@ -163,12 +166,12 @@ function program_action_uninstall() {
 }
 function program_action_update(options) {
     return __awaiter(this, void 0, void 0, function () {
-        var e_1, _a, _module_dir_path, _b, db_schema_path, _db_schema_path, unix_user, _c, node_python_messaging_dir_path, _node_python_messaging_dir_path, _d, udev_dir_path, _udev_dir_path, to_distribute_rel_paths_1, to_distribute_rel_paths_1_1, name;
-        return __generator(this, function (_e) {
-            switch (_e.label) {
+        var e_1, _a, _module_dir_path, _b, db_schema_path, _db_schema_path, unix_user, _c, node_python_messaging_dir_path, _node_python_messaging_dir_path, _d, udev_dir_path, _udev_dir_path, _e, _f, name;
+        return __generator(this, function (_g) {
+            switch (_g.label) {
                 case 0:
                     if (!getIsProd()) {
-                        console.log(scriptLib.colorize("Should not update prod", "RED"));
+                        console.log(scriptLib.colorize("Should not update dev", "RED"));
                         process.exit(1);
                     }
                     scriptLib.stopProcessSync(exports.pidfile_path, "SIGUSR2");
@@ -191,21 +194,21 @@ function program_action_update(options) {
                         scriptLib.fs_move("MOVE", udev_dir_path, _udev_dir_path);
                     }
                     try {
-                        for (to_distribute_rel_paths_1 = __values(to_distribute_rel_paths), to_distribute_rel_paths_1_1 = to_distribute_rel_paths_1.next(); !to_distribute_rel_paths_1_1.done; to_distribute_rel_paths_1_1 = to_distribute_rel_paths_1.next()) {
-                            name = to_distribute_rel_paths_1_1.value;
+                        for (_e = __values(__spread(to_distribute_rel_paths, ["node_module", "node"])), _f = _e.next(); !_f.done; _f = _e.next()) {
+                            name = _f.value;
                             scriptLib.fs_move("MOVE", _module_dir_path, module_dir_path, name);
                         }
                     }
                     catch (e_1_1) { e_1 = { error: e_1_1 }; }
                     finally {
                         try {
-                            if (to_distribute_rel_paths_1_1 && !to_distribute_rel_paths_1_1.done && (_a = to_distribute_rel_paths_1.return)) _a.call(to_distribute_rel_paths_1);
+                            if (_f && !_f.done && (_a = _e.return)) _a.call(_e);
                         }
                         finally { if (e_1) throw e_1.error; }
                     }
                     return [4 /*yield*/, rebuild_node_modules()];
                 case 1:
-                    _e.sent();
+                    _g.sent();
                     if (!InstallOptions_1.InstallOptions.get().do_not_create_systemd_conf) {
                         scriptLib.execSync("systemctl start " + exports.srv_name);
                     }
@@ -215,85 +218,126 @@ function program_action_update(options) {
         });
     });
 }
-function program_action_tarball() {
+function program_action_release() {
     return __awaiter(this, void 0, void 0, function () {
-        var e_2, _a, e_3, _b, _module_dir_path, to_distribute_rel_paths_2, to_distribute_rel_paths_2_1, name, _node_modules_path, _c, _d, name, version, arch, build_tarball_file_name, tarball_file_name, releases_dir_path;
+        var e_2, _a, e_3, _b, _module_dir_path, to_distribute_rel_paths_1, to_distribute_rel_paths_1_1, name, arch, releases_file_path, releases, deps_digest_filename, deps_digest, previous_release_dir_path, node_modules_need_update, last_version, _c, _d, name, _node_modules_path, version, tarball_file_name, tarball_file_path, dl_url;
         return __generator(this, function (_e) {
-            if (!fs.existsSync(exports.node_path)) {
-                throw new Error("Missing node");
-            }
-            scriptLib.enableCmdTrace();
-            _module_dir_path = path.join("/tmp", path.basename(module_dir_path));
-            scriptLib.execSyncTrace("rm -rf " + _module_dir_path);
-            try {
-                for (to_distribute_rel_paths_2 = __values(to_distribute_rel_paths), to_distribute_rel_paths_2_1 = to_distribute_rel_paths_2.next(); !to_distribute_rel_paths_2_1.done; to_distribute_rel_paths_2_1 = to_distribute_rel_paths_2.next()) {
-                    name = to_distribute_rel_paths_2_1.value;
-                    scriptLib.fs_move("COPY", module_dir_path, _module_dir_path, name);
-                }
-            }
-            catch (e_2_1) { e_2 = { error: e_2_1 }; }
-            finally {
-                try {
-                    if (to_distribute_rel_paths_2_1 && !to_distribute_rel_paths_2_1.done && (_a = to_distribute_rel_paths_2.return)) _a.call(to_distribute_rel_paths_2);
-                }
-                finally { if (e_2) throw e_2.error; }
-            }
-            _node_modules_path = path.join(_module_dir_path, "node_modules");
-            try {
-                for (_c = __values(["@types", "typescript"]), _d = _c.next(); !_d.done; _d = _c.next()) {
-                    name = _d.value;
-                    scriptLib.execSyncTrace("rm -r " + path.join(_node_modules_path, name));
-                }
-            }
-            catch (e_3_1) { e_3 = { error: e_3_1 }; }
-            finally {
-                try {
-                    if (_d && !_d.done && (_b = _c.return)) _b.call(_c);
-                }
-                finally { if (e_3) throw e_3.error; }
-            }
-            scriptLib.execSyncTrace([
-                "rm -r",
-                path.join(scriptLib.find_module_path("node-python-messaging", _module_dir_path), "dist", "virtual"),
-                path.join(scriptLib.find_module_path("udev", _module_dir_path), "build")
-            ].join(" "));
-            scriptLib.execSyncTrace("find " + _node_modules_path + " -type f -name \"*.ts\" -exec rm -rf {} \\;");
-            (function hide_auth_token() {
-                var e_4, _a;
-                var files = scriptLib.execSync("find . -name \"package-lock.json\" -o -name \"package.json\"", { "cwd": _module_dir_path })
-                    .slice(0, -1)
-                    .split("\n")
-                    .map(function (rp) { return path.join(_module_dir_path, rp); });
-                try {
-                    for (var files_1 = __values(files), files_1_1 = files_1.next(); !files_1_1.done; files_1_1 = files_1.next()) {
-                        var file = files_1_1.value;
-                        fs.writeFileSync(file, Buffer.from(fs.readFileSync(file)
-                            .toString("utf8")
-                            .replace(/[0-9a-f]+:x-oauth-basic/g, "xxxxxxxxxxxxxxxx"), "utf8"));
-                    }
-                }
-                catch (e_4_1) { e_4 = { error: e_4_1 }; }
-                finally {
+            switch (_e.label) {
+                case 0:
+                    scriptLib.enableCmdTrace();
+                    _module_dir_path = path.join("/tmp", path.basename(module_dir_path));
+                    scriptLib.execSyncTrace("rm -rf " + _module_dir_path);
                     try {
-                        if (files_1_1 && !files_1_1.done && (_a = files_1.return)) _a.call(files_1);
+                        for (to_distribute_rel_paths_1 = __values(to_distribute_rel_paths), to_distribute_rel_paths_1_1 = to_distribute_rel_paths_1.next(); !to_distribute_rel_paths_1_1.done; to_distribute_rel_paths_1_1 = to_distribute_rel_paths_1.next()) {
+                            name = to_distribute_rel_paths_1_1.value;
+                            scriptLib.fs_move("COPY", module_dir_path, _module_dir_path, name);
+                        }
                     }
-                    finally { if (e_4) throw e_4.error; }
-                }
-            })();
-            version = require(path.join(module_dir_path, "package.json")).version;
-            arch = scriptLib.sh_eval("uname -m");
-            build_tarball_file_name = function (version, arch) { return "dongle_" + version + "_" + arch + ".tar.gz"; };
-            tarball_file_name = build_tarball_file_name(version, arch);
-            releases_dir_path = path.join(module_dir_path, "docs", "releases");
-            scriptLib.execSyncTrace([
-                "tar -czf",
-                path.join(releases_dir_path, tarball_file_name),
-                "-C " + _module_dir_path + " ."
-            ].join(" "));
-            scriptLib.execSyncTrace("rm -r " + _module_dir_path);
-            scriptLib.execSyncTrace("ln -sf " + tarball_file_name + " " + build_tarball_file_name("latest", arch), { "cwd": releases_dir_path });
-            console.log("---DONE---");
-            return [2 /*return*/];
+                    catch (e_2_1) { e_2 = { error: e_2_1 }; }
+                    finally {
+                        try {
+                            if (to_distribute_rel_paths_1_1 && !to_distribute_rel_paths_1_1.done && (_a = to_distribute_rel_paths_1.return)) _a.call(to_distribute_rel_paths_1);
+                        }
+                        finally { if (e_2) throw e_2.error; }
+                    }
+                    arch = scriptLib.sh_eval("uname -m");
+                    releases_file_path = path.join(module_dir_path, "docs", "releases.json");
+                    releases = require(releases_file_path);
+                    deps_digest_filename = "dependencies.md5";
+                    deps_digest = crypto
+                        .createHash("md5")
+                        .update(Buffer.from(JSON.stringify(require(path.join(module_dir_path, "package-lock.json"))["dependencies"]), "utf8"))
+                        .digest("hex");
+                    previous_release_dir_path = path.join(_module_dir_path, "previous_release");
+                    last_version = releases[arch];
+                    if (!(last_version === undefined)) return [3 /*break*/, 1];
+                    node_modules_need_update = true;
+                    return [3 /*break*/, 3];
+                case 1: return [4 /*yield*/, scriptLib.download_and_extract_tarball(releases[last_version], previous_release_dir_path, "OVERWRITE IF EXIST")];
+                case 2:
+                    _e.sent();
+                    node_modules_need_update = fs.readFileSync(path.join(previous_release_dir_path, deps_digest_filename)).toString("utf8") !== deps_digest;
+                    _e.label = 3;
+                case 3:
+                    if (!node_modules_need_update) {
+                        console.log("node_modules haven't change since last release");
+                        try {
+                            for (_c = __values(["node_modules", "node", deps_digest_filename]), _d = _c.next(); !_d.done; _d = _c.next()) {
+                                name = _d.value;
+                                scriptLib.execSyncTrace("mv " + name + " " + _module_dir_path, { "cwd": previous_release_dir_path });
+                            }
+                        }
+                        catch (e_3_1) { e_3 = { error: e_3_1 }; }
+                        finally {
+                            try {
+                                if (_d && !_d.done && (_b = _c.return)) _b.call(_c);
+                            }
+                            finally { if (e_3) throw e_3.error; }
+                        }
+                    }
+                    else {
+                        console.log("Need to update node_module");
+                        scriptLib.execSyncTrace("sudo env \"PATH=" + path.dirname(process.argv[0]) + ":" + process.env["PATH"] + "\" npm install --production --unsafe-perm", { "cwd": _module_dir_path });
+                        scriptLib.execSyncTrace("rm package-lock.json", { "cwd": _module_dir_path });
+                        fs.writeFileSync(path.join(_module_dir_path, deps_digest_filename), Buffer.from(deps_digest, "utf8"));
+                        _node_modules_path = path.join(_module_dir_path, "node_modules");
+                        scriptLib.execSyncTrace([
+                            "rm -r",
+                            path.join(scriptLib.find_module_path("node-python-messaging", _module_dir_path), "dist", "virtual"),
+                            path.join(scriptLib.find_module_path("udev", _module_dir_path), "build")
+                        ].join(" "));
+                        scriptLib.execSyncTrace("find " + _node_modules_path + " -type f -name \"*.ts\" -exec rm -rf {} \\;");
+                        (function hide_auth_token() {
+                            var e_4, _a;
+                            var files = scriptLib.execSync("find . -name \"package-lock.json\" -o -name \"package.json\"", { "cwd": _module_dir_path })
+                                .slice(0, -1)
+                                .split("\n")
+                                .map(function (rp) { return path.join(_module_dir_path, rp); });
+                            try {
+                                for (var files_1 = __values(files), files_1_1 = files_1.next(); !files_1_1.done; files_1_1 = files_1.next()) {
+                                    var file = files_1_1.value;
+                                    fs.writeFileSync(file, Buffer.from(fs.readFileSync(file)
+                                        .toString("utf8")
+                                        .replace(/[0-9a-f]+:x-oauth-basic/g, "xxxxxxxxxxxxxxxx"), "utf8"));
+                                }
+                            }
+                            catch (e_4_1) { e_4 = { error: e_4_1 }; }
+                            finally {
+                                try {
+                                    if (files_1_1 && !files_1_1.done && (_a = files_1.return)) _a.call(files_1);
+                                }
+                                finally { if (e_4) throw e_4.error; }
+                            }
+                        })();
+                    }
+                    scriptLib.execSyncTrace("rm -rf " + previous_release_dir_path);
+                    version = require(path.join(module_dir_path, "package.json")).version;
+                    tarball_file_name = "dongle_" + version + "_" + arch + ".tar.gz";
+                    tarball_file_path = path.join("/tmp", tarball_file_name);
+                    scriptLib.execSyncTrace([
+                        "tar -czf",
+                        tarball_file_path,
+                        "-C " + _module_dir_path + " ."
+                    ].join(" "));
+                    scriptLib.execSyncTrace("rm -r " + _module_dir_path);
+                    console.log("Start uploading...");
+                    return [4 /*yield*/, require("putasset")(fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
+                            .toString("utf8")
+                            .replace(/\s/g, ""), {
+                            "owner": "garronej",
+                            "repo": "releases",
+                            "tag": "chan-dongle-extended",
+                            "filename": tarball_file_path,
+                            "force": true
+                        })];
+                case 4:
+                    dl_url = _e.sent();
+                    scriptLib.execSyncTrace("rm " + tarball_file_path);
+                    releases[releases[arch] = version + "_" + arch] = dl_url;
+                    fs.writeFileSync(releases_file_path, Buffer.from(JSON.stringify(releases, null, 2), "utf8"));
+                    console.log("---DONE---");
+                    return [2 /*return*/];
+            }
         });
     });
 }
@@ -1232,11 +1276,11 @@ if (require.main === module) {
             .option("--path [{path}]")
             .action(function (options) { return program_action_update(options); });
         program
-            .command("tarball")
-            .action(function () { return program_action_tarball(); });
+            .command("release")
+            .action(function () { return program_action_release(); });
         program
             .command("build-asterisk-chan-dongle")
-            .usage("Only generate ")
+            .usage("Only generate chan_dongle.so ( asterisk module )")
             .option("--dest_dir [{dest_dir}]")
             .option("--asterisk_main_conf [{asterisk_main_conf}]")
             .option("--ast_include_dir_path [{ast_include_dir_path}]")

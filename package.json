@@ -1,15 +1,14 @@
 {
   "name": "chan-dongle-extended",
-  "version": "5.5.0",
+  "version": "5.5.2",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
   "scripts": {
     "postinstall": "cp $(readlink -e $(which node)) ./node",
     "tsc": "./node ./node_modules/typescript/bin/tsc -p ./tsconfig.json",
-    "tsc-w": "node ./node_modules/typescript/bin/tsc -w -p ./tsconfig.json",
     "start": "sudo ./node ./dist/bin/main.js",
-    "tarball": "sudo ./node ./dist/bin/installer tarball",
+    "release": "sudo $(which node) ./dist/bin/installer release",
     "test": "sudo ./node ./dist/test/db"
   },
   "repository": {
@@ -33,13 +32,13 @@
     "ts-ami": "github:garronej/ts-ami",
     "ts-events-extended": "garronej/ts-events-extended",
     "ts-gsm-modem": "git+https://206e4c24cb9a1e4a8d42b7ac86e4a026b02cee42:x-oauth-basic@github.com/garronej/ts-gsm-modem.git",
-    "ts-sip": "github:garronej/ts-sip"
+    "ts-sip": "github:garronej/ts-sip",
+    "node-gyp": "^3.7.0"
   },
   "devDependencies": {
-    "@types/colors": "^1.2.1",
     "@types/node": "^8.9.1",
     "@types/node-persist": "0.0.31",
-    "node-gyp": "^3.7.0",
+    "putasset": "github:garronej/node-putasset#4.1.0",
     "typescript": "^2.9.2"
   }
 }

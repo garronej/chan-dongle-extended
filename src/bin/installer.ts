@@ -4,6 +4,7 @@ import * as path from "path";
 import * as scriptLib from "scripting-tools";
 import * as readline from "readline";
 import { ini } from "ini-extended";
+import * as crypto from "crypto";
 
 export const unix_user_default = "chan_dongle";
 export const srv_name = "chan_dongle";
@@ -23,9 +24,7 @@ const to_distribute_rel_paths = [
     "README.md",
     `res/${path.basename(db_path)}`,
     "dist",
-    "node_modules",
-    "package.json",
-    path.basename(node_path)
+    "package.json"
 ];
 
 //Must be after declaration of working_directory_path and unix_user
@@ -124,7 +123,7 @@ async function program_action_uninstall() {
 async function program_action_update(options) {
 
     if (!getIsProd()) {
-        console.log(scriptLib.colorize("Should not update prod", "RED"));
+        console.log(scriptLib.colorize("Should not update dev", "RED"));
         process.exit(1);
     }
 
@@ -172,7 +171,7 @@ async function program_action_update(options) {
 
     }
 
-    for (const name of to_distribute_rel_paths) {
+    for (const name of [...to_distribute_rel_paths, "node_module", "node"]) {
         scriptLib.fs_move("MOVE", _module_dir_path, module_dir_path, name);
     }
 
@@ -187,11 +186,7 @@ async function program_action_update(options) {
     console.log(scriptLib.colorize("Update success", "GREEN"));
 }
 
-async function program_action_tarball() {
-
-    if (!fs.existsSync(node_path)) {
-        throw new Error(`Missing node`);
-    }
+async function program_action_release() {
 
     scriptLib.enableCmdTrace();
 
@@ -203,77 +198,161 @@ async function program_action_tarball() {
         scriptLib.fs_move("COPY", module_dir_path, _module_dir_path, name);
     }
 
+    const arch = scriptLib.sh_eval("uname -m");
 
-    const _node_modules_path = path.join(_module_dir_path, "node_modules");
+    const releases_file_path = path.join(module_dir_path, "docs", "releases.json");
 
-    for (const name of ["@types", "typescript"]) {
+    const releases = require(releases_file_path);
 
-        scriptLib.execSyncTrace(`rm -r ${path.join(_node_modules_path, name)}`);
+    const deps_digest_filename = "dependencies.md5";
+
+    const deps_digest = crypto
+        .createHash("md5")
+        .update(
+            Buffer.from(
+                JSON.stringify(
+                    require(
+                        path.join(module_dir_path, "package-lock.json")
+                    )["dependencies"]
+                ),
+                "utf8"
+            )
+        )
+        .digest("hex")
+        ;
+
+    const previous_release_dir_path = path.join(_module_dir_path, "previous_release");
+
+    let node_modules_need_update: boolean;
+
+    const last_version = releases[arch];
+
+    if (last_version === undefined) {
+
+        node_modules_need_update = true;
+
+    } else {
+
+        await scriptLib.download_and_extract_tarball(
+            releases[last_version],
+            previous_release_dir_path,
+            "OVERWRITE IF EXIST"
+        );
+
+        node_modules_need_update = fs.readFileSync(
+            path.join(previous_release_dir_path, deps_digest_filename)
+        ).toString("utf8") !== deps_digest;
 
     }
 
-    scriptLib.execSyncTrace([
-        "rm -r",
-        path.join(
-            scriptLib.find_module_path("node-python-messaging", _module_dir_path),
-            "dist", "virtual"
-        ),
-        path.join(
-            scriptLib.find_module_path("udev", _module_dir_path),
-            "build"
-        )
-    ].join(" "));
+    if (!node_modules_need_update) {
 
+        console.log("node_modules haven't change since last release");
 
-    scriptLib.execSyncTrace(`find ${_node_modules_path} -type f -name "*.ts" -exec rm -rf {} \\;`);
+        for (let name of ["node_modules", "node", deps_digest_filename]) {
 
-    (function hide_auth_token() {
-
-        let files = scriptLib.execSync(`find . -name "package-lock.json" -o -name "package.json"`, { "cwd": _module_dir_path })
-            .slice(0, -1)
-            .split("\n")
-            .map(rp => path.join(_module_dir_path, rp));
-
-        for (let file of files) {
-
-            fs.writeFileSync(
-                file,
-                Buffer.from(
-                    fs.readFileSync(file)
-                        .toString("utf8")
-                        .replace(/[0-9a-f]+:x-oauth-basic/g, "xxxxxxxxxxxxxxxx"),
-                    "utf8"
-                )
-            );
+            scriptLib.execSyncTrace(`mv ${name} ${_module_dir_path}`, { "cwd": previous_release_dir_path });
 
         }
 
-    })();
+    } else {
+
+        console.log("Need to update node_module");
+
+        scriptLib.execSyncTrace(
+            `sudo env "PATH=${path.dirname(process.argv[0])}:${process.env["PATH"]}" npm install --production --unsafe-perm`,
+            { "cwd": _module_dir_path }
+        );
+
+        scriptLib.execSyncTrace(`rm package-lock.json`, { "cwd": _module_dir_path });
+
+        fs.writeFileSync(
+            path.join(_module_dir_path, deps_digest_filename),
+            Buffer.from(deps_digest, "utf8")
+        );
+
+        const _node_modules_path = path.join(_module_dir_path, "node_modules");
+
+        scriptLib.execSyncTrace([
+            "rm -r",
+            path.join(
+                scriptLib.find_module_path("node-python-messaging", _module_dir_path),
+                "dist", "virtual"
+            ),
+            path.join(
+                scriptLib.find_module_path("udev", _module_dir_path),
+                "build"
+            )
+        ].join(" "));
+
+        scriptLib.execSyncTrace(`find ${_node_modules_path} -type f -name "*.ts" -exec rm -rf {} \\;`);
+
+        (function hide_auth_token() {
+
+            const files = scriptLib.execSync(`find . -name "package-lock.json" -o -name "package.json"`, { "cwd": _module_dir_path })
+                .slice(0, -1)
+                .split("\n")
+                .map(rp => path.join(_module_dir_path, rp));
+
+            for (let file of files) {
+
+                fs.writeFileSync(
+                    file,
+                    Buffer.from(
+                        fs.readFileSync(file)
+                            .toString("utf8")
+                            .replace(/[0-9a-f]+:x-oauth-basic/g, "xxxxxxxxxxxxxxxx"),
+                        "utf8"
+                    )
+                );
+
+            }
+
+        })();
+
+    }
+
+    scriptLib.execSyncTrace(`rm -rf ${previous_release_dir_path}`);
 
     const { version } = require(path.join(module_dir_path, "package.json"));
 
-    const arch = scriptLib.sh_eval("uname -m");
+    const tarball_file_name = `dongle_${version}_${arch}.tar.gz`;
 
-    const build_tarball_file_name = (
-        version: string,
-        arch: string
-    ) => `dongle_${version}_${arch}.tar.gz`;
-
-    const tarball_file_name = build_tarball_file_name(version, arch);
-
-    const releases_dir_path = path.join(module_dir_path, "docs", "releases");
+    const tarball_file_path = path.join("/tmp", tarball_file_name);
 
     scriptLib.execSyncTrace([
         "tar -czf",
-        path.join(releases_dir_path, tarball_file_name),
+        tarball_file_path,
         `-C ${_module_dir_path} .`
     ].join(" "));
 
     scriptLib.execSyncTrace(`rm -r ${_module_dir_path}`);
 
-    scriptLib.execSyncTrace(
-        `ln -sf ${tarball_file_name} ${build_tarball_file_name("latest", arch)}`,
-        { "cwd": releases_dir_path }
+    console.log("Start uploading...");
+
+    const dl_url = await require("putasset")(
+        fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
+            .toString("utf8")
+            .replace(/\s/g, ""),
+        {
+            "owner": "garronej",
+            "repo": "releases",
+            "tag": "chan-dongle-extended",
+            "filename": tarball_file_path,
+            "force": true
+        }
+    );
+
+    scriptLib.execSyncTrace(`rm ${tarball_file_path}`);
+
+    releases[releases[arch] = `${version}_${arch}`] = dl_url;
+
+    fs.writeFileSync(
+        releases_file_path,
+        Buffer.from(
+            JSON.stringify(releases, null, 2),
+            "utf8"
+        )
     );
 
     console.log("---DONE---");
@@ -692,10 +771,10 @@ namespace asterisk_chan_dongle {
     }
 
     export async function build(
-        dest_dir_path: string, 
+        dest_dir_path: string,
         ast_include_dir_path: string,
         ast_cmdline: string
-    ){
+    ) {
 
         const src_dir_path = path.join(dest_dir_path, "asterisk-chan-dongle");
 
@@ -1318,13 +1397,13 @@ if (require.main === module) {
             ;
 
         program
-            .command("tarball")
-            .action(() => program_action_tarball())
+            .command("release")
+            .action(() => program_action_release())
             ;
 
         program
             .command("build-asterisk-chan-dongle")
-            .usage("Only generate ")
+            .usage("Only generate chan_dongle.so ( asterisk module )")
             .option("--dest_dir [{dest_dir}]")
             .option("--asterisk_main_conf [{asterisk_main_conf}]")
             .option("--ast_include_dir_path [{ast_include_dir_path}]")
