@@ -1,2 +1,4 @@
 {
+  "armv6l": "5.5.2_armv6l",
+  "5.5.2_armv6l": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.2_armv6l.tar.gz"
 }
