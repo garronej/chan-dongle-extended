@@ -158,7 +158,7 @@ function atBridge(accessPoint, modem, tty0tty) {
             return;
         }
         if (!isPing) {
-            debug("(AT) " + (!isRespFromModem ? "( fake )" : "") + "modem response: " + readableAt(rawResp));
+            debug("(AT) " + (!isRespFromModem ? "( fake ) " : "") + "modem response: " + readableAt(rawResp));
         }
         portVirtual.writeAndDrain(rawResp);
     };
@@ -204,13 +204,14 @@ function atBridge(accessPoint, modem, tty0tty) {
     });
     portVirtual.once("data", function () {
         return modem.evtUnsolicitedAtMessage.attach(function (urc) {
-            var doForward = !(urc.id === "CX_BOOT_URC" ||
+            var doNotForward = (urc.id === "CX_BOOT_URC" ||
                 urc.id === "CX_RSSI_URC" ||
-                (urc instanceof ts_gsm_modem_1.AtMessage.P_CMTI_URC) && urc.index < 0);
-            if (doForward) {
+                (urc instanceof ts_gsm_modem_1.AtMessage.P_CMTI_URC) && (urc.index < 0 ||
+                    atBridge.confManagerApi.staticModuleConfiguration.defaults["disablesms"] === "yes"));
+            if (!doNotForward) {
                 portVirtual.writeAndDrain(urc.raw);
             }
-            debug("(AT) urc: " + readableAt(urc.raw) + " ( " + (doForward ? "forwarded" : "NOT forwarded") + " to asterisk-chan-dongle )");
+            debug("(AT) urc: " + readableAt(urc.raw) + " ( " + (doNotForward ? "NOT forwarded" : "forwarded") + " to asterisk-chan-dongle )");
         });
     });
 }

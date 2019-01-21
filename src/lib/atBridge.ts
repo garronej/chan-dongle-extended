@@ -129,7 +129,7 @@ function atBridge(
 
         if (!isPing) {
 
-            debug(`(AT) ${!isRespFromModem ? "( fake )" : ""}modem response: ${readableAt(rawResp)}`);
+            debug(`(AT) ${!isRespFromModem ? "( fake ) " : ""}modem response: ${readableAt(rawResp)}`);
 
         }
 
@@ -198,19 +198,22 @@ function atBridge(
         modem.evtUnsolicitedAtMessage.attach(
             urc => {
 
-                let doForward= !(
+                let doNotForward= (
                     urc.id === "CX_BOOT_URC" ||
                     urc.id === "CX_RSSI_URC" ||
-                    (urc instanceof AtMessage.P_CMTI_URC) && urc.index < 0
+                    (urc instanceof AtMessage.P_CMTI_URC) && (
+                        urc.index < 0 ||
+                        atBridge.confManagerApi.staticModuleConfiguration.defaults["disablesms"] === "yes"
+                    )
                 );
 
-                if( doForward ){
+                if( !doNotForward ){
 
                     portVirtual.writeAndDrain(urc.raw);
 
                 }
 
-                debug(`(AT) urc: ${readableAt(urc.raw)} ( ${doForward?"forwarded":"NOT forwarded"} to asterisk-chan-dongle )`);
+                debug(`(AT) urc: ${readableAt(urc.raw)} ( ${doNotForward?"NOT forwarded":"forwarded"} to asterisk-chan-dongle )`);
 
             })
     );
