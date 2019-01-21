@@ -204,7 +204,7 @@ function atBridge(accessPoint, modem, tty0tty) {
     });
     portVirtual.once("data", function () {
         return modem.evtUnsolicitedAtMessage.attach(function (urc) {
-            var doForward = (urc.id === "CX_BOOT_URC" ||
+            var doForward = !(urc.id === "CX_BOOT_URC" ||
                 urc.id === "CX_RSSI_URC" ||
                 (urc instanceof ts_gsm_modem_1.AtMessage.P_CMTI_URC) && urc.index < 0);
             if (doForward) {
