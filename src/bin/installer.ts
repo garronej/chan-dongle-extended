@@ -4,7 +4,6 @@ import * as path from "path";
 import * as readline from "readline";
 import * as crypto from "crypto";
 import * as scriptLib from "scripting-tools";
-import * as putasset from "putasset";
 
 export const unix_user_default = "chan_dongle";
 export const srv_name = "chan_dongle";
@@ -312,7 +311,11 @@ async function program_action_release() {
         console.log("Need to update node_module");
 
         scriptLib.execSyncTrace(
-            `sudo env "PATH=${path.dirname(process.argv[0])}:${process.env["PATH"]}" npm install --production --unsafe-perm`,
+            [
+                `sudo`,
+                `env "PATH=${path.dirname(process.argv[0])}:${process.env["PATH"]}"`,
+                `npm install --production --unsafe-perm`,
+            ].join(" "),
             { "cwd": _module_dir_path }
         );
 
@@ -382,7 +385,7 @@ async function program_action_release() {
 
     console.log("Start uploading...");
 
-    const dl_url = await putasset(
+    const dl_url = await (await import("putasset"))(
         fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
             .toString("utf8")
             .replace(/\s/g, ""),
@@ -1403,7 +1406,7 @@ if (require.main === module) {
             .command("release")
             .action(() => program_action_release())
             ;
-        
+
         program
             .command("install_prereq")
             .action(() => program_action_install_prereq())

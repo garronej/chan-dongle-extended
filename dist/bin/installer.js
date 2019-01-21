@@ -71,7 +71,6 @@ var path = require("path");
 var readline = require("readline");
 var crypto = require("crypto");
 var scriptLib = require("scripting-tools");
-var putasset = require("putasset");
 exports.unix_user_default = "chan_dongle";
 exports.srv_name = "chan_dongle";
 var module_dir_path = path.join(__dirname, "..", "..");
@@ -349,7 +348,11 @@ function program_action_release() {
                     }
                     else {
                         console.log("Need to update node_module");
-                        scriptLib.execSyncTrace("sudo env \"PATH=" + path.dirname(process.argv[0]) + ":" + process.env["PATH"] + "\" npm install --production --unsafe-perm", { "cwd": _module_dir_path });
+                        scriptLib.execSyncTrace([
+                            "sudo",
+                            "env \"PATH=" + path.dirname(process.argv[0]) + ":" + process.env["PATH"] + "\"",
+                            "npm install --production --unsafe-perm",
+                        ].join(" "), { "cwd": _module_dir_path });
                         scriptLib.execSyncTrace("rm package-lock.json", { "cwd": _module_dir_path });
                         fs.writeFileSync(path.join(_module_dir_path, deps_digest_filename), Buffer.from(deps_digest, "utf8"));
                         _node_modules_path = path.join(_module_dir_path, "node_modules");
@@ -393,16 +396,17 @@ function program_action_release() {
                     ].join(" "));
                     scriptLib.execSyncTrace("rm -r " + _module_dir_path);
                     console.log("Start uploading...");
-                    return [4 /*yield*/, putasset(fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
-                            .toString("utf8")
-                            .replace(/\s/g, ""), {
-                            "owner": "garronej",
-                            "repo": "releases",
-                            "tag": "chan-dongle-extended",
-                            "filename": tarball_file_path,
-                            "force": true
-                        })];
-                case 4:
+                    return [4 /*yield*/, Promise.resolve().then(function () { return require("putasset"); })];
+                case 4: return [4 /*yield*/, (_e.sent())(fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
+                        .toString("utf8")
+                        .replace(/\s/g, ""), {
+                        "owner": "garronej",
+                        "repo": "releases",
+                        "tag": "chan-dongle-extended",
+                        "filename": tarball_file_path,
+                        "force": true
+                    })];
+                case 5:
                     dl_url = _e.sent();
                     scriptLib.execSyncTrace("rm " + tarball_file_path);
                     releases[releases[arch] = version + "_" + arch] = dl_url;
