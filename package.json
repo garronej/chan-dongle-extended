@@ -5,7 +5,7 @@
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
   "scripts": {
-    "partial_install": "npm install commander garronej/scripting-tools garronej/chan-dongle-extended-client garronej/ts-ami garronej/node-putasset",
+    "partial_install": "npm install --no-package-lock commander garronej/scripting-tools garronej/chan-dongle-extended-client garronej/ts-ami garronej/node-putasset",
     "preinstall": "npm run partial_install && sudo $(which node) ./dist/bin/installer install_prereq",
     "postinstall": "cp $(readlink -e $(which node)) ./node",
     "tsc": "./node ./node_modules/typescript/bin/tsc -p ./tsconfig.json",
