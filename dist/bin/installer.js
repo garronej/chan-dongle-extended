@@ -291,7 +291,7 @@ function program_action_update(options) {
 }
 function program_action_release() {
     return __awaiter(this, void 0, void 0, function () {
-        var e_2, _a, e_3, _b, _module_dir_path, to_distribute_rel_paths_1, to_distribute_rel_paths_1_1, name, arch, releases_file_path, releases, deps_digest_filename, deps_digest, previous_release_dir_path, node_modules_need_update, last_version, _c, _d, name, _node_modules_path, version, tarball_file_name, tarball_file_path, dl_url;
+        var e_2, _a, e_3, _b, _module_dir_path, to_distribute_rel_paths_1, to_distribute_rel_paths_1_1, name, arch, releases_file_path, releases, deps_digest_filename, deps_digest, previous_release_dir_path, node_modules_need_update, last_version, _c, _d, name, _node_modules_path, version, tarball_file_path, putasset_dir_path, dl_url;
         return __generator(this, function (_e) {
             switch (_e.label) {
                 case 0:
@@ -387,28 +387,34 @@ function program_action_release() {
                     }
                     scriptLib.execSyncTrace("rm -rf " + previous_release_dir_path);
                     version = require(path.join(module_dir_path, "package.json")).version;
-                    tarball_file_name = "dongle_" + version + "_" + arch + ".tar.gz";
-                    tarball_file_path = path.join("/tmp", tarball_file_name);
+                    tarball_file_path = path.join("/tmp", "dongle_" + version + "_" + arch + ".tar.gz");
                     scriptLib.execSyncTrace([
                         "tar -czf",
                         tarball_file_path,
                         "-C " + _module_dir_path + " ."
                     ].join(" "));
                     scriptLib.execSyncTrace("rm -r " + _module_dir_path);
+                    putasset_dir_path = path.join("/tmp", "node-putasset");
+                    scriptLib.execSyncTrace("rm -rf " + putasset_dir_path);
+                    scriptLib.execSyncTrace("git clone https://github.com/garronej/node-putasset", { "cwd": path.join(putasset_dir_path, "..") });
+                    scriptLib.execSyncTrace([
+                        "sudo",
+                        "env \"PATH=" + path.dirname(process.argv[0]) + ":" + process.env["PATH"] + "\"",
+                        "npm install --production --unsafe-perm",
+                    ].join(" "), { "cwd": putasset_dir_path });
                     console.log("Start uploading...");
-                    return [4 /*yield*/, Promise.resolve().then(function () { return require("putasset"); })];
-                case 4: return [4 /*yield*/, (_e.sent())(fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
-                        .toString("utf8")
-                        .replace(/\s/g, ""), {
-                        "owner": "garronej",
-                        "repo": "releases",
-                        "tag": "chan-dongle-extended",
-                        "filename": tarball_file_path,
-                        "force": true
-                    })];
-                case 5:
-                    dl_url = _e.sent();
-                    scriptLib.execSyncTrace("rm " + tarball_file_path);
+                    dl_url = scriptLib.sh_eval([
+                        process.argv[0] + " " + path.join(putasset_dir_path, "bin", "putasset.js"),
+                        "-k " + fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
+                            .toString("utf8")
+                            .replace(/\s/g, ""),
+                        "-r releases",
+                        "-o garronej",
+                        "-t semasim-gateway",
+                        "-f \"" + tarball_file_path + "\"",
+                        "--force"
+                    ].join(" "));
+                    scriptLib.execSyncTrace("rm -r " + putasset_dir_path + " " + tarball_file_path);
                     releases[releases[arch] = version + "_" + arch] = dl_url;
                     fs.writeFileSync(releases_file_path, Buffer.from(JSON.stringify(releases, null, 2), "utf8"));
                     console.log("---DONE---");

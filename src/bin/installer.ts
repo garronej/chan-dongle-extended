@@ -371,9 +371,7 @@ async function program_action_release() {
 
     const { version } = require(path.join(module_dir_path, "package.json"));
 
-    const tarball_file_name = `dongle_${version}_${arch}.tar.gz`;
-
-    const tarball_file_path = path.join("/tmp", tarball_file_name);
+    const tarball_file_path = path.join("/tmp", `dongle_${version}_${arch}.tar.gz`);
 
     scriptLib.execSyncTrace([
         "tar -czf",
@@ -383,22 +381,41 @@ async function program_action_release() {
 
     scriptLib.execSyncTrace(`rm -r ${_module_dir_path}`);
 
-    console.log("Start uploading...");
+    const putasset_dir_path = path.join("/tmp", "node-putasset");
 
-    const dl_url = await (await import("putasset"))(
-        fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
-            .toString("utf8")
-            .replace(/\s/g, ""),
-        {
-            "owner": "garronej",
-            "repo": "releases",
-            "tag": "chan-dongle-extended",
-            "filename": tarball_file_path,
-            "force": true
-        }
+    scriptLib.execSyncTrace(`rm -rf ${putasset_dir_path}`);
+
+    scriptLib.execSyncTrace(
+        `git clone https://github.com/garronej/node-putasset`,
+        { "cwd": path.join(putasset_dir_path, "..") }
     );
 
-    scriptLib.execSyncTrace(`rm ${tarball_file_path}`);
+    scriptLib.execSyncTrace(
+        [
+            `sudo`,
+            `env "PATH=${path.dirname(process.argv[0])}:${process.env["PATH"]}"`,
+            `npm install --production --unsafe-perm`,
+        ].join(" "),
+        { "cwd": putasset_dir_path }
+    );
+
+    console.log("Start uploading...");
+
+    const dl_url = scriptLib.sh_eval(
+        [
+            `${process.argv[0]} ${path.join(putasset_dir_path, "bin", "putasset.js")}`,
+            `-k ` + fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
+                .toString("utf8")
+                .replace(/\s/g, ""),
+            `-r releases`,
+            `-o garronej`,
+            `-t semasim-gateway`,
+            `-f "${tarball_file_path}"`,
+            `--force`
+        ].join(" ")
+    );
+
+    scriptLib.execSyncTrace(`rm -r ${putasset_dir_path} ${tarball_file_path}`);
 
     releases[releases[arch] = `${version}_${arch}`] = dl_url;
 

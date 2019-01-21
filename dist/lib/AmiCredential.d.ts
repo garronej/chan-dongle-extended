@@ -1,6 +1,5 @@
-import { Ami } from "ts-ami";
 export declare namespace AmiCredential {
     const file_path: string;
-    function set(credential: Ami.Credential): void;
-    function get(): Ami.Credential;
+    function set(credential: import("ts-ami").Ami.Credential): void;
+    function get(): import("ts-ami").Ami.Credential;
 }
