@@ -1,10 +1,10 @@
 import * as child_process from "child_process";
 import * as fs from "fs";
 import * as path from "path";
-import * as scriptLib from "scripting-tools";
 import * as readline from "readline";
-import { ini } from "ini-extended";
 import * as crypto from "crypto";
+import * as scriptLib from "scripting-tools";
+import * as putasset from "putasset";
 
 export const unix_user_default = "chan_dongle";
 export const srv_name = "chan_dongle";
@@ -47,6 +47,58 @@ export function getIsProd(): boolean {
 export namespace getIsProd {
     export let value: boolean | undefined = undefined;
 }
+
+async function program_action_install_prereq() {
+
+    await scriptLib.apt_get_install_if_missing("git", "git");
+
+    await scriptLib.apt_get_install_if_missing("python", "python");
+    //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
+    await scriptLib.apt_get_install_if_missing("python-pip", "pip");
+
+    await (async function installVirtualenv() {
+
+        process.stdout.write(`Checking for python module virtualenv ... `);
+
+        try {
+
+            scriptLib.execSyncQuiet(`which virtualenv`);
+
+        } catch{
+
+            readline.clearLine(process.stdout, 0);
+            process.stdout.write("\r");
+
+            const { exec, onSuccess } = scriptLib.start_long_running_process("Installing virtualenv");
+
+            try {
+
+                await scriptLib.exec(`pip install virtualenv`);
+
+
+            } catch {
+
+                await exec(`pip install -i https://pypi.python.org/simple/ --upgrade pip`);
+
+                await exec(`pip install virtualenv`);
+
+            }
+
+            onSuccess("DONE");
+
+            return;
+
+        }
+
+        console.log(`found. ${scriptLib.colorize("OK", "GREEN")}`);
+
+    })();
+
+    await scriptLib.apt_get_install_if_missing("build-essential");
+
+    await scriptLib.apt_get_install_if_missing("libudev-dev");
+
+};
 
 
 async function program_action_install(options) {
@@ -330,7 +382,7 @@ async function program_action_release() {
 
     console.log("Start uploading...");
 
-    const dl_url = await require("putasset")(
+    const dl_url = await putasset(
         fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
             .toString("utf8")
             .replace(/\s/g, ""),
@@ -385,7 +437,7 @@ async function install(options: Partial<InstallOptions>) {
 
     if (getIsProd()) {
 
-        await install_prereq();
+        await program_action_install_prereq();
 
         await rebuild_node_modules();
 
@@ -428,7 +480,7 @@ async function install(options: Partial<InstallOptions>) {
 
     shellScripts.create();
 
-    asterisk_manager.enable();
+    await asterisk_manager.enable();
 
     scriptLib.execSync(
         `cp ${path.join(module_dir_path, "res", path.basename(db_path))} ${db_path}`,
@@ -905,7 +957,9 @@ namespace asterisk_manager {
     const ami_conf_back_path = path.join(working_directory_path, "manager.conf.back");
     const get_ami_conf_path = () => path.join(Astdirs.get().astetcdir, "manager.conf");
 
-    export function enable() {
+    export async function enable() {
+
+        const { ini } = await import("ini-extended");
 
         process.stdout.write(`Enabling asterisk manager ... `);
 
@@ -1210,57 +1264,6 @@ namespace modemManager {
 
 }
 
-async function install_prereq() {
-
-    await scriptLib.apt_get_install_if_missing("git", "git");
-
-    await scriptLib.apt_get_install_if_missing("python", "python");
-    //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
-    await scriptLib.apt_get_install_if_missing("python-pip", "pip");
-
-    await (async function installVirtualenv() {
-
-        process.stdout.write(`Checking for python module virtualenv ... `);
-
-        try {
-
-            scriptLib.execSyncQuiet(`which virtualenv`);
-
-        } catch{
-
-            readline.clearLine(process.stdout, 0);
-            process.stdout.write("\r");
-
-            const { exec, onSuccess } = scriptLib.start_long_running_process("Installing virtualenv");
-
-            try {
-
-                await scriptLib.exec(`pip install virtualenv`);
-
-
-            } catch {
-
-                await exec(`pip install -i https://pypi.python.org/simple/ --upgrade pip`);
-
-                await exec(`pip install virtualenv`);
-
-            }
-
-            onSuccess("DONE");
-
-            return;
-
-        }
-
-        console.log(`found. ${scriptLib.colorize("OK", "GREEN")}`);
-
-    })();
-
-    await scriptLib.apt_get_install_if_missing("build-essential");
-
-    await scriptLib.apt_get_install_if_missing("libudev-dev");
-
-};
 
 export function build_ast_cmdline(): string {
 
@@ -1399,6 +1402,11 @@ if (require.main === module) {
         program
             .command("release")
             .action(() => program_action_release())
+            ;
+        
+        program
+            .command("install_prereq")
+            .action(() => program_action_install_prereq())
             ;
 
         program

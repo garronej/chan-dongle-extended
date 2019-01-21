@@ -68,10 +68,10 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var child_process = require("child_process");
 var fs = require("fs");
 var path = require("path");
-var scriptLib = require("scripting-tools");
 var readline = require("readline");
-var ini_extended_1 = require("ini-extended");
 var crypto = require("crypto");
+var scriptLib = require("scripting-tools");
+var putasset = require("putasset");
 exports.unix_user_default = "chan_dongle";
 exports.srv_name = "chan_dongle";
 var module_dir_path = path.join(__dirname, "..", "..");
@@ -104,6 +104,78 @@ exports.getIsProd = getIsProd;
 (function (getIsProd) {
     getIsProd.value = undefined;
 })(getIsProd = exports.getIsProd || (exports.getIsProd = {}));
+function program_action_install_prereq() {
+    return __awaiter(this, void 0, void 0, function () {
+        return __generator(this, function (_a) {
+            switch (_a.label) {
+                case 0: return [4 /*yield*/, scriptLib.apt_get_install_if_missing("git", "git")];
+                case 1:
+                    _a.sent();
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("python", "python")];
+                case 2:
+                    _a.sent();
+                    //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("python-pip", "pip")];
+                case 3:
+                    //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
+                    _a.sent();
+                    return [4 /*yield*/, (function installVirtualenv() {
+                            return __awaiter(this, void 0, void 0, function () {
+                                var _a, _b, exec, onSuccess, _c;
+                                return __generator(this, function (_d) {
+                                    switch (_d.label) {
+                                        case 0:
+                                            process.stdout.write("Checking for python module virtualenv ... ");
+                                            _d.label = 1;
+                                        case 1:
+                                            _d.trys.push([1, 2, , 9]);
+                                            scriptLib.execSyncQuiet("which virtualenv");
+                                            return [3 /*break*/, 9];
+                                        case 2:
+                                            _a = _d.sent();
+                                            readline.clearLine(process.stdout, 0);
+                                            process.stdout.write("\r");
+                                            _b = scriptLib.start_long_running_process("Installing virtualenv"), exec = _b.exec, onSuccess = _b.onSuccess;
+                                            _d.label = 3;
+                                        case 3:
+                                            _d.trys.push([3, 5, , 8]);
+                                            return [4 /*yield*/, scriptLib.exec("pip install virtualenv")];
+                                        case 4:
+                                            _d.sent();
+                                            return [3 /*break*/, 8];
+                                        case 5:
+                                            _c = _d.sent();
+                                            return [4 /*yield*/, exec("pip install -i https://pypi.python.org/simple/ --upgrade pip")];
+                                        case 6:
+                                            _d.sent();
+                                            return [4 /*yield*/, exec("pip install virtualenv")];
+                                        case 7:
+                                            _d.sent();
+                                            return [3 /*break*/, 8];
+                                        case 8:
+                                            onSuccess("DONE");
+                                            return [2 /*return*/];
+                                        case 9:
+                                            console.log("found. " + scriptLib.colorize("OK", "GREEN"));
+                                            return [2 /*return*/];
+                                    }
+                                });
+                            });
+                        })()];
+                case 4:
+                    _a.sent();
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("build-essential")];
+                case 5:
+                    _a.sent();
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("libudev-dev")];
+                case 6:
+                    _a.sent();
+                    return [2 /*return*/];
+            }
+        });
+    });
+}
+;
 function program_action_install(options) {
     return __awaiter(this, void 0, void 0, function () {
         var _a, message;
@@ -321,7 +393,7 @@ function program_action_release() {
                     ].join(" "));
                     scriptLib.execSyncTrace("rm -r " + _module_dir_path);
                     console.log("Start uploading...");
-                    return [4 /*yield*/, require("putasset")(fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
+                    return [4 /*yield*/, putasset(fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
                             .toString("utf8")
                             .replace(/\s/g, ""), {
                             "owner": "garronej",
@@ -360,7 +432,7 @@ function install(options) {
                     }
                     scriptLib.execSync("chown " + unix_user + ":" + unix_user + " " + exports.working_directory_path);
                     if (!getIsProd()) return [3 /*break*/, 3];
-                    return [4 /*yield*/, install_prereq()];
+                    return [4 /*yield*/, program_action_install_prereq()];
                 case 1:
                     _a.sent();
                     return [4 /*yield*/, rebuild_node_modules()];
@@ -396,7 +468,9 @@ function install(options) {
                 case 10:
                     _a.sent();
                     shellScripts.create();
-                    asterisk_manager.enable();
+                    return [4 /*yield*/, asterisk_manager.enable()];
+                case 11:
+                    _a.sent();
                     scriptLib.execSync("cp " + path.join(module_dir_path, "res", path.basename(exports.db_path)) + " " + exports.db_path, { "uid": scriptLib.get_uid(unix_user), "gid": scriptLib.get_gid(unix_user) });
                     if (!InstallOptions_1.InstallOptions.get().do_not_create_systemd_conf) {
                         scriptLib.systemd.createConfigFile(exports.srv_name, path.join(__dirname, "main.js"), exports.node_path, "ENABLE", "START");
@@ -829,63 +903,72 @@ var asterisk_manager;
     var ami_conf_back_path = path.join(exports.working_directory_path, "manager.conf.back");
     var get_ami_conf_path = function () { return path.join(Astdirs_1.Astdirs.get().astetcdir, "manager.conf"); };
     function enable() {
-        var _a;
-        process.stdout.write("Enabling asterisk manager ... ");
-        var ami_conf_path = get_ami_conf_path();
-        var general = {
-            "enabled": "yes",
-            "port": InstallOptions_1.InstallOptions.get().enable_ast_ami_on_port,
-            "bindaddr": "127.0.0.1",
-            "displayconnects": "yes"
-        };
-        if (!fs.existsSync(ami_conf_path)) {
-            var stat = fs.statSync(InstallOptions_1.InstallOptions.get().asterisk_main_conf);
-            child_process.execSync("touch " + ami_conf_path, {
-                "uid": stat.uid,
-                "gid": stat.gid
-            });
-            scriptLib.execSync("chmod 640 " + ami_conf_path);
-        }
-        else {
-            scriptLib.execSync("cp -p " + ami_conf_path + " " + ami_conf_back_path);
-            //TODO: test if return {} when empty file
-            var parsed_general = ini_extended_1.ini.parseStripWhitespace(fs.readFileSync(ami_conf_path).toString("utf8"))["general"] || {};
-            for (var key in parsed_general) {
-                switch (key) {
-                    case "enabled": break;
-                    case "port":
-                        if (!InstallOptions_1.InstallOptions.getDeduced().overwrite_ami_port_if_enabled) {
-                            general["port"] = parsed_general["port"];
+        return __awaiter(this, void 0, void 0, function () {
+            var _a, ini, ami_conf_path, general, stat, parsed_general, key, credential;
+            return __generator(this, function (_b) {
+                switch (_b.label) {
+                    case 0: return [4 /*yield*/, Promise.resolve().then(function () { return require("ini-extended"); })];
+                    case 1:
+                        ini = (_b.sent()).ini;
+                        process.stdout.write("Enabling asterisk manager ... ");
+                        ami_conf_path = get_ami_conf_path();
+                        general = {
+                            "enabled": "yes",
+                            "port": InstallOptions_1.InstallOptions.get().enable_ast_ami_on_port,
+                            "bindaddr": "127.0.0.1",
+                            "displayconnects": "yes"
+                        };
+                        if (!fs.existsSync(ami_conf_path)) {
+                            stat = fs.statSync(InstallOptions_1.InstallOptions.get().asterisk_main_conf);
+                            child_process.execSync("touch " + ami_conf_path, {
+                                "uid": stat.uid,
+                                "gid": stat.gid
+                            });
+                            scriptLib.execSync("chmod 640 " + ami_conf_path);
                         }
-                        break;
-                    default: general[key] = parsed_general[key];
+                        else {
+                            scriptLib.execSync("cp -p " + ami_conf_path + " " + ami_conf_back_path);
+                            parsed_general = ini.parseStripWhitespace(fs.readFileSync(ami_conf_path).toString("utf8"))["general"] || {};
+                            for (key in parsed_general) {
+                                switch (key) {
+                                    case "enabled": break;
+                                    case "port":
+                                        if (!InstallOptions_1.InstallOptions.getDeduced().overwrite_ami_port_if_enabled) {
+                                            general["port"] = parsed_general["port"];
+                                        }
+                                        break;
+                                    default: general[key] = parsed_general[key];
+                                }
+                            }
+                        }
+                        credential = {
+                            "host": "127.0.0.1",
+                            "port": general["port"],
+                            "user": "chan_dongle_extended",
+                            "secret": "" + Date.now()
+                        };
+                        fs.writeFileSync(ami_conf_path, Buffer.from(ini.stringify((_a = {
+                                general: general
+                            },
+                            _a[credential.user] = {
+                                "secret": credential.secret,
+                                "deny": "0.0.0.0/0.0.0.0",
+                                "permit": "0.0.0.0/0.0.0.0",
+                                "read": "all",
+                                "write": "all",
+                                "writetimeout": "5000"
+                            },
+                            _a)), "utf8"));
+                        try {
+                            scriptLib.execSyncQuiet(build_ast_cmdline() + " -rx \"core reload\"", { "timeout": 5000 });
+                        }
+                        catch (_c) { }
+                        AmiCredential_1.AmiCredential.set(credential);
+                        console.log(scriptLib.colorize("OK", "GREEN"));
+                        return [2 /*return*/];
                 }
-            }
-        }
-        var credential = {
-            "host": "127.0.0.1",
-            "port": general["port"],
-            "user": "chan_dongle_extended",
-            "secret": "" + Date.now()
-        };
-        fs.writeFileSync(ami_conf_path, Buffer.from(ini_extended_1.ini.stringify((_a = {
-                general: general
-            },
-            _a[credential.user] = {
-                "secret": credential.secret,
-                "deny": "0.0.0.0/0.0.0.0",
-                "permit": "0.0.0.0/0.0.0.0",
-                "read": "all",
-                "write": "all",
-                "writetimeout": "5000"
-            },
-            _a)), "utf8"));
-        try {
-            scriptLib.execSyncQuiet(build_ast_cmdline() + " -rx \"core reload\"", { "timeout": 5000 });
-        }
-        catch (_b) { }
-        AmiCredential_1.AmiCredential.set(credential);
-        console.log(scriptLib.colorize("OK", "GREEN"));
+            });
+        });
     }
     asterisk_manager.enable = enable;
     function restore() {
@@ -1081,78 +1164,6 @@ var modemManager;
     }
     modemManager.enable_and_start = enable_and_start;
 })(modemManager || (modemManager = {}));
-function install_prereq() {
-    return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
-                case 0: return [4 /*yield*/, scriptLib.apt_get_install_if_missing("git", "git")];
-                case 1:
-                    _a.sent();
-                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("python", "python")];
-                case 2:
-                    _a.sent();
-                    //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
-                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("python-pip", "pip")];
-                case 3:
-                    //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
-                    _a.sent();
-                    return [4 /*yield*/, (function installVirtualenv() {
-                            return __awaiter(this, void 0, void 0, function () {
-                                var _a, _b, exec, onSuccess, _c;
-                                return __generator(this, function (_d) {
-                                    switch (_d.label) {
-                                        case 0:
-                                            process.stdout.write("Checking for python module virtualenv ... ");
-                                            _d.label = 1;
-                                        case 1:
-                                            _d.trys.push([1, 2, , 9]);
-                                            scriptLib.execSyncQuiet("which virtualenv");
-                                            return [3 /*break*/, 9];
-                                        case 2:
-                                            _a = _d.sent();
-                                            readline.clearLine(process.stdout, 0);
-                                            process.stdout.write("\r");
-                                            _b = scriptLib.start_long_running_process("Installing virtualenv"), exec = _b.exec, onSuccess = _b.onSuccess;
-                                            _d.label = 3;
-                                        case 3:
-                                            _d.trys.push([3, 5, , 8]);
-                                            return [4 /*yield*/, scriptLib.exec("pip install virtualenv")];
-                                        case 4:
-                                            _d.sent();
-                                            return [3 /*break*/, 8];
-                                        case 5:
-                                            _c = _d.sent();
-                                            return [4 /*yield*/, exec("pip install -i https://pypi.python.org/simple/ --upgrade pip")];
-                                        case 6:
-                                            _d.sent();
-                                            return [4 /*yield*/, exec("pip install virtualenv")];
-                                        case 7:
-                                            _d.sent();
-                                            return [3 /*break*/, 8];
-                                        case 8:
-                                            onSuccess("DONE");
-                                            return [2 /*return*/];
-                                        case 9:
-                                            console.log("found. " + scriptLib.colorize("OK", "GREEN"));
-                                            return [2 /*return*/];
-                                    }
-                                });
-                            });
-                        })()];
-                case 4:
-                    _a.sent();
-                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("build-essential")];
-                case 5:
-                    _a.sent();
-                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("libudev-dev")];
-                case 6:
-                    _a.sent();
-                    return [2 /*return*/];
-            }
-        });
-    });
-}
-;
 function build_ast_cmdline() {
     var _a = InstallOptions_1.InstallOptions.get(), ld_library_path_for_asterisk = _a.ld_library_path_for_asterisk, asterisk_main_conf = _a.asterisk_main_conf;
     return build_ast_cmdline.build_from_args(ld_library_path_for_asterisk, asterisk_main_conf);
@@ -1278,6 +1289,9 @@ if (require.main === module) {
         program
             .command("release")
             .action(function () { return program_action_release(); });
+        program
+            .command("install_prereq")
+            .action(function () { return program_action_install_prereq(); });
         program
             .command("build-asterisk-chan-dongle")
             .usage("Only generate chan_dongle.so ( asterisk module )")

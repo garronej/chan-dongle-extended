@@ -1,18 +1,11 @@
 # Chan-dongle-extended
 
-[USER README](https://garronej.github.io/chan-dongle-extended/)
+[WEBSITE](https://garronej.github.io/chan-dongle-extended/)
 
-* Installing build dependencies
-````bash
-$ sudo apt-get install libudev-dev python python-pip
-$ sudo pip install virtualenv
-````
+## Installing node 
 
-* Publishing a new release for a specific architecture:
+### On armv6 hosts ( raspberry pi 1 )
 ``` bash
-# <========== Installing node.js ===========>
-
-# FOR armv6: 
 # We can't install it from the repository so we have to download it manually:
 # ( The download link is on the download page of the node.js website )
 $ cd ~ && wget https://nodejs.org/dist/v8.12.0/node-v8.12.0-linux-armv6l.tar.xz
@@ -21,52 +14,29 @@ $ tar xf node-v8.*-linux-armv6l.tar.xz
 $ source ~/.bashrc
 $ sudo su
 $ npm install -g npm
+```
 
-
-# FOR any other arch:
+### On any other host ( armv7, x32, x64 )
+``` bash
 $ curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 $ sudo apt-get install -y nodejs
 $ sudo npm install -g npm
-
-# <========== end installing node ===========>
-
-# IMPORTANT: Install build dependencies ( see section ), then
-
-$ git clone https://github.com/garronej/chan-dongle-extended
-$ cd chan-dongle-extended
-$ npm install
-$ npm checkout package-lock.json
-$ npm run release
 ```
 
-* Testing if chan-dongle-extended work on a specific host.
-``` bash
-# Install the service ( see https://garronej.github.io/chan-dongle-extended/ )
-# [ Plug a USB 3G dongle holding a sim card to the host. ]
-# A locked dongle should be listed, copy the IMSI
-$ dongle list 
-$ dongle select [imsi]
-$ dongle unlock -p 1234
-#Wait ~15s
-$ dongle send -t "foo bar baz" -n 0636786385
-# [ Checks that the message is well received ]
-#Optionally test the other functionalities: 
-# List the available commands:
-$ dongle --help 
-# Get details on how to use a particular command ( here example with the 'send' command )
-$ dongle send --help
-# Do not forget to read the output,
-# it will tell what packages are no longer needed and can be purged.
-$ sudo dongle_uninstaller run
-```
+## Publish release
+To build, bundle and publish a new release for 
+a specifics arch there is no need to ``npm install`` just clone
+this repo then: 
 
-* Editing the code and debugging.
+* run ``npm run partial_install`` ( without sudo, only first time )
+* run ``npm run release`` ( without sudo )
+* commit *docs/release.json* ( pull first, resolve merge conflict if any )
+* push
+
+## Run local copy of the code for debugging
 ``` bash
-# IMPORTANT: Install build dependencies ( see section ), then
 $ npm install
-#Install locally
 $ sudo ./node dist/bin/installer install
-#Run local copy of the service
 $ npm start 
 ```
 
