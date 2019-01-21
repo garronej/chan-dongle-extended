@@ -410,7 +410,7 @@ function program_action_release() {
                             .replace(/\s/g, ""),
                         "-r releases",
                         "-o garronej",
-                        "-t semasim-gateway",
+                        "-t chan-dongle-extended",
                         "-f \"" + tarball_file_path + "\"",
                         "--force"
                     ].join(" "));
