@@ -84,7 +84,7 @@ function init(modems, chanDongleConfManagerApi) {
                                     case 0: return [4 /*yield*/, modem.runCommand("AT+CCWA?\r", { "recoverable": true })
                                             .then(function (_a) {
                                             var raw = _a.raw;
-                                            return console.log(accessPoint.dataIfPath + " CCWA Read: " + readableAt(raw));
+                                            return debug(accessPoint.dataIfPath + " CCWA Read: " + readableAt(raw));
                                         })];
                                     case 1:
                                         _a.sent();
@@ -99,7 +99,7 @@ function init(modems, chanDongleConfManagerApi) {
                                     case 0: return [4 /*yield*/, modem.runCommand("AT+CCWA=" + params + "\r", { "recoverable": true })];
                                     case 1:
                                         _a = _b.sent(), final = _a.final, raw = _a.raw;
-                                        console.log(accessPoint.dataIfPath + " CCWA Set " + params + ": " + readableAt(raw), { final: final });
+                                        debug(accessPoint.dataIfPath + " CCWA Set " + params + ": " + readableAt(raw), { final: final });
                                         return [2 /*return*/, final];
                                 }
                             });
@@ -107,7 +107,7 @@ function init(modems, chanDongleConfManagerApi) {
                         return [4 /*yield*/, modem.runCommand("AT+CCWA=?\r", { "recoverable": true })
                                 .then(function (_a) {
                                 var raw = _a.raw;
-                                return console.log(accessPoint.dataIfPath + " CCWA Test: " + readableAt(raw));
+                                return debug(accessPoint.dataIfPath + " CCWA Test: " + readableAt(raw));
                             })];
                     case 1:
                         _c.sent();
@@ -129,7 +129,7 @@ function init(modems, chanDongleConfManagerApi) {
                         return [4 /*yield*/, set("0,,1")];
                     case 7:
                         if ((_c.sent()).isError) {
-                            console.log("Everything have failed");
+                            debug("Everything have failed");
                         }
                         _c.label = 8;
                     case 8: return [4 /*yield*/, read()];

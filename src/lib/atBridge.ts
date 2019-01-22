@@ -34,7 +34,7 @@ export function init(
         const read= async ()=> {
 
             await modem.runCommand("AT+CCWA?\r", { "recoverable": true })
-                .then(({ raw }) => console.log(`${accessPoint.dataIfPath} CCWA Read: ${readableAt(raw)}`));
+                .then(({ raw }) => debug(`${accessPoint.dataIfPath} CCWA Read: ${readableAt(raw)}`));
 
         };
 
@@ -42,14 +42,14 @@ export function init(
 
             const { final, raw } = await modem.runCommand(`AT+CCWA=${params}\r`, { "recoverable": true });
 
-            console.log(`${accessPoint.dataIfPath} CCWA Set ${params}: ${readableAt(raw)}`, { final })
+            debug(`${accessPoint.dataIfPath} CCWA Set ${params}: ${readableAt(raw)}`, { final })
 
             return final;
 
         }
 
         await modem.runCommand("AT+CCWA=?\r", { "recoverable": true })
-            .then(({ raw }) => console.log(`${accessPoint.dataIfPath} CCWA Test: ${readableAt(raw)}`));
+            .then(({ raw }) => debug(`${accessPoint.dataIfPath} CCWA Test: ${readableAt(raw)}`));
 
         await read();
 
@@ -62,7 +62,7 @@ export function init(
                 await read();
 
                 if ((await set("0,,1")).isError) {
-                    console.log("Everything have failed");
+                    debug("Everything have failed");
                 }
             }
         }
