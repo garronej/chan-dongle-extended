@@ -59,6 +59,9 @@ var logger = require("logger");
 var types = require("./types");
 var ts_events_extended_1 = require("ts-events-extended");
 var debug = logger.debugFactory();
+function readableAt(raw) {
+    return "`" + raw.replace(/\r/g, "\\r").replace(/\n/g, "\\n") + "`";
+}
 function init(modems, chanDongleConfManagerApi) {
     var _this = this;
     atBridge.confManagerApi = chanDongleConfManagerApi;
@@ -66,16 +69,51 @@ function init(modems, chanDongleConfManagerApi) {
     modems.evtCreate.attach(function (_a) {
         var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];
         return __awaiter(_this, void 0, void 0, function () {
-            return __generator(this, function (_c) {
-                switch (_c.label) {
+            var _c, final, raw;
+            return __generator(this, function (_d) {
+                switch (_d.label) {
                     case 0:
                         if (types.LockedModem.match(modem)) {
                             return [2 /*return*/];
                         }
                         debug("Configure modem to reject call waiting");
-                        return [4 /*yield*/, modem.runCommand("AT+CCWA=0,0,1\r")];
+                        return [4 /*yield*/, modem.runCommand("AT+CCWA=?\r", { "recoverable": true }).then(function (_a) {
+                                var raw = _a.raw;
+                                return console.log(accessPoint.dataIfPath + " CCWA Test: " + readableAt(raw));
+                            })];
                     case 1:
-                        _c.sent();
+                        _d.sent();
+                        return [4 /*yield*/, modem.runCommand("AT+CCWA?\r", { "recoverable": true }).then(function (_a) {
+                                var raw = _a.raw;
+                                return console.log(accessPoint.dataIfPath + " CCWA Read: " + readableAt(raw));
+                            })];
+                    case 2:
+                        _d.sent();
+                        return [4 /*yield*/, modem.runCommand("AT+CCWA=0,0,1\r", { "recoverable": true })];
+                    case 3:
+                        _c = _d.sent(), final = _c.final, raw = _c.raw;
+                        console.log(accessPoint.dataIfPath + " CCWA Set 0,0,1: " + readableAt(raw), { final: final });
+                        if (!final.isError) return [3 /*break*/, 7];
+                        return [4 /*yield*/, modem.runCommand("AT+CCWA?\r", { "recoverable": true }).then(function (_a) {
+                                var raw = _a.raw;
+                                return console.log(accessPoint.dataIfPath + " CCWA Read: " + readableAt(raw));
+                            })];
+                    case 4:
+                        _d.sent();
+                        return [4 /*yield*/, modem.runCommand("AT+CCWA=,0,1\r", { "recoverable": true }).then(function (_a) {
+                                var raw = _a.raw, final = _a.final;
+                                return console.log(accessPoint.dataIfPath + " CCWA Set ,0,1: " + readableAt(raw), { final: final });
+                            })];
+                    case 5:
+                        _d.sent();
+                        return [4 /*yield*/, modem.runCommand("AT+CCWA?\r", { "recoverable": true }).then(function (_a) {
+                                var raw = _a.raw;
+                                return console.log(accessPoint.dataIfPath + " CCWA Read: " + readableAt(raw));
+                            })];
+                    case 6:
+                        _d.sent();
+                        _d.label = 7;
+                    case 7:
                         atBridge(accessPoint, modem, tty0ttyFactory());
                         return [2 /*return*/];
                 }
@@ -106,9 +144,6 @@ exports.waitForTerminate = waitForTerminate;
     waitForTerminate.ports = new Set();
     waitForTerminate.evtAllClosed = new ts_events_extended_1.VoidSyncEvent();
 })(waitForTerminate = exports.waitForTerminate || (exports.waitForTerminate = {}));
-function readableAt(raw) {
-    return "`" + raw.replace(/\r/g, "\\r").replace(/\n/g, "\\n") + "`";
-}
 function atBridge(accessPoint, modem, tty0tty) {
     var _this = this;
     atBridge.confManagerApi.addDongle({

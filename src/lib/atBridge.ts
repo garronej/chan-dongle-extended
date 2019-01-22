@@ -10,6 +10,10 @@ import { VoidSyncEvent } from "ts-events-extended";
 
 const debug = logger.debugFactory();
 
+function readableAt(raw: string): string{
+    return "`" + raw.replace(/\r/g, "\\r").replace(/\n/g,"\\n") + "`";
+}
+
 export function init(
     modems: types.Modems,
     chanDongleConfManagerApi: ConfManagerApi
@@ -27,7 +31,23 @@ export function init(
 
         debug("Configure modem to reject call waiting");
 
-        await modem.runCommand("AT+CCWA=0,0,1\r");
+        await modem.runCommand("AT+CCWA=?\r", { "recoverable": true }).then(({ raw })=> console.log(`${accessPoint.dataIfPath} CCWA Test: ${readableAt(raw)}`));
+
+        await modem.runCommand("AT+CCWA?\r", { "recoverable": true }).then(({ raw })=> console.log(`${accessPoint.dataIfPath} CCWA Read: ${readableAt(raw)}`));
+
+        const { final, raw } = await modem.runCommand("AT+CCWA=0,0,1\r", { "recoverable": true });
+
+        console.log(`${accessPoint.dataIfPath} CCWA Set 0,0,1: ${readableAt(raw)}`, { final })
+
+        if( final.isError ){
+
+            await modem.runCommand("AT+CCWA?\r", { "recoverable": true }).then(({ raw }) => console.log(`${accessPoint.dataIfPath} CCWA Read: ${readableAt(raw)}`));
+
+            await modem.runCommand("AT+CCWA=,0,1\r", { "recoverable": true }).then(({ raw, final }) => console.log(`${accessPoint.dataIfPath} CCWA Set ,0,1: ${readableAt(raw)}`, { final }));
+
+            await modem.runCommand("AT+CCWA?\r", { "recoverable": true }).then(({ raw }) => console.log(`${accessPoint.dataIfPath} CCWA Read: ${readableAt(raw)}`));
+
+        }
 
         atBridge(accessPoint, modem, tty0ttyFactory());
 
@@ -56,9 +76,6 @@ export namespace waitForTerminate {
 
 }
 
-function readableAt(raw: string): string{
-    return "`" + raw.replace(/\r/g, "\\r").replace(/\n/g,"\\n") + "`";
-}
 
 function atBridge(
     accessPoint: AccessPoint,
