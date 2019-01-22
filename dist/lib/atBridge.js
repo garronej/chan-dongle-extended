@@ -69,51 +69,72 @@ function init(modems, chanDongleConfManagerApi) {
     modems.evtCreate.attach(function (_a) {
         var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];
         return __awaiter(_this, void 0, void 0, function () {
-            var _c, final, raw;
-            return __generator(this, function (_d) {
-                switch (_d.label) {
+            var read, set;
+            var _this = this;
+            return __generator(this, function (_c) {
+                switch (_c.label) {
                     case 0:
                         if (types.LockedModem.match(modem)) {
                             return [2 /*return*/];
                         }
                         debug("Configure modem to reject call waiting");
-                        return [4 /*yield*/, modem.runCommand("AT+CCWA=?\r", { "recoverable": true }).then(function (_a) {
+                        read = function () { return __awaiter(_this, void 0, void 0, function () {
+                            return __generator(this, function (_a) {
+                                switch (_a.label) {
+                                    case 0: return [4 /*yield*/, modem.runCommand("AT+CCWA?\r", { "recoverable": true })
+                                            .then(function (_a) {
+                                            var raw = _a.raw;
+                                            return console.log(accessPoint.dataIfPath + " CCWA Read: " + readableAt(raw));
+                                        })];
+                                    case 1:
+                                        _a.sent();
+                                        return [2 /*return*/];
+                                }
+                            });
+                        }); };
+                        set = function (params) { return __awaiter(_this, void 0, void 0, function () {
+                            var _a, final, raw;
+                            return __generator(this, function (_b) {
+                                switch (_b.label) {
+                                    case 0: return [4 /*yield*/, modem.runCommand("AT+CCWA=" + params + "\r", { "recoverable": true })];
+                                    case 1:
+                                        _a = _b.sent(), final = _a.final, raw = _a.raw;
+                                        console.log(accessPoint.dataIfPath + " CCWA Set " + params + ": " + readableAt(raw), { final: final });
+                                        return [2 /*return*/, final];
+                                }
+                            });
+                        }); };
+                        return [4 /*yield*/, modem.runCommand("AT+CCWA=?\r", { "recoverable": true })
+                                .then(function (_a) {
                                 var raw = _a.raw;
                                 return console.log(accessPoint.dataIfPath + " CCWA Test: " + readableAt(raw));
                             })];
                     case 1:
-                        _d.sent();
-                        return [4 /*yield*/, modem.runCommand("AT+CCWA?\r", { "recoverable": true }).then(function (_a) {
-                                var raw = _a.raw;
-                                return console.log(accessPoint.dataIfPath + " CCWA Read: " + readableAt(raw));
-                            })];
+                        _c.sent();
+                        return [4 /*yield*/, read()];
                     case 2:
-                        _d.sent();
-                        return [4 /*yield*/, modem.runCommand("AT+CCWA=0,0,1\r", { "recoverable": true })];
+                        _c.sent();
+                        return [4 /*yield*/, set("0,0,1")];
                     case 3:
-                        _c = _d.sent(), final = _c.final, raw = _c.raw;
-                        console.log(accessPoint.dataIfPath + " CCWA Set 0,0,1: " + readableAt(raw), { final: final });
-                        if (!final.isError) return [3 /*break*/, 7];
-                        return [4 /*yield*/, modem.runCommand("AT+CCWA?\r", { "recoverable": true }).then(function (_a) {
-                                var raw = _a.raw;
-                                return console.log(accessPoint.dataIfPath + " CCWA Read: " + readableAt(raw));
-                            })];
+                        if (!(_c.sent()).isError) return [3 /*break*/, 8];
+                        return [4 /*yield*/, read()];
                     case 4:
-                        _d.sent();
-                        return [4 /*yield*/, modem.runCommand("AT+CCWA=,0,1\r", { "recoverable": true }).then(function (_a) {
-                                var raw = _a.raw, final = _a.final;
-                                return console.log(accessPoint.dataIfPath + " CCWA Set ,0,1: " + readableAt(raw), { final: final });
-                            })];
+                        _c.sent();
+                        return [4 /*yield*/, set(",0,1")];
                     case 5:
-                        _d.sent();
-                        return [4 /*yield*/, modem.runCommand("AT+CCWA?\r", { "recoverable": true }).then(function (_a) {
-                                var raw = _a.raw;
-                                return console.log(accessPoint.dataIfPath + " CCWA Read: " + readableAt(raw));
-                            })];
+                        if (!(_c.sent()).isError) return [3 /*break*/, 8];
+                        return [4 /*yield*/, read()];
                     case 6:
-                        _d.sent();
-                        _d.label = 7;
+                        _c.sent();
+                        return [4 /*yield*/, set("0,,1")];
                     case 7:
+                        if ((_c.sent()).isError) {
+                            console.log("Everything have failed");
+                        }
+                        _c.label = 8;
+                    case 8: return [4 /*yield*/, read()];
+                    case 9:
+                        _c.sent();
                         atBridge(accessPoint, modem, tty0ttyFactory());
                         return [2 /*return*/];
                 }

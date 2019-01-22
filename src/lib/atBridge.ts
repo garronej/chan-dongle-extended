@@ -31,23 +31,43 @@ export function init(
 
         debug("Configure modem to reject call waiting");
 
-        await modem.runCommand("AT+CCWA=?\r", { "recoverable": true }).then(({ raw })=> console.log(`${accessPoint.dataIfPath} CCWA Test: ${readableAt(raw)}`));
+        const read= async ()=> {
 
-        await modem.runCommand("AT+CCWA?\r", { "recoverable": true }).then(({ raw })=> console.log(`${accessPoint.dataIfPath} CCWA Read: ${readableAt(raw)}`));
+            await modem.runCommand("AT+CCWA?\r", { "recoverable": true })
+                .then(({ raw }) => console.log(`${accessPoint.dataIfPath} CCWA Read: ${readableAt(raw)}`));
 
-        const { final, raw } = await modem.runCommand("AT+CCWA=0,0,1\r", { "recoverable": true });
+        };
 
-        console.log(`${accessPoint.dataIfPath} CCWA Set 0,0,1: ${readableAt(raw)}`, { final })
+        const set= async (params: string)=> {
 
-        if( final.isError ){
+            const { final, raw } = await modem.runCommand(`AT+CCWA=${params}\r`, { "recoverable": true });
 
-            await modem.runCommand("AT+CCWA?\r", { "recoverable": true }).then(({ raw }) => console.log(`${accessPoint.dataIfPath} CCWA Read: ${readableAt(raw)}`));
+            console.log(`${accessPoint.dataIfPath} CCWA Set ${params}: ${readableAt(raw)}`, { final })
 
-            await modem.runCommand("AT+CCWA=,0,1\r", { "recoverable": true }).then(({ raw, final }) => console.log(`${accessPoint.dataIfPath} CCWA Set ,0,1: ${readableAt(raw)}`, { final }));
-
-            await modem.runCommand("AT+CCWA?\r", { "recoverable": true }).then(({ raw }) => console.log(`${accessPoint.dataIfPath} CCWA Read: ${readableAt(raw)}`));
+            return final;
 
         }
+
+        await modem.runCommand("AT+CCWA=?\r", { "recoverable": true })
+            .then(({ raw }) => console.log(`${accessPoint.dataIfPath} CCWA Test: ${readableAt(raw)}`));
+
+        await read();
+
+        if( (await set("0,0,1")).isError ){
+
+            await read();
+
+            if( (await set(",0,1")).isError ){
+
+                await read();
+
+                if ((await set("0,,1")).isError) {
+                    console.log("Everything have failed");
+                }
+            }
+        }
+
+        await read();
 
         atBridge(accessPoint, modem, tty0ttyFactory());
 
