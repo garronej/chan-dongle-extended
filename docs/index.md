@@ -160,7 +160,7 @@ same = n,Hangup()
 Note: SMS_BASE64 truncate message of more than 1024 byte, this is an expected behavior, 
 it is to avoid asterisk buffer overflow. You can use the 
 SMS_TEXT_SPLIT_COUNT=n and SMS_BASE64_PART_0..n-1 variables to retrieve very long SMS. 
-In order to reassemble the message you must decode each part then concatenate.
+In order to reassemble the message you must base64 decode the concatenation of all SMS_BASE64_PART_X.
 
 ## Report bugs
 
