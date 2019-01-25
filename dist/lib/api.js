@@ -335,10 +335,12 @@ function makeApiHandlers(modems) {
                     return __generator(this, function (_b) {
                         switch (_b.label) {
                             case 0:
-                                modem = Array.from(modems.values()).find(function (modem) { return modem.imei === imei; });
+                                modem = Array.from(modems.values())
+                                    .find(function (modem) { return modem.imei === imei; });
                                 if (!modem) {
                                     return [2 /*return*/, undefined];
                                 }
+                                modem["__api_rebootDongle_called__"] = true;
                                 return [4 /*yield*/, modem.terminate()];
                             case 1:
                                 _b.sent();

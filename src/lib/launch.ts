@@ -22,7 +22,10 @@ const debug = logger.debugFactory();
 
 const modems: types.Modems = new TrackableMap();
 
-const evtScheduleRetry = new SyncEvent<AccessPoint["id"]>();
+const evtScheduleRetry = new SyncEvent<{ 
+    accessPointId: AccessPoint["id"]; 
+    shouldRebootModem: boolean
+}>();
 
 export async function beforeExit() {
 
@@ -99,7 +102,7 @@ export async function launch() {
         accessPoint=> debug(`(Monitor) Disconnect: ${accessPoint}`)
     );
 
-    evtScheduleRetry.attach(accessPointId => {
+    evtScheduleRetry.attach(({accessPointId, shouldRebootModem}) => {
 
         const accessPoint = Array.from(monitor.connectedModems).find(({ id })=> id === accessPointId);
 
@@ -109,7 +112,7 @@ export async function launch() {
 
         monitor.evtModemDisconnect
             .waitFor(ap => ap === accessPoint, 2000)
-            .catch(() => createModem(accessPoint, "REBOOT"))
+            .catch(() => createModem(accessPoint, shouldRebootModem?"REBOOT":undefined))
             ;
 
     });
@@ -136,7 +139,7 @@ async function createModem(accessPoint: AccessPoint, reboot?: undefined | "REBOO
 
         onModemInitializationFailed(
             accessPoint,
-            (error as InitializationError).modemInfos
+            error as InitializationError
         );
 
         return;
@@ -149,12 +152,12 @@ async function createModem(accessPoint: AccessPoint, reboot?: undefined | "REBOO
 
 function onModemInitializationFailed(
     accessPoint: AccessPoint,
-    modemInfos: InitializationError["modemInfos"]
+    initializationError: InitializationError
 ) {
 
     modems.delete(accessPoint);
 
-    if ( modemInfos.haveFailedToReboot === true ){
+    if( initializationError instanceof InitializationError.DidNotTurnBackOnAfterReboot ){
 
         hostRebootScheduler.schedule();
 
@@ -162,13 +165,24 @@ function onModemInitializationFailed(
 
     }
 
-    if( modemInfos.hasSim === false ){
+    if( initializationError.modemInfos.hasSim === false ){
 
         return;
 
     }
 
-    evtScheduleRetry.post(accessPoint.id);
+    /*
+    NOTE: When we get an initialization error
+    after a modem have been successfully rebooted
+    do not attempt to reboot it again to prevent
+    reboot loop that will conduct to the host being 
+    rebooted
+    */
+    evtScheduleRetry.post({
+        "accessPointId": accessPoint.id,
+        "shouldRebootModem": 
+            !initializationError.modemInfos.successfullyRebooted 
+    });
 
 }
 
@@ -280,6 +294,8 @@ function onModem(
 
     debug("Modem successfully initialized".green);
 
+    const initializationTime = Date.now();
+
     modem.evtTerminate.attachOnce(
         error => {
 
@@ -287,7 +303,23 @@ function onModem(
 
             debug(`Modem terminate... ${error ? error.message : "No internal error"}`);
 
-            evtScheduleRetry.post(accessPoint.id);
+            /** 
+             * NOTE: Preventing Modem reboot loop by allowing 
+             * modem to be rebooted at most once every hour.
+             */
+            evtScheduleRetry.post({
+                "accessPointId": accessPoint.id,
+                "shouldRebootModem": (
+                    !!modem["__api_rebootDongle_called__"] ||
+                    (
+                        !!error &&
+                        (
+                            !modem.successfullyRebooted ||
+                            Date.now() - initializationTime > 3600000
+                        )
+                    )
+                )
+            });
 
         }
     );

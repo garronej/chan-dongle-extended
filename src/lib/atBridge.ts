@@ -29,45 +29,18 @@ export function init(
             return;
         }
 
-        debug("Configure modem to reject call waiting");
-
-        const read= async ()=> {
-
-            await modem.runCommand("AT+CCWA?\r", { "recoverable": true })
-                .then(({ raw }) => debug(`${accessPoint.dataIfPath} CCWA Read: ${readableAt(raw)}`));
-
-        };
-
-        const set= async (params: string)=> {
-
-            const { final, raw } = await modem.runCommand(`AT+CCWA=${params}\r`, { "recoverable": true });
-
-            debug(`${accessPoint.dataIfPath} CCWA Set ${params}: ${readableAt(raw)}`, { final })
-
-            return final;
-
-        }
-
-        await modem.runCommand("AT+CCWA=?\r", { "recoverable": true })
-            .then(({ raw }) => debug(`${accessPoint.dataIfPath} CCWA Test: ${readableAt(raw)}`));
-
-        await read();
-
-        if( (await set("0,0,1")).isError ){
-
-            await read();
-
-            if( (await set(",0,1")).isError ){
-
-                await read();
-
-                if ((await set("0,,1")).isError) {
-                    debug("Everything have failed");
-                }
+        await modem.runCommand(
+            `AT+CCWA=0,0,1\r`,
+            {
+                "recoverable": true,
+                "retryOnErrors": [30, 257]
             }
-        }
-
-        await read();
+        ).then(({ final }) =>
+            debug(
+                "Configure modem to reject call waiting:",
+                final.isError ? final : "SUCCESS"
+            )
+        );
 
         atBridge(accessPoint, modem, tty0ttyFactory());
 
@@ -235,7 +208,7 @@ function atBridge(
         modem.evtUnsolicitedAtMessage.attach(
             urc => {
 
-                let doNotForward= (
+                let doNotForward = (
                     urc.id === "CX_BOOT_URC" ||
                     urc.id === "CX_RSSI_URC" ||
                     (urc instanceof AtMessage.P_CMTI_URC) && (
@@ -244,13 +217,13 @@ function atBridge(
                     )
                 );
 
-                if( !doNotForward ){
+                if (!doNotForward) {
 
                     portVirtual.writeAndDrain(urc.raw);
 
                 }
 
-                debug(`(AT) urc: ${readableAt(urc.raw)} ( ${doNotForward?"NOT forwarded":"forwarded"} to asterisk-chan-dongle )`);
+                debug(`(AT) urc: ${readableAt(urc.raw)} ( ${doNotForward ? "NOT forwarded" : "forwarded"} to asterisk-chan-dongle )`);
 
             })
     );

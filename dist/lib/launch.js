@@ -135,7 +135,8 @@ function launch() {
                         createModem(accessPoint);
                     });
                     monitor.evtModemDisconnect.attach(function (accessPoint) { return debug("(Monitor) Disconnect: " + accessPoint); });
-                    evtScheduleRetry.attach(function (accessPointId) {
+                    evtScheduleRetry.attach(function (_a) {
+                        var accessPointId = _a.accessPointId, shouldRebootModem = _a.shouldRebootModem;
                         var accessPoint = Array.from(monitor.connectedModems).find(function (_a) {
                             var id = _a.id;
                             return id === accessPointId;
@@ -145,7 +146,7 @@ function launch() {
                         }
                         monitor.evtModemDisconnect
                             .waitFor(function (ap) { return ap === accessPoint; }, 2000)
-                            .catch(function () { return createModem(accessPoint, "REBOOT"); });
+                            .catch(function () { return createModem(accessPoint, shouldRebootModem ? "REBOOT" : undefined); });
                     });
                     return [2 /*return*/];
             }
@@ -177,7 +178,7 @@ function createModem(accessPoint, reboot) {
                     return [3 /*break*/, 4];
                 case 3:
                     error_1 = _a.sent();
-                    onModemInitializationFailed(accessPoint, error_1.modemInfos);
+                    onModemInitializationFailed(accessPoint, error_1);
                     return [2 /*return*/];
                 case 4:
                     onModem(accessPoint, modem);
@@ -186,16 +187,26 @@ function createModem(accessPoint, reboot) {
         });
     });
 }
-function onModemInitializationFailed(accessPoint, modemInfos) {
+function onModemInitializationFailed(accessPoint, initializationError) {
     modems.delete(accessPoint);
-    if (modemInfos.haveFailedToReboot === true) {
+    if (initializationError instanceof ts_gsm_modem_1.InitializationError.DidNotTurnBackOnAfterReboot) {
         hostRebootScheduler.schedule();
         return;
     }
-    if (modemInfos.hasSim === false) {
+    if (initializationError.modemInfos.hasSim === false) {
         return;
     }
-    evtScheduleRetry.post(accessPoint.id);
+    /*
+    NOTE: When we get an initialization error
+    after a modem have been successfully rebooted
+    do not attempt to reboot it again to prevent
+    reboot loop that will conduct to the host being
+    rebooted
+    */
+    evtScheduleRetry.post({
+        "accessPointId": accessPoint.id,
+        "shouldRebootModem": !initializationError.modemInfos.successfullyRebooted
+    });
 }
 function onLockedModem(accessPoint, modemInfos, iccid, pinState, tryLeft, performUnlock, terminate) {
     return __awaiter(this, void 0, void 0, function () {
@@ -286,10 +297,21 @@ function onLockedModem(accessPoint, modemInfos, iccid, pinState, tryLeft, perfor
 }
 function onModem(accessPoint, modem) {
     debug("Modem successfully initialized".green);
+    var initializationTime = Date.now();
     modem.evtTerminate.attachOnce(function (error) {
         modems.delete(accessPoint);
         debug("Modem terminate... " + (error ? error.message : "No internal error"));
-        evtScheduleRetry.post(accessPoint.id);
+        /**
+         * NOTE: Preventing Modem reboot loop by allowing
+         * modem to be rebooted at most once every hour.
+         */
+        evtScheduleRetry.post({
+            "accessPointId": accessPoint.id,
+            "shouldRebootModem": (!!modem["__api_rebootDongle_called__"] ||
+                (!!error &&
+                    (!modem.successfullyRebooted ||
+                        Date.now() - initializationTime > 3600000)))
+        });
     });
     modems.set(accessPoint, modem);
 }

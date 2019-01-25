@@ -329,13 +329,16 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
         const handler: sipLibrary.api.Server.Handler<Params, Response> = {
             "handler": async ({ imei }) => {
 
-                const modem= Array.from(modems.values()).find(modem=> modem.imei === imei);
+                const modem= Array.from(modems.values())
+                    .find(modem => modem.imei === imei);
 
                 if( !modem ){
 
                     return undefined;
 
                 }
+
+                modem["__api_rebootDongle_called__"]= true;
 
                 await modem.terminate();
 
