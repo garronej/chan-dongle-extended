@@ -225,7 +225,8 @@ function atBridge(
 
                 debug(`(AT) urc: ${readableAt(urc.raw)} ( ${doNotForward ? "NOT forwarded" : "forwarded"} to asterisk-chan-dongle )`);
 
-            })
+            }
+        )
     );
 
 
