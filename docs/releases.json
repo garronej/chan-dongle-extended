@@ -3,9 +3,9 @@
   "5.5.2_armv6l": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.2_armv6l.tar.gz",
   "armv7l": "5.5.6_armv7l",
   "5.5.2_armv7l": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.2_armv7l.tar.gz",
-  "i686": "5.5.6_i686",
+  "i686": "5.5.7_i686",
   "5.5.2_i686": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.2_i686.tar.gz",
-  "x86_64": "5.5.6_x86_64",
+  "x86_64": "5.5.7_x86_64",
   "5.5.2_x86_64": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.2_x86_64.tar.gz",
   "5.5.3_armv6l": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.3_armv6l.tar.gz",
   "5.5.3_armv7l": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.3_armv7l.tar.gz",
@@ -22,5 +22,7 @@
   "5.5.6_armv7l": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.6_armv7l.tar.gz",
   "5.5.6_i686": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.6_i686.tar.gz",
   "5.5.6_x86_64": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.6_x86_64.tar.gz",
-  "5.5.6_armv6l": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.6_armv6l.tar.gz"
+  "5.5.6_armv6l": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.6_armv6l.tar.gz",
+  "5.5.7_i686": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.7_i686.tar.gz",
+  "5.5.7_x86_64": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.7_x86_64.tar.gz"
 }
