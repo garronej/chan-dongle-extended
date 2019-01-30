@@ -811,6 +811,26 @@ export namespace tty0tty {
 
     }
 
+    export async function re_install_if_needed() {
+
+        while (!scriptLib.sh_if(`test -e "${tty0tty.ko_file_path}"`)) {
+
+            console.log("Linux kernel updated, need to rebuild tty0tty...");
+
+            try {
+
+                await tty0tty.install();
+
+            } catch (error) {
+
+                console.log("Building tty0tty failed", error);
+
+            }
+
+        }
+
+    }
+
 }
 
 namespace asterisk_chan_dongle {
@@ -1444,6 +1464,11 @@ if (require.main === module) {
                     options["asterisk_main_conf"] || "/etc/asterisk/asterisk.conf"
                 )
             ))
+            ;
+
+        program
+            .command("re-install-tty0tty-if-needed")
+            .action(()=> tty0tty.re_install_if_needed())
             ;
 
         program.parse(process.argv);

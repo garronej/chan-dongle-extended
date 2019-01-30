@@ -32,21 +32,7 @@ scriptLib.createService({
 
                 await hostRebootScheduler.rebootIfScheduled();
 
-                while( !scriptLib.sh_if(`test -e "${tty0tty.ko_file_path}"`) ){
-
-                    debug("Linux kernel updated, need to rebuild tty0tty...");
-
-                    try{
-
-                        await tty0tty.install();
-
-                    }catch(error){
-
-                        debug("Building tty0tty failed", error);
-
-                    }
-
-                }
+                await tty0tty.re_install_if_needed();
 
                 while (true) {
 
