@@ -562,7 +562,7 @@ function uninstall(verbose: false | "VERBOSE" = false) {
 
 }
 
-namespace tty0tty {
+export namespace tty0tty {
 
     const h_dir_path = path.join(working_directory_path, "linux-headers");
 
@@ -755,7 +755,7 @@ namespace tty0tty {
     }
 
     const load_module_file_path = "/etc/modules";
-    const ko_file_path = "/lib/modules/$(uname -r)/kernel/drivers/misc/tty0tty.ko";
+    export const ko_file_path = "/lib/modules/$(uname -r)/kernel/drivers/misc/tty0tty.ko";
 
     export async function install() {
 
@@ -1053,7 +1053,7 @@ namespace asterisk_manager {
         try {
 
             scriptLib.execSyncQuiet(
-                `${build_ast_cmdline()} -rx "core reload"`,
+                `${build_ast_cmdline()} -rx "core restart now"`,
                 { "timeout": 5000 }
             );
 
@@ -1078,7 +1078,7 @@ namespace asterisk_manager {
         try {
 
             scriptLib.execSyncQuiet(
-                `${build_ast_cmdline()} -rx "core reload"`,
+                `${build_ast_cmdline()} -rx "core restart now"`,
                 { "timeout": 5000 }
             );
 

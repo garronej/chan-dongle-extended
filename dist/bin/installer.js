@@ -726,7 +726,7 @@ var tty0tty;
         });
     }
     var load_module_file_path = "/etc/modules";
-    var ko_file_path = "/lib/modules/$(uname -r)/kernel/drivers/misc/tty0tty.ko";
+    tty0tty.ko_file_path = "/lib/modules/$(uname -r)/kernel/drivers/misc/tty0tty.ko";
     function install() {
         return __awaiter(this, void 0, void 0, function () {
             var _a, exec, onSuccess, tty0tty_dir_path, cdExec, _b;
@@ -750,7 +750,7 @@ var tty0tty;
                         return [4 /*yield*/, remove_local_linux_headers()];
                     case 5:
                         _c.sent();
-                        return [4 /*yield*/, cdExec("cp tty0tty.ko " + ko_file_path)];
+                        return [4 /*yield*/, cdExec("cp tty0tty.ko " + tty0tty.ko_file_path)];
                     case 6:
                         _c.sent();
                         return [4 /*yield*/, exec("rm -r " + tty0tty_dir_path)];
@@ -783,10 +783,10 @@ var tty0tty;
     tty0tty.install = install;
     function remove() {
         fs.writeFileSync(load_module_file_path, Buffer.from(("" + fs.readFileSync(load_module_file_path)).replace(/tty0tty\n?/g, ""), "utf8"));
-        scriptLib.execSyncQuiet("rm -f " + ko_file_path);
+        scriptLib.execSyncQuiet("rm -f " + tty0tty.ko_file_path);
     }
     tty0tty.remove = remove;
-})(tty0tty || (tty0tty = {}));
+})(tty0tty = exports.tty0tty || (exports.tty0tty = {}));
 var asterisk_chan_dongle;
 (function (asterisk_chan_dongle) {
     function linkDongleConfigFile() {
@@ -970,7 +970,7 @@ var asterisk_manager;
                             },
                             _a)), "utf8"));
                         try {
-                            scriptLib.execSyncQuiet(build_ast_cmdline() + " -rx \"core reload\"", { "timeout": 5000 });
+                            scriptLib.execSyncQuiet(build_ast_cmdline() + " -rx \"core restart now\"", { "timeout": 5000 });
                         }
                         catch (_c) { }
                         AmiCredential_1.AmiCredential.set(credential);
@@ -987,7 +987,7 @@ var asterisk_manager;
             scriptLib.execSyncQuiet("mv " + ami_conf_back_path + " " + get_ami_conf_path());
         }
         try {
-            scriptLib.execSyncQuiet(build_ast_cmdline() + " -rx \"core reload\"", { "timeout": 5000 });
+            scriptLib.execSyncQuiet(build_ast_cmdline() + " -rx \"core restart now\"", { "timeout": 5000 });
         }
         catch (_a) { }
     }

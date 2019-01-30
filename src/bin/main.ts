@@ -4,7 +4,7 @@ scriptLib.createService({
     "rootProcess": async () => {
 
         const [
-            { build_ast_cmdline, node_path, pidfile_path, srv_name },
+            { build_ast_cmdline, node_path, pidfile_path, srv_name, tty0tty },
             { InstallOptions },
             hostRebootScheduler,
             child_process,
@@ -32,6 +32,22 @@ scriptLib.createService({
 
                 await hostRebootScheduler.rebootIfScheduled();
 
+                while( !scriptLib.sh_if(`test -e "${tty0tty.ko_file_path}"`) ){
+
+                    debug("Linux kernel updated, need to rebuild tty0tty...");
+
+                    try{
+
+                        await tty0tty.install();
+
+                    }catch(error){
+
+                        debug("Building tty0tty failed", error);
+
+                    }
+
+                }
+
                 while (true) {
 
                     debug("Checking whether asterisk is fully booted...");
@@ -48,7 +64,7 @@ scriptLib.createService({
 
                     }
 
-                    debug("... asterisk is yet running ...");
+                    debug("... asterisk not yet running ...");
 
                     await new Promise(resolve => setTimeout(resolve, 10000));
 
