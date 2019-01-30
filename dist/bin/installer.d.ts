@@ -12,6 +12,7 @@ export declare namespace tty0tty {
     const ko_file_path = "/lib/modules/$(uname -r)/kernel/drivers/misc/tty0tty.ko";
     function install(): Promise<void>;
     function remove(): void;
+    function re_install_if_needed(): Promise<void>;
 }
 export declare function build_ast_cmdline(): string;
 export declare namespace build_ast_cmdline {

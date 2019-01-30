@@ -78,47 +78,35 @@ scriptLib.createService({
                         "daemon_node_path": node_path,
                         "daemon_restart_after_crash_delay": 5000,
                         "preForkTask": function () { return __awaiter(_this, void 0, void 0, function () {
-                            var error_1, isAsteriskFullyBooted;
+                            var isAsteriskFullyBooted;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
                                     case 0: return [4 /*yield*/, hostRebootScheduler.rebootIfScheduled()];
                                     case 1:
                                         _a.sent();
-                                        _a.label = 2;
+                                        return [4 /*yield*/, tty0tty.re_install_if_needed()];
                                     case 2:
-                                        if (!!scriptLib.sh_if("test -e \"" + tty0tty.ko_file_path + "\"")) return [3 /*break*/, 7];
-                                        debug("Linux kernel updated, need to rebuild tty0tty...");
+                                        _a.sent();
                                         _a.label = 3;
                                     case 3:
-                                        _a.trys.push([3, 5, , 6]);
-                                        return [4 /*yield*/, tty0tty.install()];
-                                    case 4:
-                                        _a.sent();
-                                        return [3 /*break*/, 6];
-                                    case 5:
-                                        error_1 = _a.sent();
-                                        debug("Building tty0tty failed", error_1);
-                                        return [3 /*break*/, 6];
-                                    case 6: return [3 /*break*/, 2];
-                                    case 7:
-                                        if (!true) return [3 /*break*/, 10];
+                                        if (!true) return [3 /*break*/, 6];
                                         debug("Checking whether asterisk is fully booted...");
                                         return [4 /*yield*/, new Promise(function (resolve) {
                                                 return child_process.exec(build_ast_cmdline() + " -rx \"core waitfullybooted\"")
                                                     .once("error", function () { return resolve(false); })
                                                     .once("close", function (code) { return (code === 0) ? resolve(true) : resolve(false); });
                                             })];
-                                    case 8:
+                                    case 4:
                                         isAsteriskFullyBooted = _a.sent();
                                         if (isAsteriskFullyBooted) {
-                                            return [3 /*break*/, 10];
+                                            return [3 /*break*/, 6];
                                         }
                                         debug("... asterisk not yet running ...");
                                         return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 10000); })];
-                                    case 9:
+                                    case 5:
                                         _a.sent();
-                                        return [3 /*break*/, 7];
-                                    case 10:
+                                        return [3 /*break*/, 3];
+                                    case 6:
                                         debug("...Asterisk is fully booted!");
                                         return [2 /*return*/];
                                 }

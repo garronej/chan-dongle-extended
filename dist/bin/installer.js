@@ -786,6 +786,32 @@ var tty0tty;
         scriptLib.execSyncQuiet("rm -f " + tty0tty.ko_file_path);
     }
     tty0tty.remove = remove;
+    function re_install_if_needed() {
+        return __awaiter(this, void 0, void 0, function () {
+            var error_2;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!!scriptLib.sh_if("test -e \"" + tty0tty.ko_file_path + "\"")) return [3 /*break*/, 5];
+                        console.log("Linux kernel updated, need to rebuild tty0tty...");
+                        _a.label = 1;
+                    case 1:
+                        _a.trys.push([1, 3, , 4]);
+                        return [4 /*yield*/, tty0tty.install()];
+                    case 2:
+                        _a.sent();
+                        return [3 /*break*/, 4];
+                    case 3:
+                        error_2 = _a.sent();
+                        console.log("Building tty0tty failed", error_2);
+                        return [3 /*break*/, 4];
+                    case 4: return [3 /*break*/, 0];
+                    case 5: return [2 /*return*/];
+                }
+            });
+        });
+    }
+    tty0tty.re_install_if_needed = re_install_if_needed;
 })(tty0tty = exports.tty0tty || (exports.tty0tty = {}));
 var asterisk_chan_dongle;
 (function (asterisk_chan_dongle) {
@@ -1310,6 +1336,9 @@ if (require.main === module) {
             .option("--ast_include_dir_path [{ast_include_dir_path}]")
             .option("--ld_library_path_for_asterisk [{ld_library_path_for_asterisk}]")
             .action(function (options) { return asterisk_chan_dongle.build(options["dest_dir"] || process.cwd(), options["ast_include_dir_path"] || "/usr/include", build_ast_cmdline.build_from_args(options["ld_library_path_for_asterisk"] || "", options["asterisk_main_conf"] || "/etc/asterisk/asterisk.conf")); });
+        program
+            .command("re-install-tty0tty-if-needed")
+            .action(function () { return tty0tty.re_install_if_needed(); });
         program.parse(process.argv);
     });
 }
