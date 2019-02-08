@@ -1,6 +1,6 @@
 {
   "armv6l": "5.5.9_armv6l",
-  "armv7l": "5.5.7_armv7l",
+  "armv7l": "5.5.9_armv7l",
   "i686": "5.5.9_i686",
   "x86_64": "5.5.9_x86_64",
   "5.5.2_i686": "https://github.com/garronej/releases/releases/download/chan-dongle-extended/dongle_5.5.2_i686.tar.gz",
