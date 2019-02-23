@@ -1,6 +1,6 @@
 {
   "name": "chan-dongle-extended",
-  "version": "5.5.9",
+  "version": "5.5.10",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
@@ -8,7 +8,7 @@
     "partial_install": "npm install --no-package-lock commander@2.19.0 garronej/scripting-tools garronej/chan-dongle-extended-client",
     "preinstall": "npm run partial_install && sudo $(which node) ./dist/bin/installer install_prereq",
     "postinstall": "cp $(readlink -e $(which node)) ./node",
-    "tsc": "./node ./node_modules/typescript/bin/tsc -p ./tsconfig.json",
+    "tsc": "node ./node_modules/typescript/bin/tsc -p ./tsconfig.json",
     "start": "sudo ./node ./dist/bin/main.js",
     "release": "sudo $(which node) ./dist/bin/installer release",
     "test": "sudo ./node ./dist/test/db"
@@ -40,6 +40,6 @@
   "devDependencies": {
     "@types/node": "^8.9.1",
     "@types/node-persist": "0.0.31",
-    "typescript": "^2.9.2"
+    "typescript": "^3.3.3333"
   }
 }

@@ -291,13 +291,15 @@ function program_action_update(options) {
 }
 function program_action_release() {
     return __awaiter(this, void 0, void 0, function () {
-        var e_2, _a, e_3, _b, _module_dir_path, to_distribute_rel_paths_1, to_distribute_rel_paths_1_1, name, arch, releases_file_path, releases, deps_digest_filename, deps_digest, previous_release_dir_path, node_modules_need_update, last_version, _c, _d, name, _node_modules_path, version, tarball_file_path, putasset_dir_path, dl_url;
+        var e_2, _a, e_3, _b, tmp_dir_path, _module_dir_path, to_distribute_rel_paths_1, to_distribute_rel_paths_1_1, name, arch, deps_digest_filename, deps_digest, node_modules_need_update, putasset_target, releases_index_file_path, releases_index_file_url, fetch_releases_index, releases_index, last_version, previous_release_dir_path, _c, _d, name, _node_modules_path, version, tarball_file_path, putasset_dir_path, uploadAsset, tarball_file_url;
+        var _this = this;
         return __generator(this, function (_e) {
             switch (_e.label) {
                 case 0:
                     scriptLib.enableCmdTrace();
-                    _module_dir_path = path.join("/tmp", path.basename(module_dir_path));
-                    scriptLib.execSyncTrace("rm -rf " + _module_dir_path);
+                    tmp_dir_path = path.join("/tmp", "dongle_release_" + Date.now());
+                    scriptLib.execSyncTrace("rm -rf " + tmp_dir_path + " && mkdir " + tmp_dir_path);
+                    _module_dir_path = path.join(tmp_dir_path, path.basename(module_dir_path));
                     try {
                         for (to_distribute_rel_paths_1 = __values(to_distribute_rel_paths), to_distribute_rel_paths_1_1 = to_distribute_rel_paths_1.next(); !to_distribute_rel_paths_1_1.done; to_distribute_rel_paths_1_1 = to_distribute_rel_paths_1.next()) {
                             name = to_distribute_rel_paths_1_1.value;
@@ -312,24 +314,51 @@ function program_action_release() {
                         finally { if (e_2) throw e_2.error; }
                     }
                     arch = scriptLib.sh_eval("uname -m");
-                    releases_file_path = path.join(module_dir_path, "docs", "releases.json");
-                    releases = require(releases_file_path);
                     deps_digest_filename = "dependencies.md5";
                     deps_digest = crypto
                         .createHash("md5")
                         .update(Buffer.from(JSON.stringify(require(path.join(module_dir_path, "package-lock.json"))["dependencies"]), "utf8"))
                         .digest("hex");
-                    previous_release_dir_path = path.join(_module_dir_path, "previous_release");
-                    last_version = releases[arch];
-                    if (!(last_version === undefined)) return [3 /*break*/, 1];
+                    putasset_target = {
+                        "owner": "garronej",
+                        "repo": "releases",
+                        "tag": "chan-dongle-extended"
+                    };
+                    releases_index_file_path = path.join(tmp_dir_path, "index.json");
+                    releases_index_file_url = [
+                        "https://github.com",
+                        putasset_target.owner,
+                        putasset_target.repo,
+                        "releases",
+                        "download",
+                        putasset_target.tag,
+                        path.basename(releases_index_file_path)
+                    ].join('/');
+                    fetch_releases_index = function () { return __awaiter(_this, void 0, void 0, function () {
+                        var _a, _b;
+                        return __generator(this, function (_c) {
+                            switch (_c.label) {
+                                case 0:
+                                    _b = (_a = JSON).parse;
+                                    return [4 /*yield*/, scriptLib.web_get(releases_index_file_url)];
+                                case 1: return [2 /*return*/, _b.apply(_a, [_c.sent()])];
+                            }
+                        });
+                    }); };
+                    return [4 /*yield*/, fetch_releases_index()];
+                case 1:
+                    releases_index = _e.sent();
+                    last_version = releases_index[arch];
+                    previous_release_dir_path = path.join(tmp_dir_path, "previous_release");
+                    if (!(last_version === undefined)) return [3 /*break*/, 2];
                     node_modules_need_update = true;
-                    return [3 /*break*/, 3];
-                case 1: return [4 /*yield*/, scriptLib.download_and_extract_tarball(releases[last_version], previous_release_dir_path, "OVERWRITE IF EXIST")];
-                case 2:
+                    return [3 /*break*/, 4];
+                case 2: return [4 /*yield*/, scriptLib.download_and_extract_tarball(releases_index[last_version], previous_release_dir_path, "OVERWRITE IF EXIST")];
+                case 3:
                     _e.sent();
                     node_modules_need_update = fs.readFileSync(path.join(previous_release_dir_path, deps_digest_filename)).toString("utf8") !== deps_digest;
-                    _e.label = 3;
-                case 3:
+                    _e.label = 4;
+                case 4:
                     if (!node_modules_need_update) {
                         console.log("node_modules haven't change since last release");
                         try {
@@ -385,38 +414,40 @@ function program_action_release() {
                             }
                         })();
                     }
-                    scriptLib.execSyncTrace("rm -rf " + previous_release_dir_path);
                     version = require(path.join(module_dir_path, "package.json")).version;
-                    tarball_file_path = path.join("/tmp", "dongle_" + version + "_" + arch + ".tar.gz");
+                    tarball_file_path = path.join(tmp_dir_path, "dongle_" + version + "_" + arch + ".tar.gz");
                     scriptLib.execSyncTrace([
                         "tar -czf",
                         tarball_file_path,
                         "-C " + _module_dir_path + " ."
                     ].join(" "));
-                    scriptLib.execSyncTrace("rm -r " + _module_dir_path);
-                    putasset_dir_path = path.join("/tmp", "node-putasset");
-                    scriptLib.execSyncTrace("rm -rf " + putasset_dir_path);
+                    putasset_dir_path = path.join(tmp_dir_path, "node-putasset");
                     scriptLib.execSyncTrace("git clone https://github.com/garronej/node-putasset", { "cwd": path.join(putasset_dir_path, "..") });
                     scriptLib.execSyncTrace([
                         "sudo",
                         "env \"PATH=" + path.dirname(process.argv[0]) + ":" + process.env["PATH"] + "\"",
                         "npm install --production --unsafe-perm",
                     ].join(" "), { "cwd": putasset_dir_path });
-                    console.log("Start uploading...");
-                    dl_url = scriptLib.sh_eval([
+                    uploadAsset = function (file_path) { return scriptLib.sh_eval([
                         process.argv[0] + " " + path.join(putasset_dir_path, "bin", "putasset.js"),
                         "-k " + fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
                             .toString("utf8")
                             .replace(/\s/g, ""),
-                        "-r releases",
-                        "-o garronej",
-                        "-t chan-dongle-extended",
-                        "-f \"" + tarball_file_path + "\"",
+                        "-r " + putasset_target.repo,
+                        "-o " + putasset_target.owner,
+                        "-t " + putasset_target.tag,
+                        "-f \"" + file_path + "\"",
                         "--force"
-                    ].join(" "));
-                    scriptLib.execSyncTrace("rm -r " + putasset_dir_path + " " + tarball_file_path);
-                    releases[releases[arch] = version + "_" + arch] = dl_url;
-                    fs.writeFileSync(releases_file_path, Buffer.from(JSON.stringify(releases, null, 2), "utf8"));
+                    ].join(" ")); };
+                    console.log("Start uploading...");
+                    tarball_file_url = uploadAsset(tarball_file_path);
+                    return [4 /*yield*/, fetch_releases_index()];
+                case 5:
+                    releases_index = _e.sent();
+                    releases_index[releases_index[arch] = version + "_" + arch] = tarball_file_url;
+                    fs.writeFileSync(releases_index_file_path, Buffer.from(JSON.stringify(releases_index, null, 2), "utf8"));
+                    uploadAsset(releases_index_file_path);
+                    scriptLib.execSync("rm -r " + tmp_dir_path);
                     console.log("---DONE---");
                     return [2 /*return*/];
             }

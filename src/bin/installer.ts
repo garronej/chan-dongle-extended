@@ -241,19 +241,17 @@ async function program_action_release() {
 
     scriptLib.enableCmdTrace();
 
-    const _module_dir_path = path.join("/tmp", path.basename(module_dir_path));
+    const tmp_dir_path = path.join("/tmp", `dongle_release_${Date.now()}`);
 
-    scriptLib.execSyncTrace(`rm -rf ${_module_dir_path}`);
+    scriptLib.execSyncTrace(`rm -rf ${tmp_dir_path} && mkdir ${tmp_dir_path}`);
+
+    const _module_dir_path = path.join(tmp_dir_path, path.basename(module_dir_path));
 
     for (const name of to_distribute_rel_paths) {
         scriptLib.fs_move("COPY", module_dir_path, _module_dir_path, name);
     }
 
     const arch = scriptLib.sh_eval("uname -m");
-
-    const releases_file_path = path.join(module_dir_path, "docs", "releases.json");
-
-    const releases = require(releases_file_path);
 
     const deps_digest_filename = "dependencies.md5";
 
@@ -272,11 +270,37 @@ async function program_action_release() {
         .digest("hex")
         ;
 
-    const previous_release_dir_path = path.join(_module_dir_path, "previous_release");
 
     let node_modules_need_update: boolean;
 
-    const last_version = releases[arch];
+    const putasset_target = {
+        "owner": "garronej",
+        "repo": "releases",
+        "tag": "chan-dongle-extended"
+    };
+
+    const releases_index_file_path = path.join(tmp_dir_path, "index.json");
+
+    const releases_index_file_url = [
+        "https://github.com",
+        putasset_target.owner,
+        putasset_target.repo,
+        "releases",
+        "download",
+        putasset_target.tag,
+        path.basename(releases_index_file_path)
+    ].join('/');
+
+    const fetch_releases_index = async () =>
+        JSON.parse(
+            await scriptLib.web_get(releases_index_file_url)
+        );
+
+    let releases_index = await fetch_releases_index();
+
+    const last_version = releases_index[arch];
+
+    const previous_release_dir_path = path.join(tmp_dir_path, "previous_release");
 
     if (last_version === undefined) {
 
@@ -284,8 +308,9 @@ async function program_action_release() {
 
     } else {
 
+
         await scriptLib.download_and_extract_tarball(
-            releases[last_version],
+            releases_index[last_version],
             previous_release_dir_path,
             "OVERWRITE IF EXIST"
         );
@@ -344,7 +369,10 @@ async function program_action_release() {
 
         (function hide_auth_token() {
 
-            const files = scriptLib.execSync(`find . -name "package-lock.json" -o -name "package.json"`, { "cwd": _module_dir_path })
+            const files = scriptLib.execSync(
+                `find . -name "package-lock.json" -o -name "package.json"`,
+                { "cwd": _module_dir_path }
+            )
                 .slice(0, -1)
                 .split("\n")
                 .map(rp => path.join(_module_dir_path, rp));
@@ -367,11 +395,9 @@ async function program_action_release() {
 
     }
 
-    scriptLib.execSyncTrace(`rm -rf ${previous_release_dir_path}`);
-
     const { version } = require(path.join(module_dir_path, "package.json"));
 
-    const tarball_file_path = path.join("/tmp", `dongle_${version}_${arch}.tar.gz`);
+    const tarball_file_path = path.join(tmp_dir_path, `dongle_${version}_${arch}.tar.gz`);
 
     scriptLib.execSyncTrace([
         "tar -czf",
@@ -379,11 +405,7 @@ async function program_action_release() {
         `-C ${_module_dir_path} .`
     ].join(" "));
 
-    scriptLib.execSyncTrace(`rm -r ${_module_dir_path}`);
-
-    const putasset_dir_path = path.join("/tmp", "node-putasset");
-
-    scriptLib.execSyncTrace(`rm -rf ${putasset_dir_path}`);
+    const putasset_dir_path = path.join(tmp_dir_path, "node-putasset");
 
     scriptLib.execSyncTrace(
         `git clone https://github.com/garronej/node-putasset`,
@@ -399,33 +421,39 @@ async function program_action_release() {
         { "cwd": putasset_dir_path }
     );
 
-    console.log("Start uploading...");
-
-    const dl_url = scriptLib.sh_eval(
+    const uploadAsset = (file_path: string) => scriptLib.sh_eval(
         [
             `${process.argv[0]} ${path.join(putasset_dir_path, "bin", "putasset.js")}`,
             `-k ` + fs.readFileSync(path.join(module_dir_path, "res", "PUTASSET_TOKEN"))
                 .toString("utf8")
                 .replace(/\s/g, ""),
-            `-r releases`,
-            `-o garronej`,
-            `-t chan-dongle-extended`,
-            `-f "${tarball_file_path}"`,
+            `-r ${putasset_target.repo}`,
+            `-o ${putasset_target.owner}`,
+            `-t ${putasset_target.tag}`,
+            `-f "${file_path}"`,
             `--force`
         ].join(" ")
     );
 
-    scriptLib.execSyncTrace(`rm -r ${putasset_dir_path} ${tarball_file_path}`);
+    console.log("Start uploading...");
 
-    releases[releases[arch] = `${version}_${arch}`] = dl_url;
+    const tarball_file_url = uploadAsset(tarball_file_path);
+
+    releases_index = await fetch_releases_index();
+
+    releases_index[releases_index[arch] = `${version}_${arch}`] = tarball_file_url;
 
     fs.writeFileSync(
-        releases_file_path,
+        releases_index_file_path,
         Buffer.from(
-            JSON.stringify(releases, null, 2),
+            JSON.stringify(releases_index, null, 2),
             "utf8"
         )
     );
+
+    uploadAsset(releases_index_file_path);
+
+    scriptLib.execSync(`rm -r ${tmp_dir_path}`);
 
     console.log("---DONE---");
 
@@ -1468,7 +1496,7 @@ if (require.main === module) {
 
         program
             .command("re-install-tty0tty-if-needed")
-            .action(()=> tty0tty.re_install_if_needed())
+            .action(() => tty0tty.re_install_if_needed())
             ;
 
         program.parse(process.argv);

@@ -1,6 +1,6 @@
 # Chan-dongle-extended
 
-[WEBSITE](https://garronej.github.io/chan-dongle-extended/)
+[WEBSITE](https://garronej.github.io/chan-dongle-extended-pages/)
 
 ## Installing node 
 
@@ -30,8 +30,6 @@ this repo then:
 
 * run ``npm run partial_install`` ( without sudo, only first time )
 * run ``npm run release`` ( without sudo )
-* commit *docs/release.json* ( pull first, resolve merge conflict if any )
-* push
 
 ## Run local copy of the code for debugging
 ``` bash
