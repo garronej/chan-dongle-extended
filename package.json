@@ -1,6 +1,6 @@
 {
   "name": "chan-dongle-extended",
-  "version": "5.5.11",
+  "version": "5.5.12",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
@@ -40,6 +40,6 @@
   "devDependencies": {
     "@types/node": "^8.9.1",
     "@types/node-persist": "0.0.31",
-    "typescript": "^3.3.3333"
+    "typescript": "^3.4.5"
   }
 }

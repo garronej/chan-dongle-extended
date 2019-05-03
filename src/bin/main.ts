@@ -4,7 +4,7 @@ scriptLib.createService({
     "rootProcess": async () => {
 
         const [
-            { build_ast_cmdline, node_path, pidfile_path, srv_name, tty0tty },
+            { build_ast_cmdline, node_path, pidfile_path, srv_name, tty0tty, rebuild_node_modules_if_needed },
             { InstallOptions },
             hostRebootScheduler,
             child_process,
@@ -33,6 +33,8 @@ scriptLib.createService({
                 await hostRebootScheduler.rebootIfScheduled();
 
                 await tty0tty.re_install_if_needed();
+
+                await rebuild_node_modules_if_needed();
 
                 while (true) {
 

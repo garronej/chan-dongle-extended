@@ -55,7 +55,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 var scriptLib = require("scripting-tools");
 scriptLib.createService({
     "rootProcess": function () { return __awaiter(_this, void 0, void 0, function () {
-        var _a, _b, build_ast_cmdline, node_path, pidfile_path, srv_name, tty0tty, InstallOptions, hostRebootScheduler, child_process, logger, os, debug, config;
+        var _a, _b, build_ast_cmdline, node_path, pidfile_path, srv_name, tty0tty, rebuild_node_modules_if_needed, InstallOptions, hostRebootScheduler, child_process, logger, os, debug, config;
         var _this = this;
         return __generator(this, function (_c) {
             switch (_c.label) {
@@ -68,7 +68,7 @@ scriptLib.createService({
                         Promise.resolve().then(function () { return require("os"); })
                     ])];
                 case 1:
-                    _a = __read.apply(void 0, [_c.sent(), 6]), _b = _a[0], build_ast_cmdline = _b.build_ast_cmdline, node_path = _b.node_path, pidfile_path = _b.pidfile_path, srv_name = _b.srv_name, tty0tty = _b.tty0tty, InstallOptions = _a[1].InstallOptions, hostRebootScheduler = _a[2], child_process = _a[3], logger = _a[4], os = _a[5];
+                    _a = __read.apply(void 0, [_c.sent(), 6]), _b = _a[0], build_ast_cmdline = _b.build_ast_cmdline, node_path = _b.node_path, pidfile_path = _b.pidfile_path, srv_name = _b.srv_name, tty0tty = _b.tty0tty, rebuild_node_modules_if_needed = _b.rebuild_node_modules_if_needed, InstallOptions = _a[1].InstallOptions, hostRebootScheduler = _a[2], child_process = _a[3], logger = _a[4], os = _a[5];
                     debug = logger.debugFactory();
                     config = {
                         pidfile_path: pidfile_path,
@@ -87,26 +87,29 @@ scriptLib.createService({
                                         return [4 /*yield*/, tty0tty.re_install_if_needed()];
                                     case 2:
                                         _a.sent();
-                                        _a.label = 3;
+                                        return [4 /*yield*/, rebuild_node_modules_if_needed()];
                                     case 3:
-                                        if (!true) return [3 /*break*/, 6];
+                                        _a.sent();
+                                        _a.label = 4;
+                                    case 4:
+                                        if (!true) return [3 /*break*/, 7];
                                         debug("Checking whether asterisk is fully booted...");
                                         return [4 /*yield*/, new Promise(function (resolve) {
                                                 return child_process.exec(build_ast_cmdline() + " -rx \"core waitfullybooted\"")
                                                     .once("error", function () { return resolve(false); })
                                                     .once("close", function (code) { return (code === 0) ? resolve(true) : resolve(false); });
                                             })];
-                                    case 4:
+                                    case 5:
                                         isAsteriskFullyBooted = _a.sent();
                                         if (isAsteriskFullyBooted) {
-                                            return [3 /*break*/, 6];
+                                            return [3 /*break*/, 7];
                                         }
                                         debug("... asterisk not yet running ...");
                                         return [4 /*yield*/, new Promise(function (resolve) { return setTimeout(resolve, 10000); })];
-                                    case 5:
-                                        _a.sent();
-                                        return [3 /*break*/, 3];
                                     case 6:
+                                        _a.sent();
+                                        return [3 /*break*/, 4];
+                                    case 7:
                                         debug("...Asterisk is fully booted!");
                                         return [2 /*return*/];
                                 }

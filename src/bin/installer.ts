@@ -196,37 +196,59 @@ async function program_action_update(options) {
 
     }
 
-    const [
-        node_python_messaging_dir_path,
-        _node_python_messaging_dir_path
-    ] = [module_dir_path, _module_dir_path].map(v => scriptLib.find_module_path("node-python-messaging", v));
 
-    if (
-        path.relative(module_dir_path, node_python_messaging_dir_path)
-        ===
-        path.relative(_module_dir_path, _node_python_messaging_dir_path)
-    ) {
-
-        scriptLib.fs_move("MOVE", node_python_messaging_dir_path, _node_python_messaging_dir_path);
-
-    }
-
-    if (scriptLib.fs_areSame(node_path, path.join(_module_dir_path, path.basename(node_path)))) {
+    for (const moduleName of ["udev","node-python-messaging"] as const) {
 
         const [
-            udev_dir_path,
-            _udev_dir_path
-        ] = [module_dir_path, _module_dir_path].map(v => scriptLib.find_module_path("udev", v));
+            target_module_dir_path,
+            _target_module_dir_path
+        ] = [module_dir_path, _module_dir_path]
+            .map(v => {
+                try {
+                    return scriptLib.find_module_path(moduleName, v);
+                } catch{
+                    return "";
+                }
+            });
 
-        scriptLib.fs_move("MOVE", udev_dir_path, _udev_dir_path);
+        if (!target_module_dir_path || !_target_module_dir_path) {
+            continue;
+        }
+
+        if (
+            moduleName === "udev" && 
+            !scriptLib.fs_areSame(node_path, path.join(_module_dir_path, "node"))
+        ) {
+            //NOTE: node have changes since last version
+            continue;
+        }
+
+        if(
+                path.relative(module_dir_path, target_module_dir_path)
+                !==
+                path.relative(_module_dir_path, _target_module_dir_path)
+        ){
+            //NOTE: The new version of the package is not installed in the same location.
+            continue;
+        }
+
+        if( !([target_module_dir_path, _target_module_dir_path]
+            .map(dir_path => path.join(dir_path, "package.json"))
+            .map(file_path => require(file_path).version)
+            .every((v, _index, [v0]) => v === v0))
+        ){
+            //NOTE: The package have been updated.
+            continue;
+        }
+
+        //NOTE: Nothing have changed, we can keep the old version of the package.
+        scriptLib.fs_move("MOVE", target_module_dir_path, _target_module_dir_path);
 
     }
 
-    for (const name of [...to_distribute_rel_paths, "node_module", "node"]) {
+    for (const name of [...to_distribute_rel_paths, "node_modules", "node"]) {
         scriptLib.fs_move("MOVE", _module_dir_path, module_dir_path, name);
     }
-
-    await rebuild_node_modules();
 
     if (!InstallOptions.get().do_not_create_systemd_conf) {
 
@@ -235,6 +257,7 @@ async function program_action_update(options) {
     }
 
     console.log(scriptLib.colorize("Update success", "GREEN"));
+
 }
 
 async function program_action_release() {
@@ -487,7 +510,7 @@ async function install(options: Partial<InstallOptions>) {
 
         await program_action_install_prereq();
 
-        await rebuild_node_modules();
+        await rebuild_node_modules_if_needed();
 
     } else {
 
@@ -1361,15 +1384,30 @@ export namespace build_ast_cmdline {
 
 }
 
-async function rebuild_node_modules() {
+export async function rebuild_node_modules_if_needed() {
 
-    const { exec, onSuccess } = scriptLib.start_long_running_process("Building node_modules dependencies");
+    const { exec, onSuccess } = scriptLib.start_long_running_process("Building node_modules dependencies if needed");
 
     await (async function build_udev() {
 
-        const udev_dir_path = scriptLib.find_module_path("udev", module_dir_path);
+        let udev_dir_path: string;
+        try {
+            udev_dir_path = scriptLib.find_module_path("udev", module_dir_path);
+        } catch{
+            return;
+        }
 
-        if (fs.existsSync(path.join(udev_dir_path, "build"))) {
+        const libudev_dev_version = scriptLib.sh_eval("dpkg -s libudev-dev | grep -i version");
+        const udev_build_dir_path = path.join(udev_dir_path, "build");
+        const libudev_dev_version_path = path.join(udev_build_dir_path, "libudev_dev_version.txt");
+
+        if (
+            fs.existsSync(udev_build_dir_path) &&
+            (
+                !fs.existsSync(libudev_dev_version_path) ||
+                libudev_dev_version === fs.readFileSync(libudev_dev_version_path).toString("utf8")
+            )
+        ) {
             return;
         }
 
@@ -1387,6 +1425,8 @@ async function rebuild_node_modules() {
 
         }
 
+        scriptLib.execSync(`rm -rf ${udev_build_dir_path}`);
+
         await exec(
             [
                 `PATH=${path.join(module_dir_path)}:$PATH`,
@@ -1396,13 +1436,23 @@ async function rebuild_node_modules() {
             { "cwd": udev_dir_path }
         );
 
+        fs.writeFileSync(
+            libudev_dev_version_path,
+            Buffer.from(libudev_dev_version, "utf8")
+        );
+
     })();
 
     await (async function postinstall_node_python_messaging() {
 
-        const node_python_messaging_dir_path = scriptLib.find_module_path(
-            "node-python-messaging", module_dir_path
-        );
+        let node_python_messaging_dir_path: string;
+        try {
+            node_python_messaging_dir_path = scriptLib.find_module_path(
+                "node-python-messaging", module_dir_path
+            );
+        } catch{
+            return;
+        }
 
         if (fs.existsSync(path.join(node_python_messaging_dir_path, "dist", "virtual"))) {
             return;
