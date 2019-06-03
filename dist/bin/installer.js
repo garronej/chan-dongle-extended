@@ -893,7 +893,7 @@ var asterisk_chan_dongle;
     asterisk_chan_dongle.linkDongleConfigFile = linkDongleConfigFile;
     function build(dest_dir_path, ast_include_dir_path, ast_cmdline) {
         return __awaiter(this, void 0, void 0, function () {
-            var src_dir_path, _a, exec, onSuccess, ast_ver, cdExec;
+            var src_dir_path, _a, exec, onSuccess, ast_ver, cdExec, repoHost;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -907,7 +907,8 @@ var asterisk_chan_dongle;
                         _a = scriptLib.start_long_running_process("Building and installing asterisk chan_dongle ( may take several minutes )"), exec = _a.exec, onSuccess = _a.onSuccess;
                         ast_ver = scriptLib.sh_eval(ast_cmdline + " -V").match(/^Asterisk\s+([0-9\.]+)/)[1];
                         cdExec = function (cmd) { return exec(cmd, { "cwd": src_dir_path }); };
-                        return [4 /*yield*/, exec("git clone https://github.com/garronej/asterisk-chan-dongle " + src_dir_path)];
+                        repoHost = "wdoekes";
+                        return [4 /*yield*/, exec("git clone https://github.com/" + repoHost + "/asterisk-chan-dongle " + src_dir_path)];
                     case 3:
                         _b.sent();
                         return [4 /*yield*/, cdExec("./bootstrap")];

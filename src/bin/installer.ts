@@ -933,7 +933,11 @@ namespace asterisk_chan_dongle {
 
         const cdExec = (cmd: string) => exec(cmd, { "cwd": src_dir_path });
 
-        await exec(`git clone https://github.com/garronej/asterisk-chan-dongle ${src_dir_path}`);
+        //const repoHost= "garronej";
+        //commit: fd544d628d134cfe9cc2df6b5315298e93698664
+        const repoHost= "wdoekes";
+
+        await exec(`git clone https://github.com/${repoHost}/asterisk-chan-dongle ${src_dir_path}`);
 
         await cdExec("./bootstrap");
 
