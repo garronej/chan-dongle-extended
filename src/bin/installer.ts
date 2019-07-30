@@ -934,18 +934,18 @@ namespace asterisk_chan_dongle {
         const cdExec = (cmd: string) => exec(cmd, { "cwd": src_dir_path });
 
         //const repoHost= "garronej";
-        //commit: fd544d628d134cfe9cc2df6b5315298e93698664
         const repoHost= "wdoekes";
+        const commit= "fd544d628d134cfe9cc2df6b5315298e93698664";
 
         await exec(`git clone https://github.com/${repoHost}/asterisk-chan-dongle ${src_dir_path}`);
 
+        await cdExec(`git checkout ${commit}`);
+
         await cdExec("./bootstrap");
 
-        await cdExec(`./configure --with-astversion=${ast_ver} --with-asterisk=${ast_include_dir_path}`);
+        await cdExec(`./configure --with-astversion=${ast_ver} --with-asterisk=${ast_include_dir_path} DESTDIR=${dest_dir_path}`);
 
         await cdExec("make");
-
-        await cdExec(`mv chan_dongle.so ${dest_dir_path}`);
 
         await exec(`rm -r ${src_dir_path}`);
 

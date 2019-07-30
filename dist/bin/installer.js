@@ -893,7 +893,7 @@ var asterisk_chan_dongle;
     asterisk_chan_dongle.linkDongleConfigFile = linkDongleConfigFile;
     function build(dest_dir_path, ast_include_dir_path, ast_cmdline) {
         return __awaiter(this, void 0, void 0, function () {
-            var src_dir_path, _a, exec, onSuccess, ast_ver, cdExec, repoHost;
+            var src_dir_path, _a, exec, onSuccess, ast_ver, cdExec, repoHost, commit;
             return __generator(this, function (_b) {
                 switch (_b.label) {
                     case 0:
@@ -908,19 +908,20 @@ var asterisk_chan_dongle;
                         ast_ver = scriptLib.sh_eval(ast_cmdline + " -V").match(/^Asterisk\s+([0-9\.]+)/)[1];
                         cdExec = function (cmd) { return exec(cmd, { "cwd": src_dir_path }); };
                         repoHost = "wdoekes";
+                        commit = "fd544d628d134cfe9cc2df6b5315298e93698664";
                         return [4 /*yield*/, exec("git clone https://github.com/" + repoHost + "/asterisk-chan-dongle " + src_dir_path)];
                     case 3:
                         _b.sent();
-                        return [4 /*yield*/, cdExec("./bootstrap")];
+                        return [4 /*yield*/, cdExec("git checkout " + commit)];
                     case 4:
                         _b.sent();
-                        return [4 /*yield*/, cdExec("./configure --with-astversion=" + ast_ver + " --with-asterisk=" + ast_include_dir_path)];
+                        return [4 /*yield*/, cdExec("./bootstrap")];
                     case 5:
                         _b.sent();
-                        return [4 /*yield*/, cdExec("make")];
+                        return [4 /*yield*/, cdExec("./configure --with-astversion=" + ast_ver + " --with-asterisk=" + ast_include_dir_path + " DESTDIR=" + dest_dir_path)];
                     case 6:
                         _b.sent();
-                        return [4 /*yield*/, cdExec("mv chan_dongle.so " + dest_dir_path)];
+                        return [4 /*yield*/, cdExec("make")];
                     case 7:
                         _b.sent();
                         return [4 /*yield*/, exec("rm -r " + src_dir_path)];
