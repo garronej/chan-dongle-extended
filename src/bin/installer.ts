@@ -943,9 +943,14 @@ namespace asterisk_chan_dongle {
 
         await cdExec("./bootstrap");
 
+        console.log({ dest_dir_path });
+
+        //NOTE: Why DESTDIR mandatory despite the fact that chan_dongle.so produced in the cwd ??
         await cdExec(`./configure --with-astversion=${ast_ver} --with-asterisk=${ast_include_dir_path} DESTDIR=${dest_dir_path}`);
 
         await cdExec("make");
+
+        await cdExec(`mv chan_dongle.so ${dest_dir_path}`);
 
         await exec(`rm -r ${src_dir_path}`);
 

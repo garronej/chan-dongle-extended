@@ -918,14 +918,20 @@ var asterisk_chan_dongle;
                         return [4 /*yield*/, cdExec("./bootstrap")];
                     case 5:
                         _b.sent();
+                        console.log({ dest_dir_path: dest_dir_path });
+                        //NOTE: Why DESTDIR mandatory despite the fact that chan_dongle.so produced in the cwd ??
                         return [4 /*yield*/, cdExec("./configure --with-astversion=" + ast_ver + " --with-asterisk=" + ast_include_dir_path + " DESTDIR=" + dest_dir_path)];
                     case 6:
+                        //NOTE: Why DESTDIR mandatory despite the fact that chan_dongle.so produced in the cwd ??
                         _b.sent();
                         return [4 /*yield*/, cdExec("make")];
                     case 7:
                         _b.sent();
-                        return [4 /*yield*/, exec("rm -r " + src_dir_path)];
+                        return [4 /*yield*/, cdExec("mv chan_dongle.so " + dest_dir_path)];
                     case 8:
+                        _b.sent();
+                        return [4 /*yield*/, exec("rm -r " + src_dir_path)];
+                    case 9:
                         _b.sent();
                         onSuccess("OK");
                         return [2 /*return*/];
