@@ -210,7 +210,6 @@ function atBridge(
 
                 let doNotForward = (
                     urc.id === "CX_BOOT_URC" ||
-                    urc.id === "CX_RSSI_URC" ||
                     (urc instanceof AtMessage.P_CMTI_URC) && (
                         urc.index < 0 ||
                         atBridge.confManagerApi.staticModuleConfiguration.defaults["disablesms"] === "yes"
