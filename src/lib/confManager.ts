@@ -47,7 +47,7 @@ const default_staticModuleConfiguration: dcTypes.StaticModuleConfiguration = {
         "disable": "no",
         "initstate": "start",
         "exten": "+12345678987",
-        "dtmf": "relax"
+        "dtmf": "off"
     }
 };
 

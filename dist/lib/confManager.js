@@ -88,7 +88,7 @@ var default_staticModuleConfiguration = {
         "disable": "no",
         "initstate": "start",
         "exten": "+12345678987",
-        "dtmf": "relax"
+        "dtmf": "off"
     }
 };
 function loadChanDongleSo(ami) {
