@@ -641,11 +641,12 @@ export namespace tty0tty {
 
         process.stdout.write("Checking for linux kernel headers ...");
 
-        if (fs.existsSync(path.join(build_link_path, "include"))) {
+        if( scriptLib.sh_if(`ls ${path.join(build_link_path, "include")}`) ){
 
             console.log(`found. ${scriptLib.colorize("OK", "GREEN")}`);
 
             return;
+
         }
 
         readline.clearLine(process.stdout, 0);
@@ -1288,7 +1289,13 @@ async function apt_get_install_asterisk() {
 
     }
 
-    const pr_install_ast = scriptLib.apt_get_install_if_missing("asterisk-dev");
+    const pr_install_ast = (async ()=>{
+
+        await scriptLib.apt_get_install_if_missing("asterisk-dev");
+
+        await scriptLib.apt_get_install_if_missing("asterisk");
+
+    })();
 
     //HOTFIX: On old version of raspberry pi install crash because timeout is reached.
 

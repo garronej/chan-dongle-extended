@@ -185,6 +185,43 @@ function broadcastRequest(methodName, params) {
 function onNewModem(modem) {
     var _this = this;
     var dongleImei = modem.imei;
+    modem.evtGsmConnectivityChange.attach(function () {
+        var e_3, _a;
+        var methodName = remoteApiDeclaration.notifyGsmConnectivityChange.methodName;
+        try {
+            for (var sockets_2 = __values(sockets), sockets_2_1 = sockets_2.next(); !sockets_2_1.done; sockets_2_1 = sockets_2.next()) {
+                var socket = sockets_2_1.value;
+                sipLibrary.api.client.sendRequest(socket, methodName, { dongleImei: dongleImei }).catch(function () { });
+            }
+        }
+        catch (e_3_1) { e_3 = { error: e_3_1 }; }
+        finally {
+            try {
+                if (sockets_2_1 && !sockets_2_1.done && (_a = sockets_2.return)) _a.call(sockets_2);
+            }
+            finally { if (e_3) throw e_3.error; }
+        }
+    });
+    modem.evtCellSignalStrengthTierChange.attach(function () {
+        var e_4, _a;
+        var methodName = remoteApiDeclaration.notifyCellSignalStrengthChange.methodName;
+        try {
+            for (var sockets_3 = __values(sockets), sockets_3_1 = sockets_3.next(); !sockets_3_1.done; sockets_3_1 = sockets_3.next()) {
+                var socket = sockets_3_1.value;
+                sipLibrary.api.client.sendRequest(socket, methodName, {
+                    dongleImei: dongleImei,
+                    "cellSignalStrength": buildDongleFromModem.modemCellSignalStrengthTierToDongleCellSignalStrength(modem.getCurrentGsmConnectivityState().cellSignalStrength.tier)
+                }).catch(function () { });
+            }
+        }
+        catch (e_4_1) { e_4 = { error: e_4_1 }; }
+        finally {
+            try {
+                if (sockets_3_1 && !sockets_3_1.done && (_a = sockets_3.return)) _a.call(sockets_3);
+            }
+            finally { if (e_4) throw e_4.error; }
+        }
+    });
     modem.evtMessage.attach(function (message) { return __awaiter(_this, void 0, void 0, function () {
         var methodName, response;
         var _this = this;
@@ -193,7 +230,7 @@ function onNewModem(modem) {
                 case 0:
                     methodName = remoteApiDeclaration.notifyMessage.methodName;
                     return [4 /*yield*/, new Promise(function (resolve) {
-                            var e_3, _a;
+                            var e_5, _a;
                             var tasks = [];
                             var _loop_1 = function (socket) {
                                 tasks[tasks.length] = (function () { return __awaiter(_this, void 0, void 0, function () {
@@ -218,17 +255,17 @@ function onNewModem(modem) {
                                 }); })();
                             };
                             try {
-                                for (var sockets_2 = __values(sockets), sockets_2_1 = sockets_2.next(); !sockets_2_1.done; sockets_2_1 = sockets_2.next()) {
-                                    var socket = sockets_2_1.value;
+                                for (var sockets_4 = __values(sockets), sockets_4_1 = sockets_4.next(); !sockets_4_1.done; sockets_4_1 = sockets_4.next()) {
+                                    var socket = sockets_4_1.value;
                                     _loop_1(socket);
                                 }
                             }
-                            catch (e_3_1) { e_3 = { error: e_3_1 }; }
+                            catch (e_5_1) { e_5 = { error: e_5_1 }; }
                             finally {
                                 try {
-                                    if (sockets_2_1 && !sockets_2_1.done && (_a = sockets_2.return)) _a.call(sockets_2);
+                                    if (sockets_4_1 && !sockets_4_1.done && (_a = sockets_4.return)) _a.call(sockets_4);
                                 }
-                                finally { if (e_3) throw e_3.error; }
+                                finally { if (e_5) throw e_5.error; }
                             }
                             Promise.all(tasks).then(function () { return resolve("SAVE MESSAGE"); });
                         })];
@@ -547,8 +584,20 @@ function buildDongleFromModem(modem) {
                     contacts: contacts,
                     digest: digest
                 }
-            }
+            },
+            "cellSignalStrength": modemCellSignalStrengthTierToDongleCellSignalStrength(modem.getCurrentGsmConnectivityState().cellSignalStrength.tier),
+            "isGsmConnectivityOk": modem.isGsmConnectivityOk()
         };
     }
     buildDongleFromModem.buildUsableDongleFromModem = buildUsableDongleFromModem;
+    function modemCellSignalStrengthTierToDongleCellSignalStrength(tier) {
+        switch (tier) {
+            case "<=-113 dBm": return "VERY WEAK";
+            case "-111 dBm": return "WEAK";
+            case "–109 dBm to –53 dBm": return "GOOD";
+            case "≥ –51 dBm": return "EXCELLENT";
+            case "Unknown or undetectable": return "NULL";
+        }
+    }
+    buildDongleFromModem.modemCellSignalStrengthTierToDongleCellSignalStrength = modemCellSignalStrengthTierToDongleCellSignalStrength;
 })(buildDongleFromModem || (buildDongleFromModem = {}));

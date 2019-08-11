@@ -181,21 +181,22 @@ function getApi(ami) {
                     api = {
                         staticModuleConfiguration: staticModuleConfiguration,
                         "reset": runExclusive.build(groupRef, function () { return __awaiter(_this, void 0, void 0, function () {
-                            var e_1, _a, _b, _c, key;
+                            var _a, _b, key;
+                            var e_1, _c;
                             return __generator(this, function (_d) {
                                 switch (_d.label) {
                                     case 0:
                                         debug("reset");
                                         try {
-                                            for (_b = __values(Object.keys(state).filter(function (key) { return key !== "general" && key !== "defaults"; })), _c = _b.next(); !_c.done; _c = _b.next()) {
-                                                key = _c.value;
+                                            for (_a = __values(Object.keys(state).filter(function (key) { return key !== "general" && key !== "defaults"; })), _b = _a.next(); !_b.done; _b = _a.next()) {
+                                                key = _b.value;
                                                 delete state[key];
                                             }
                                         }
                                         catch (e_1_1) { e_1 = { error: e_1_1 }; }
                                         finally {
                                             try {
-                                                if (_c && !_c.done && (_a = _b.return)) _a.call(_b);
+                                                if (_b && !_b.done && (_c = _a.return)) _c.call(_a);
                                             }
                                             finally { if (e_1) throw e_1.error; }
                                         }

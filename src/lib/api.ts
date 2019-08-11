@@ -1,4 +1,4 @@
-import { Modem } from "ts-gsm-modem";
+import { Modem, AtMessage } from "ts-gsm-modem";
 import * as types from "./types";
 import { InstallOptions } from "./InstallOptions";
 import * as logger from "logger";
@@ -167,9 +167,52 @@ function onNewModem(modem: Modem) {
 
     const dongleImei = modem.imei;
 
+    modem.evtGsmConnectivityChange.attach(() => {
+
+        const { methodName } = remoteApiDeclaration.notifyGsmConnectivityChange;
+        type Params = remoteApiDeclaration.notifyGsmConnectivityChange.Params;
+        type Response = remoteApiDeclaration.notifyGsmConnectivityChange.Response;
+
+        for (let socket of sockets) {
+
+            sipLibrary.api.client.sendRequest<Params, Response>(
+                socket,
+                methodName,
+                { dongleImei }
+            ).catch(() => { });
+
+        }
+
+    });
+
+    modem.evtCellSignalStrengthTierChange.attach(() => {
+
+        const { methodName } = remoteApiDeclaration.notifyCellSignalStrengthChange;
+        type Params = remoteApiDeclaration.notifyCellSignalStrengthChange.Params;
+        type Response = remoteApiDeclaration.notifyCellSignalStrengthChange.Response;
+
+        for (let socket of sockets) {
+
+            sipLibrary.api.client.sendRequest<Params, Response>(
+                socket,
+                methodName,
+                {
+                    dongleImei,
+                    "cellSignalStrength":
+                        buildDongleFromModem.modemCellSignalStrengthTierToDongleCellSignalStrength(
+                            modem.getCurrentGsmConnectivityState().cellSignalStrength.tier
+                        )
+                }
+            ).catch(() => { });
+
+        }
+
+
+    });
+
     modem.evtMessage.attach(async message => {
 
-        const methodName = remoteApiDeclaration.notifyMessage.methodName;
+        const { methodName } = remoteApiDeclaration.notifyMessage;
         type Params = remoteApiDeclaration.notifyMessage.Params;
         type Response = remoteApiDeclaration.notifyMessage.Response;
 
@@ -320,7 +363,7 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
     })();
 
-    (()=>{
+    (() => {
 
         const methodName = localApiDeclaration.rebootDongle.methodName
         type Params = localApiDeclaration.rebootDongle.Params;
@@ -329,16 +372,16 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
         const handler: sipLibrary.api.Server.Handler<Params, Response> = {
             "handler": async ({ imei }) => {
 
-                const modem= Array.from(modems.values())
+                const modem = Array.from(modems.values())
                     .find(modem => modem.imei === imei);
 
-                if( !modem ){
+                if (!modem) {
 
                     return undefined;
 
                 }
 
-                modem["__api_rebootDongle_called__"]= true;
+                modem["__api_rebootDongle_called__"] = true;
 
                 await modem.terminate();
 
@@ -603,10 +646,25 @@ namespace buildDongleFromModem {
                     contacts,
                     digest
                 }
-            }
+            },
+            "cellSignalStrength": modemCellSignalStrengthTierToDongleCellSignalStrength(
+                modem.getCurrentGsmConnectivityState().cellSignalStrength.tier
+            ),
+            "isGsmConnectivityOk": modem.isGsmConnectivityOk()
         };
 
     }
 
+    export function modemCellSignalStrengthTierToDongleCellSignalStrength(
+        tier: AtMessage.GsmOrUtranCellSignalStrengthTier
+    ): dcTypes.Dongle.Usable.CellSignalStrength {
+        switch (tier) {
+            case "<=-113 dBm": return "VERY WEAK";
+            case "-111 dBm": return "WEAK";
+            case "–109 dBm to –53 dBm": return "GOOD";
+            case "≥ –51 dBm": return "EXCELLENT";
+            case "Unknown or undetectable": return "NULL";
+        }
+    }
 
 }
