@@ -7,11 +7,12 @@ import { Tty0tty } from "./Tty0tty";
 import * as logger from "logger";
 import * as types from "./types";
 import { VoidSyncEvent } from "ts-events-extended";
+import * as runExclusive from "run-exclusive";
 
 const debug = logger.debugFactory();
 
-function readableAt(raw: string): string{
-    return "`" + raw.replace(/\r/g, "\\r").replace(/\n/g,"\\n") + "`";
+function readableAt(raw: string): string {
+    return "`" + raw.replace(/\r/g, "\\r").replace(/\n/g, "\\n") + "`";
 }
 
 export function init(
@@ -28,19 +29,6 @@ export function init(
         if (types.LockedModem.match(modem)) {
             return;
         }
-
-        await modem.runCommand(
-            `AT+CCWA=0,0,1\r`,
-            {
-                "recoverable": true,
-                "retryOnErrors": [30, 257]
-            }
-        ).then(({ final }) =>
-            debug(
-                "Configure modem to reject call waiting:",
-                final.isError ? final : "SUCCESS"
-            )
-        );
 
         atBridge(accessPoint, modem, tty0ttyFactory());
 
@@ -69,12 +57,53 @@ export namespace waitForTerminate {
 
 }
 
-
 function atBridge(
     accessPoint: AccessPoint,
     modem: Modem,
     tty0tty: Tty0tty
 ) {
+
+    const { confManagerApi } = atBridge;
+
+    (
+        modem.isGsmConnectivityOk() ?
+            Promise.resolve() :
+            modem.evtGsmConnectivityChange.waitFor()
+    ).then(async function callee() {
+
+        if (!!modem.terminateState) {
+            return;
+        }
+
+        debug("connectivity ok running AT+CCWA");
+
+        const { final } = await modem.runCommand(
+            `AT+CCWA=0,0,1\r`,
+            { "recoverable": true }
+        );
+
+        if (!!final.isError) {
+
+            debug("Failed to disable call waiting".red, final.raw);
+
+            modem.evtGsmConnectivityChange.attachOnce(
+                () => modem.isGsmConnectivityOk(),
+                () => callee()
+            );
+
+            return;
+
+        }
+
+        debug("Call waiting successfully disabled".green);
+
+    });
+
+
+    const runCommand = runExclusive.build(
+        ((...inputs) => modem.runCommand.apply(modem, inputs)
+        ) as typeof Modem.prototype.runCommand
+    );
 
     atBridge.confManagerApi.addDongle({
         "dongleName": accessPoint.friendlyId,
@@ -99,6 +128,7 @@ function atBridge(
         if (waitForTerminate.ports.size === 0) {
 
             waitForTerminate.evtAllClosed.post();
+
         }
 
     });
@@ -108,7 +138,7 @@ function atBridge(
 
             debug("Modem terminate => closing bridge");
 
-            await atBridge.confManagerApi.removeDongle(accessPoint.friendlyId);
+            await confManagerApi.removeDongle(accessPoint.friendlyId);
 
             if (portVirtual.isOpen()) {
 
@@ -132,7 +162,7 @@ function atBridge(
 
     const forwardResp = (rawResp: string, isRespFromModem: boolean, isPing = false) => {
 
-        if (modem.runCommand_isRunning) {
+        if (runExclusive.isRunning(runCommand)) {
             debug(`Newer command from chanDongle, dropping response ${readableAt(rawResp)}`.red);
             return;
         }
@@ -184,7 +214,7 @@ function atBridge(
 
         }
 
-        if (modem.runCommand_queuedCallCount) {
+        if (runExclusive.getQueuedCallCount(runCommand) !== 0) {
 
             debug([
                 `a command is already running and`,
@@ -194,9 +224,9 @@ function atBridge(
 
         }
 
-        modem.runCommand_cancelAllQueuedCalls();
+        runExclusive.cancelAllQueuedCalls(runCommand);
 
-        modem.runCommand(command, {
+        runCommand(command, {
             "recoverable": true,
             "reportMode": AtMessage.ReportMode.NO_DEBUG_INFO,
             "retryOnErrors": false
@@ -208,11 +238,11 @@ function atBridge(
         modem.evtUnsolicitedAtMessage.attach(
             urc => {
 
-                let doNotForward = (
+                const doNotForward = (
                     urc.id === "CX_BOOT_URC" ||
                     (urc instanceof AtMessage.P_CMTI_URC) && (
                         urc.index < 0 ||
-                        atBridge.confManagerApi.staticModuleConfiguration.defaults["disablesms"] === "yes"
+                        confManagerApi.staticModuleConfiguration.defaults["disablesms"] === "yes"
                     )
                 );
 
@@ -227,8 +257,6 @@ function atBridge(
             }
         )
     );
-
-
 
 };
 

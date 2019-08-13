@@ -152,13 +152,13 @@ function launch(modems, staticModuleConfiguration) {
                 return newModem.imei;
             }
         })();
-        (function () {
+        {
             var methodName = remoteApiDeclaration.updateMap.methodName;
             broadcastRequest(methodName, {
                 dongleImei: dongleImei,
                 "dongle": buildDongleFromModem(newModem)
             });
-        })();
+        }
         if (types.matchModem(newModem)) {
             onNewModem(newModem);
         }
@@ -288,7 +288,7 @@ function onNewModem(modem) {
 function makeApiHandlers(modems) {
     var _this = this;
     var handlers = {};
-    (function () {
+    {
         var methodName = localApiDeclaration.sendMessage.methodName;
         var handler = {
             "handler": function (_a) {
@@ -326,8 +326,8 @@ function makeApiHandlers(modems) {
             }
         };
         handlers[methodName] = handler;
-    })();
-    (function () {
+    }
+    {
         var methodName = localApiDeclaration.unlock.methodName;
         var handler = {
             "handler": function (params) { return __awaiter(_this, void 0, void 0, function () {
@@ -361,8 +361,8 @@ function makeApiHandlers(modems) {
             }); }
         };
         handlers[methodName] = handler;
-    })();
-    (function () {
+    }
+    {
         var methodName = localApiDeclaration.rebootDongle.methodName;
         var handler = {
             "handler": function (_a) {
@@ -388,15 +388,15 @@ function makeApiHandlers(modems) {
             }
         };
         handlers[methodName] = handler;
-    })();
-    (function () {
+    }
+    {
         var methodName = localApiDeclaration.getMessages.methodName;
         var handler = {
             "handler": function (params) { return db.messages.retrieve(params); }
         };
         handlers[methodName] = handler;
-    })();
-    (function () {
+    }
+    {
         var methodName = localApiDeclaration.createContact.methodName;
         var handler = {
             "handler": function (_a) {
@@ -429,8 +429,8 @@ function makeApiHandlers(modems) {
             }
         };
         handlers[methodName] = handler;
-    })();
-    (function () {
+    }
+    {
         var methodName = localApiDeclaration.updateContact.methodName;
         var handler = {
             "handler": function (_a) {
@@ -463,8 +463,8 @@ function makeApiHandlers(modems) {
             }
         };
         handlers[methodName] = handler;
-    })();
-    (function () {
+    }
+    {
         var methodName = localApiDeclaration.deleteContact.methodName;
         var handler = {
             "handler": function (_a) {
@@ -497,7 +497,7 @@ function makeApiHandlers(modems) {
             }
         };
         handlers[methodName] = handler;
-    })();
+    }
     return handlers;
 }
 /**

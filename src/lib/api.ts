@@ -103,7 +103,7 @@ export function launch(
     modems.evt.attach(
         ([newModem, _, oldModem]) => {
 
-            let dongleImei: string = (() => {
+            const dongleImei: string = (() => {
 
                 if (isVoid(newModem)) {
                     if (isVoid(oldModem)) throw "( never )";
@@ -115,9 +115,9 @@ export function launch(
 
             })();
 
-            (() => {
+            {
 
-                const methodName = remoteApiDeclaration.updateMap.methodName;
+                const { methodName } = remoteApiDeclaration.updateMap;
                 type Params = remoteApiDeclaration.updateMap.Params;
                 type Response = remoteApiDeclaration.updateMap.Response;
 
@@ -129,7 +129,7 @@ export function launch(
                     }
                 );
 
-            })();
+            }
 
             if (types.matchModem(newModem)) {
 
@@ -272,9 +272,9 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
     const handlers: sipLibrary.api.Server.Handlers = {};
 
-    (() => {
+    {
 
-        const methodName = localApiDeclaration.sendMessage.methodName;
+        const { methodName } = localApiDeclaration.sendMessage;
         type Params = localApiDeclaration.sendMessage.Params;
         type Response = localApiDeclaration.sendMessage.Response;
 
@@ -317,11 +317,11 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
         handlers[methodName] = handler;
 
-    })();
+    }
 
-    (() => {
+    {
 
-        const methodName = localApiDeclaration.unlock.methodName;
+        const { methodName } = localApiDeclaration.unlock;
         type Params = localApiDeclaration.unlock.Params;
         type Response = localApiDeclaration.unlock.Response;
 
@@ -361,11 +361,11 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
         handlers[methodName] = handler;
 
-    })();
+    }
 
-    (() => {
+    {
 
-        const methodName = localApiDeclaration.rebootDongle.methodName
+        const { methodName } = localApiDeclaration.rebootDongle
         type Params = localApiDeclaration.rebootDongle.Params;
         type Response = localApiDeclaration.rebootDongle.Response;
 
@@ -392,11 +392,11 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
         handlers[methodName] = handler;
 
-    })();
+    }
 
-    (() => {
+    {
 
-        const methodName = localApiDeclaration.getMessages.methodName;
+        const { methodName } = localApiDeclaration.getMessages;
         type Params = localApiDeclaration.getMessages.Params;
         type Response = localApiDeclaration.getMessages.Response;
 
@@ -406,11 +406,11 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
         handlers[methodName] = handler;
 
-    })();
+    }
 
-    (() => {
+    {
 
-        const methodName = localApiDeclaration.createContact.methodName;
+        const { methodName } = localApiDeclaration.createContact;
         type Params = localApiDeclaration.createContact.Params;
         type Response = localApiDeclaration.createContact.Response;
 
@@ -447,11 +447,11 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
         handlers[methodName] = handler;
 
-    })();
+    }
 
-    (() => {
+    {
 
-        const methodName = localApiDeclaration.updateContact.methodName;
+        const { methodName } = localApiDeclaration.updateContact;
         type Params = localApiDeclaration.updateContact.Params;
         type Response = localApiDeclaration.updateContact.Response;
 
@@ -490,11 +490,11 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
         handlers[methodName] = handler;
 
-    })();
+    }
 
-    (() => {
+    {
 
-        const methodName = localApiDeclaration.deleteContact.methodName;
+        const { methodName } = localApiDeclaration.deleteContact;
         type Params = localApiDeclaration.deleteContact.Params;
         type Response = localApiDeclaration.deleteContact.Response;
 
@@ -529,7 +529,7 @@ function makeApiHandlers(modems: types.Modems): sipLibrary.api.Server.Handlers {
 
         handlers[methodName] = handler;
 
-    })();
+    }
 
     return handlers;
 

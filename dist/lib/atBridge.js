@@ -58,6 +58,7 @@ var Tty0tty_1 = require("./Tty0tty");
 var logger = require("logger");
 var types = require("./types");
 var ts_events_extended_1 = require("ts-events-extended");
+var runExclusive = require("run-exclusive");
 var debug = logger.debugFactory();
 function readableAt(raw) {
     return "`" + raw.replace(/\r/g, "\\r").replace(/\n/g, "\\n") + "`";
@@ -70,23 +71,11 @@ function init(modems, chanDongleConfManagerApi) {
         var _b = __read(_a, 2), modem = _b[0], accessPoint = _b[1];
         return __awaiter(_this, void 0, void 0, function () {
             return __generator(this, function (_c) {
-                switch (_c.label) {
-                    case 0:
-                        if (types.LockedModem.match(modem)) {
-                            return [2 /*return*/];
-                        }
-                        return [4 /*yield*/, modem.runCommand("AT+CCWA=0,0,1\r", {
-                                "recoverable": true,
-                                "retryOnErrors": [30, 257]
-                            }).then(function (_a) {
-                                var final = _a.final;
-                                return debug("Configure modem to reject call waiting:", final.isError ? final : "SUCCESS");
-                            })];
-                    case 1:
-                        _c.sent();
-                        atBridge(accessPoint, modem, tty0ttyFactory());
-                        return [2 /*return*/];
+                if (types.LockedModem.match(modem)) {
+                    return [2 /*return*/];
                 }
+                atBridge(accessPoint, modem, tty0ttyFactory());
+                return [2 /*return*/];
             });
         });
     });
@@ -116,6 +105,40 @@ exports.waitForTerminate = waitForTerminate;
 })(waitForTerminate = exports.waitForTerminate || (exports.waitForTerminate = {}));
 function atBridge(accessPoint, modem, tty0tty) {
     var _this = this;
+    var confManagerApi = atBridge.confManagerApi;
+    (modem.isGsmConnectivityOk() ?
+        Promise.resolve() :
+        modem.evtGsmConnectivityChange.waitFor()).then(function callee() {
+        return __awaiter(this, void 0, void 0, function () {
+            var final;
+            return __generator(this, function (_a) {
+                switch (_a.label) {
+                    case 0:
+                        if (!!modem.terminateState) {
+                            return [2 /*return*/];
+                        }
+                        debug("connectivity ok running AT+CCWA");
+                        return [4 /*yield*/, modem.runCommand("AT+CCWA=0,0,1\r", { "recoverable": true })];
+                    case 1:
+                        final = (_a.sent()).final;
+                        if (!!final.isError) {
+                            debug("Failed to disable call waiting".red, final.raw);
+                            modem.evtGsmConnectivityChange.attachOnce(function () { return modem.isGsmConnectivityOk(); }, function () { return callee(); });
+                            return [2 /*return*/];
+                        }
+                        debug("Call waiting successfully disabled".green);
+                        return [2 /*return*/];
+                }
+            });
+        });
+    });
+    var runCommand = runExclusive.build((function () {
+        var inputs = [];
+        for (var _i = 0; _i < arguments.length; _i++) {
+            inputs[_i] = arguments[_i];
+        }
+        return modem.runCommand.apply(modem, inputs);
+    }));
     atBridge.confManagerApi.addDongle({
         "dongleName": accessPoint.friendlyId,
         "data": tty0tty.rightEnd,
@@ -137,7 +160,7 @@ function atBridge(accessPoint, modem, tty0tty) {
             switch (_a.label) {
                 case 0:
                     debug("Modem terminate => closing bridge");
-                    return [4 /*yield*/, atBridge.confManagerApi.removeDongle(accessPoint.friendlyId)];
+                    return [4 /*yield*/, confManagerApi.removeDongle(accessPoint.friendlyId)];
                 case 1:
                     _a.sent();
                     if (!portVirtual.isOpen()) return [3 /*break*/, 3];
@@ -158,7 +181,7 @@ function atBridge(accessPoint, modem, tty0tty) {
     var serviceProviderShort = (modem.serviceProviderName || "Unknown SP").substring(0, 15);
     var forwardResp = function (rawResp, isRespFromModem, isPing) {
         if (isPing === void 0) { isPing = false; }
-        if (modem.runCommand_isRunning) {
+        if (runExclusive.isRunning(runCommand)) {
             debug(("Newer command from chanDongle, dropping response " + readableAt(rawResp)).red);
             return;
         }
@@ -190,15 +213,15 @@ function atBridge(accessPoint, modem, tty0tty) {
             forwardResp("\r\n+COPS: 0,0,\"" + serviceProviderShort + "\",0\r\n" + ok, false);
             return;
         }
-        if (modem.runCommand_queuedCallCount) {
+        if (runExclusive.getQueuedCallCount(runCommand) !== 0) {
             debug([
                 "a command is already running and",
                 modem.runCommand_queuedCallCount + " command in stack",
                 "flushing the pending command in stack"
             ].join("\n").yellow);
         }
-        modem.runCommand_cancelAllQueuedCalls();
-        modem.runCommand(command, {
+        runExclusive.cancelAllQueuedCalls(runCommand);
+        runCommand(command, {
             "recoverable": true,
             "reportMode": ts_gsm_modem_1.AtMessage.ReportMode.NO_DEBUG_INFO,
             "retryOnErrors": false
@@ -211,7 +234,7 @@ function atBridge(accessPoint, modem, tty0tty) {
         return modem.evtUnsolicitedAtMessage.attach(function (urc) {
             var doNotForward = (urc.id === "CX_BOOT_URC" ||
                 (urc instanceof ts_gsm_modem_1.AtMessage.P_CMTI_URC) && (urc.index < 0 ||
-                    atBridge.confManagerApi.staticModuleConfiguration.defaults["disablesms"] === "yes"));
+                    confManagerApi.staticModuleConfiguration.defaults["disablesms"] === "yes"));
             if (!doNotForward) {
                 portVirtual.writeAndDrain(urc.raw);
             }

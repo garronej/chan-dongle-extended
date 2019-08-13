@@ -62,6 +62,8 @@ export async function launch() {
 
     const ami = Ami.getInstance(AmiCredential.get());
 
+
+
     ami.evtTcpConnectionClosed.attachOnce(() => {
 
         debug("TCP connection with Asterisk manager closed, reboot");
