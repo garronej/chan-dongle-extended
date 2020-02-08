@@ -9,7 +9,7 @@ import localApiDeclaration = apiDeclaration.service;
 import remoteApiDeclaration = apiDeclaration.controller;
 import { isVoid, Void } from "trackable-map";
 import * as sipLibrary from "ts-sip";
-import { VoidSyncEvent } from "ts-events-extended";
+import { VoidEvt } from "ts-evt";
 import * as db from "./db";
 import * as net from "net";
 
@@ -41,7 +41,7 @@ export function launch(
         })
     );
 
-    const evtListening = new VoidSyncEvent();
+    const evtListening = new VoidEvt();
 
     const netServer = net.createServer();
 

@@ -8,7 +8,7 @@ import { Ami } from "ts-ami";
 import * as dialplan from "./dialplan";
 import * as api from "./api";
 import * as atBridge from "./atBridge";
-import { SyncEvent } from "ts-events-extended";
+import { Evt } from "ts-evt";
 import * as confManager from "./confManager";
 import * as types from "./types";
 import * as logger from "logger";
@@ -22,7 +22,7 @@ const debug = logger.debugFactory();
 
 const modems: types.Modems = new TrackableMap();
 
-const evtScheduleRetry = new SyncEvent<{ 
+const evtScheduleRetry = new Evt<{ 
     accessPointId: AccessPoint["id"]; 
     shouldRebootModem: boolean
 }>();

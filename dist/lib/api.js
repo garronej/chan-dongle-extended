@@ -69,7 +69,7 @@ var localApiDeclaration = chan_dongle_extended_client_1.apiDeclaration.service;
 var remoteApiDeclaration = chan_dongle_extended_client_1.apiDeclaration.controller;
 var trackable_map_1 = require("trackable-map");
 var sipLibrary = require("ts-sip");
-var ts_events_extended_1 = require("ts-events-extended");
+var ts_evt_1 = require("ts-evt");
 var db = require("./db");
 var net = require("net");
 var debug = logger.debugFactory();
@@ -93,7 +93,7 @@ function launch(modems, staticModuleConfiguration) {
         "displayOnlyErrors": false,
         "hideKeepAlive": true
     }));
-    var evtListening = new ts_events_extended_1.VoidSyncEvent();
+    var evtListening = new ts_evt_1.VoidEvt();
     var netServer = net.createServer();
     netServer
         .once("error", function (error) { throw error; })

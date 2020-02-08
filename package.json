@@ -1,6 +1,6 @@
 {
   "name": "chan-dongle-extended",
-  "version": "5.6.2",
+  "version": "5.6.3",
   "description": "feature SMS multipart, phonebook memory access, PIN code management",
   "main": "./dist/lib/index.js",
   "types": "./dist/lib/index.d.ts",
@@ -33,7 +33,7 @@
     "trackable-map": "garronej/trackable-map",
     "transfer-tools": "garronej/transfer-tools",
     "ts-ami": "github:garronej/ts-ami",
-    "ts-events-extended": "garronej/ts-events-extended",
+    "ts-evt": "^4.3.3",
     "ts-gsm-modem": "git+https://206e4c24cb9a1e4a8d42b7ac86e4a026b02cee42:x-oauth-basic@github.com/garronej/ts-gsm-modem.git",
     "ts-sip": "github:garronej/ts-sip"
   },
