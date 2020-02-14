@@ -1,10 +1,11 @@
 #!/usr/bin/env node
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -35,7 +36,6 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
         if (op[0] & 5) throw op[1]; return { value: op[0] ? op[1] : void 0, done: true };
     }
 };
-var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var program = require("commander");
 var chan_dongle_extended_client_1 = require("../chan-dongle-extended-client");
@@ -47,7 +47,7 @@ require("colors");
 program
     .command("list")
     .description("List dongles")
-    .action(function () { return __awaiter(_this, void 0, void 0, function () {
+    .action(function () { return __awaiter(void 0, void 0, void 0, function () {
     var dc;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -72,7 +72,7 @@ program
     "Select dongle for subsequent calls",
     " ( to avoid having to set --imei on each command)"
 ].join(""))
-    .action(function (imei) { return __awaiter(_this, void 0, void 0, function () {
+    .action(function (imei) { return __awaiter(void 0, void 0, void 0, function () {
     var dc;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -103,7 +103,7 @@ program
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("-p, --pin [pin]", "SIM PIN ( 4 digits )")
     .option("--puk [puk-newPin]", "PUK ( 8 digits ) and new PIN eg. --puk 12345678-0000")
-    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
+    .action(function (options) { return __awaiter(void 0, void 0, void 0, function () {
     var imei, dc, unlockResult, match, puk, newPin, error_1;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -157,7 +157,7 @@ program
     .command("reboot")
     .description("Send AT command to reboot a dongle")
     .option("-i, --imei [imei]", "IMEI of the dongle")
-    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
+    .action(function (options) { return __awaiter(void 0, void 0, void 0, function () {
     var imei, dc, error_2;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -193,7 +193,7 @@ program
     .option("-n, --number [number]", "target phone number")
     .option("-t, --text [text]", "Text of the message")
     .option("-T, --text-base64 [textBase64]", "Text Base64 encoded")
-    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
+    .action(function (options) { return __awaiter(void 0, void 0, void 0, function () {
     var number, text, textBase64, imei, dc, st, sendMessageResult, error_3;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -246,7 +246,7 @@ program
     .command("messages")
     .description("Get received SMS")
     .option("-f, --flush", "Whether or not erasing retrieved messages")
-    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
+    .action(function (options) { return __awaiter(void 0, void 0, void 0, function () {
     var flush, dc, messages, error_4;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -279,7 +279,7 @@ program
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("--name [name]", "Contact's name")
     .option("--number [number]", "Contact's number")
-    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
+    .action(function (options) { return __awaiter(void 0, void 0, void 0, function () {
     var name, number, imei, dc, dongle, contact, error_5;
     return __generator(this, function (_a) {
         switch (_a.label) {
@@ -326,7 +326,7 @@ program
     .description("Delete a contact from phonebook memory")
     .option("-i, --imei [imei]", "IMEI of the dongle")
     .option("--index [index]", "Contact's index")
-    .action(function (options) { return __awaiter(_this, void 0, void 0, function () {
+    .action(function (options) { return __awaiter(void 0, void 0, void 0, function () {
     var index, imei, dc, dongle, error_6;
     return __generator(this, function (_a) {
         switch (_a.label) {

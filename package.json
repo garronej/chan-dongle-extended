@@ -27,14 +27,14 @@
     "logger": "github:garronej/logger",
     "node-gyp": "^3.7.0",
     "node-persist": "^2.1.0",
-    "run-exclusive": "github:garronej/run-exclusive",
+    "run-exclusive": "^2.1.5",
     "scripting-tools": "github:garronej/scripting-tools",
     "sqlite-custom": "github:garronej/sqlite-custom",
     "trackable-map": "garronej/trackable-map",
     "transfer-tools": "garronej/transfer-tools",
     "ts-ami": "github:garronej/ts-ami",
-    "ts-evt": "^4.3.3",
-    "ts-gsm-modem": "git+https://206e4c24cb9a1e4a8d42b7ac86e4a026b02cee42:x-oauth-basic@github.com/garronej/ts-gsm-modem.git",
+    "ts-evt": "^5.0.2",
+    "ts-gsm-modem": "github:garronej/ts-gsm-modem",
     "ts-sip": "github:garronej/ts-sip"
   },
   "devDependencies": {

@@ -48,7 +48,7 @@ function init(modems, ami, dialplanContext, defaultNumber) {
         modem.evtMessage.attach(function (message) {
             debug("Notify Message");
             var textSplit = tt.stringTransform.textSplit(ts_ami_1.Ami.headerValueMaxLength, tt.stringTransform.safeBufferFromTo(message.text, "utf8", "base64"));
-            var variables = __assign({}, dongleVariables, { "SMS_NUMBER": message.number, "SMS_DATE": message.date.toISOString(), "SMS_TEXT_SPLIT_COUNT": "" + textSplit.length, "SMS_BASE64": tt.stringTransformExt.b64crop(ts_ami_1.Ami.headerValueMaxLength, message.text) });
+            var variables = __assign(__assign({}, dongleVariables), { "SMS_NUMBER": message.number, "SMS_DATE": message.date.toISOString(), "SMS_TEXT_SPLIT_COUNT": "" + textSplit.length, "SMS_BASE64": tt.stringTransformExt.b64crop(ts_ami_1.Ami.headerValueMaxLength, message.text) });
             for (var i = 0; i < textSplit.length; i++) {
                 variables["SMS_BASE64_PART_" + i] = textSplit[i];
             }
@@ -57,7 +57,7 @@ function init(modems, ami, dialplanContext, defaultNumber) {
         modem.evtMessageStatusReport.attach(function (statusReport) {
             debug("Notify status report");
             var dischargeDate = statusReport.dischargeDate, isDelivered = statusReport.isDelivered, sendDate = statusReport.sendDate, status = statusReport.status, recipient = statusReport.recipient;
-            var variable = __assign({}, dongleVariables, { "STATUS_REPORT_DISCHARGE_TIME": isNaN(dischargeDate.getTime()) ? "" + dischargeDate : dischargeDate.toISOString(), "STATUS_REPORT_IS_DELIVERED": "" + isDelivered, "STATUS_REPORT_SEND_TIME": "" + sendDate.getTime(), "STATUS_REPORT_STATUS": status, "STATUS_REPORT_RECIPIENT": recipient });
+            var variable = __assign(__assign({}, dongleVariables), { "STATUS_REPORT_DISCHARGE_TIME": isNaN(dischargeDate.getTime()) ? "" + dischargeDate : dischargeDate.toISOString(), "STATUS_REPORT_IS_DELIVERED": "" + isDelivered, "STATUS_REPORT_SEND_TIME": "" + sendDate.getTime(), "STATUS_REPORT_STATUS": status, "STATUS_REPORT_RECIPIENT": recipient });
             ami.originateLocalChannel(dialplanContext, "sms-status-report", variable);
         });
     });

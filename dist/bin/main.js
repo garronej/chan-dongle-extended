@@ -1,9 +1,10 @@
 "use strict";
 var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, generator) {
+    function adopt(value) { return value instanceof P ? value : new P(function (resolve) { resolve(value); }); }
     return new (P || (P = Promise))(function (resolve, reject) {
         function fulfilled(value) { try { step(generator.next(value)); } catch (e) { reject(e); } }
         function rejected(value) { try { step(generator["throw"](value)); } catch (e) { reject(e); } }
-        function step(result) { result.done ? resolve(result.value) : new P(function (resolve) { resolve(result.value); }).then(fulfilled, rejected); }
+        function step(result) { result.done ? resolve(result.value) : adopt(result.value).then(fulfilled, rejected); }
         step((generator = generator.apply(thisArg, _arguments || [])).next());
     });
 };
@@ -50,13 +51,11 @@ var __read = (this && this.__read) || function (o, n) {
     }
     return ar;
 };
-var _this = this;
 Object.defineProperty(exports, "__esModule", { value: true });
 var scriptLib = require("scripting-tools");
 scriptLib.createService({
-    "rootProcess": function () { return __awaiter(_this, void 0, void 0, function () {
+    "rootProcess": function () { return __awaiter(void 0, void 0, void 0, function () {
         var _a, _b, build_ast_cmdline, node_path, pidfile_path, srv_name, tty0tty, rebuild_node_modules_if_needed, InstallOptions, hostRebootScheduler, child_process, logger, os, debug, config;
-        var _this = this;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0: return [4 /*yield*/, Promise.all([
@@ -77,7 +76,7 @@ scriptLib.createService({
                         "daemon_unix_user": InstallOptions.get().unix_user,
                         "daemon_node_path": node_path,
                         "daemon_restart_after_crash_delay": 5000,
-                        "preForkTask": function () { return __awaiter(_this, void 0, void 0, function () {
+                        "preForkTask": function () { return __awaiter(void 0, void 0, void 0, function () {
                             var isAsteriskFullyBooted;
                             return __generator(this, function (_a) {
                                 switch (_a.label) {
@@ -127,9 +126,8 @@ scriptLib.createService({
             }
         });
     }); },
-    "daemonProcess": function () { return __awaiter(_this, void 0, void 0, function () {
+    "daemonProcess": function () { return __awaiter(void 0, void 0, void 0, function () {
         var _a, path, fs, working_directory_path, logger, _b, launch, beforeExit, logfile_path;
-        var _this = this;
         return __generator(this, function (_c) {
             switch (_c.label) {
                 case 0: return [4 /*yield*/, Promise.all([
@@ -147,7 +145,7 @@ scriptLib.createService({
                                 logger.file.enable(logfile_path);
                                 launch();
                             },
-                            "beforeExitTask": function (error) { return __awaiter(_this, void 0, void 0, function () {
+                            "beforeExitTask": function (error) { return __awaiter(void 0, void 0, void 0, function () {
                                 return __generator(this, function (_a) {
                                     switch (_a.label) {
                                         case 0:
