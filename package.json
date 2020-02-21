@@ -30,10 +30,10 @@
     "run-exclusive": "^2.1.5",
     "scripting-tools": "github:garronej/scripting-tools",
     "sqlite-custom": "github:garronej/sqlite-custom",
-    "trackable-map": "garronej/trackable-map",
+    "trackable-map": "github:garronej/trackable-map",
     "transfer-tools": "garronej/transfer-tools",
     "ts-ami": "github:garronej/ts-ami",
-    "ts-evt": "^5.0.2",
+    "ts-evt": "^6.0.0",
     "ts-gsm-modem": "github:garronej/ts-gsm-modem",
     "ts-sip": "github:garronej/ts-sip"
   },
