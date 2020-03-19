@@ -6,7 +6,7 @@ import { Api as ConfManagerApi } from "./confManager";
 import { Tty0tty } from "./Tty0tty";
 import * as logger from "logger";
 import * as types from "./types";
-import { VoidEvt } from "ts-evt";
+import { VoidEvt } from "evt";
 import * as runExclusive from "run-exclusive";
 
 const debug = logger.debugFactory();

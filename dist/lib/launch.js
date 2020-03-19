@@ -54,7 +54,7 @@ var ts_ami_1 = require("ts-ami");
 var dialplan = require("./dialplan");
 var api = require("./api");
 var atBridge = require("./atBridge");
-var ts_evt_1 = require("ts-evt");
+var evt_1 = require("evt");
 var confManager = require("./confManager");
 var logger = require("logger");
 var db = require("./db");
@@ -63,7 +63,7 @@ var hostRebootScheduler = require("./hostRebootScheduler");
 var scripting_tools_1 = require("scripting-tools");
 var debug = logger.debugFactory();
 var modems = new trackable_map_1.TrackableMap();
-var evtScheduleRetry = new ts_evt_1.Evt();
+var evtScheduleRetry = new evt_1.Evt();
 function beforeExit() {
     return __awaiter(this, void 0, void 0, function () {
         var _this = this;

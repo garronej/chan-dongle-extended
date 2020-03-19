@@ -9,7 +9,7 @@ import localApiDeclaration = apiDeclaration.service;
 import remoteApiDeclaration = apiDeclaration.controller;
 import { isVoid, Void } from "trackable-map";
 import * as sipLibrary from "ts-sip";
-import { VoidEvt } from "ts-evt";
+import { VoidEvt } from "evt";
 import * as db from "./db";
 import * as net from "net";
 
@@ -544,20 +544,21 @@ async function performModemAction<Response>(
     action: () => Promise<Response>
 ): Promise<Response> {
 
-    const boundTo = [];
+    const ctx = VoidEvt.newCtx();
 
     const response = await Promise.race([
         action(),
         new Promise<never>(
             (_, reject) => modem.evtTerminate.attachOnce(
-                boundTo, () => reject(
+                ctx,
+                () => reject(
                     new Error("Modem disconnect while performing action")
                 )
             )
         )
     ]);
 
-    modem.evtTerminate.detach(boundTo);
+    modem.evtTerminate.detach(ctx);
 
     return response;
 

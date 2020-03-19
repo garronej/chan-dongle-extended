@@ -58,7 +58,7 @@ var ts_gsm_modem_1 = require("ts-gsm-modem");
 var Tty0tty_1 = require("./Tty0tty");
 var logger = require("logger");
 var types = require("./types");
-var ts_evt_1 = require("ts-evt");
+var evt_1 = require("evt");
 var runExclusive = require("run-exclusive");
 var debug = logger.debugFactory();
 function readableAt(raw) {
@@ -102,7 +102,7 @@ function waitForTerminate() {
 exports.waitForTerminate = waitForTerminate;
 (function (waitForTerminate) {
     waitForTerminate.ports = new Set();
-    waitForTerminate.evtAllClosed = new ts_evt_1.VoidEvt();
+    waitForTerminate.evtAllClosed = new evt_1.VoidEvt();
 })(waitForTerminate = exports.waitForTerminate || (exports.waitForTerminate = {}));
 function atBridge(accessPoint, modem, tty0tty) {
     var _this = this;

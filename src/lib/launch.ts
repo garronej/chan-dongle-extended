@@ -8,7 +8,7 @@ import { Ami } from "ts-ami";
 import * as dialplan from "./dialplan";
 import * as api from "./api";
 import * as atBridge from "./atBridge";
-import { Evt } from "ts-evt";
+import { Evt } from "evt";
 import * as confManager from "./confManager";
 import * as types from "./types";
 import * as logger from "logger";

@@ -71,7 +71,7 @@ var localApiDeclaration = chan_dongle_extended_client_1.apiDeclaration.service;
 var remoteApiDeclaration = chan_dongle_extended_client_1.apiDeclaration.controller;
 var trackable_map_1 = require("trackable-map");
 var sipLibrary = require("ts-sip");
-var ts_evt_1 = require("ts-evt");
+var evt_1 = require("evt");
 var db = require("./db");
 var net = require("net");
 var debug = logger.debugFactory();
@@ -95,7 +95,7 @@ function launch(modems, staticModuleConfiguration) {
         "displayOnlyErrors": false,
         "hideKeepAlive": true
     }));
-    var evtListening = new ts_evt_1.VoidEvt();
+    var evtListening = new evt_1.VoidEvt();
     var netServer = net.createServer();
     netServer
         .once("error", function (error) { throw error; })
@@ -508,18 +508,18 @@ function makeApiHandlers(modems) {
  * */
 function performModemAction(modem, action) {
     return __awaiter(this, void 0, void 0, function () {
-        var boundTo, response;
+        var ctx, response;
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    boundTo = [];
+                    ctx = evt_1.VoidEvt.newCtx();
                     return [4 /*yield*/, Promise.race([
                             action(),
-                            new Promise(function (_, reject) { return modem.evtTerminate.attachOnce(boundTo, function () { return reject(new Error("Modem disconnect while performing action")); }); })
+                            new Promise(function (_, reject) { return modem.evtTerminate.attachOnce(ctx, function () { return reject(new Error("Modem disconnect while performing action")); }); })
                         ])];
                 case 1:
                     response = _a.sent();
-                    modem.evtTerminate.detach(boundTo);
+                    modem.evtTerminate.detach(ctx);
                     return [2 /*return*/, response];
             }
         });
