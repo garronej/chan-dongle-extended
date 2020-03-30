@@ -107,70 +107,81 @@ exports.getIsProd = getIsProd;
 })(getIsProd = exports.getIsProd || (exports.getIsProd = {}));
 function program_action_install_prereq() {
     return __awaiter(this, void 0, void 0, function () {
-        return __generator(this, function (_a) {
-            switch (_a.label) {
+        var _a;
+        return __generator(this, function (_b) {
+            switch (_b.label) {
                 case 0: return [4 /*yield*/, scriptLib.apt_get_install_if_missing("git", "git")];
                 case 1:
-                    _a.sent();
+                    _b.sent();
                     return [4 /*yield*/, scriptLib.apt_get_install_if_missing("python", "python")];
                 case 2:
-                    _a.sent();
+                    _b.sent();
                     //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
                     return [4 /*yield*/, scriptLib.apt_get_install_if_missing("python-pip", "pip")];
                 case 3:
                     //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
-                    _a.sent();
-                    return [4 /*yield*/, (function installVirtualenv() {
-                            return __awaiter(this, void 0, void 0, function () {
-                                var _a, _b, exec, onSuccess, _c;
-                                return __generator(this, function (_d) {
-                                    switch (_d.label) {
-                                        case 0:
-                                            process.stdout.write("Checking for python module virtualenv ... ");
-                                            _d.label = 1;
-                                        case 1:
-                                            _d.trys.push([1, 2, , 9]);
-                                            scriptLib.execSyncQuiet("which virtualenv");
-                                            return [3 /*break*/, 9];
-                                        case 2:
-                                            _a = _d.sent();
-                                            readline.clearLine(process.stdout, 0);
-                                            process.stdout.write("\r");
-                                            _b = scriptLib.start_long_running_process("Installing virtualenv"), exec = _b.exec, onSuccess = _b.onSuccess;
-                                            _d.label = 3;
-                                        case 3:
-                                            _d.trys.push([3, 5, , 8]);
-                                            return [4 /*yield*/, scriptLib.exec("pip install virtualenv")];
-                                        case 4:
-                                            _d.sent();
-                                            return [3 /*break*/, 8];
-                                        case 5:
-                                            _c = _d.sent();
-                                            return [4 /*yield*/, exec("pip install -i https://pypi.python.org/simple/ --upgrade pip")];
-                                        case 6:
-                                            _d.sent();
-                                            return [4 /*yield*/, exec("pip install virtualenv")];
-                                        case 7:
-                                            _d.sent();
-                                            return [3 /*break*/, 8];
-                                        case 8:
-                                            onSuccess("DONE");
-                                            return [2 /*return*/];
-                                        case 9:
-                                            console.log("found. " + scriptLib.colorize("OK", "GREEN"));
-                                            return [2 /*return*/];
-                                    }
-                                });
-                            });
-                        })()];
+                    _b.sent();
+                    _b.label = 4;
                 case 4:
-                    _a.sent();
-                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("build-essential")];
+                    _b.trys.push([4, 6, , 7]);
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("python-setuptools")];
                 case 5:
-                    _a.sent();
-                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("libudev-dev")];
+                    _b.sent();
+                    return [3 /*break*/, 7];
                 case 6:
-                    _a.sent();
+                    _a = _b.sent();
+                    return [3 /*break*/, 7];
+                case 7: return [4 /*yield*/, (function installVirtualenv() {
+                        return __awaiter(this, void 0, void 0, function () {
+                            var _a, _b, exec, onSuccess, _c;
+                            return __generator(this, function (_d) {
+                                switch (_d.label) {
+                                    case 0:
+                                        process.stdout.write("Checking for python module virtualenv ... ");
+                                        _d.label = 1;
+                                    case 1:
+                                        _d.trys.push([1, 2, , 9]);
+                                        scriptLib.execSyncQuiet("which virtualenv");
+                                        return [3 /*break*/, 9];
+                                    case 2:
+                                        _a = _d.sent();
+                                        readline.clearLine(process.stdout, 0);
+                                        process.stdout.write("\r");
+                                        _b = scriptLib.start_long_running_process("Installing virtualenv"), exec = _b.exec, onSuccess = _b.onSuccess;
+                                        _d.label = 3;
+                                    case 3:
+                                        _d.trys.push([3, 5, , 8]);
+                                        return [4 /*yield*/, scriptLib.exec("pip install virtualenv")];
+                                    case 4:
+                                        _d.sent();
+                                        return [3 /*break*/, 8];
+                                    case 5:
+                                        _c = _d.sent();
+                                        return [4 /*yield*/, exec("pip install -i https://pypi.python.org/simple/ --upgrade pip")];
+                                    case 6:
+                                        _d.sent();
+                                        return [4 /*yield*/, exec("pip install virtualenv")];
+                                    case 7:
+                                        _d.sent();
+                                        return [3 /*break*/, 8];
+                                    case 8:
+                                        onSuccess("DONE");
+                                        return [2 /*return*/];
+                                    case 9:
+                                        console.log("found. " + scriptLib.colorize("OK", "GREEN"));
+                                        return [2 /*return*/];
+                                }
+                            });
+                        });
+                    })()];
+                case 8:
+                    _b.sent();
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("build-essential")];
+                case 9:
+                    _b.sent();
+                    return [4 /*yield*/, scriptLib.apt_get_install_if_missing("libudev-dev")];
+                case 10:
+                    _b.sent();
                     return [2 /*return*/];
             }
         });

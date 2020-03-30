@@ -55,6 +55,13 @@ async function program_action_install_prereq() {
     //NOTE assume python 2 available. var range = semver.Range('>=2.5.0 <3.0.0')
     await scriptLib.apt_get_install_if_missing("python-pip", "pip");
 
+    try {
+
+        await scriptLib.apt_get_install_if_missing("python-setuptools");
+
+    } catch{
+    }
+
     await (async function installVirtualenv() {
 
         process.stdout.write(`Checking for python module virtualenv ... `);
@@ -190,14 +197,14 @@ async function program_action_update(options) {
 
         scriptLib.fs_move("COPY", _db_schema_path, db_path);
 
-        const unix_user= InstallOptions.get().unix_user;
+        const unix_user = InstallOptions.get().unix_user;
 
         scriptLib.execSync(`chown ${unix_user}:${unix_user} ${db_path}`);
 
     }
 
 
-    for (const moduleName of ["udev","node-python-messaging"] as const) {
+    for (const moduleName of ["udev", "node-python-messaging"] as const) {
 
         const [
             target_module_dir_path,
@@ -216,27 +223,27 @@ async function program_action_update(options) {
         }
 
         if (
-            moduleName === "udev" && 
+            moduleName === "udev" &&
             !scriptLib.fs_areSame(node_path, path.join(_module_dir_path, "node"))
         ) {
             //NOTE: node have changes since last version
             continue;
         }
 
-        if(
-                path.relative(module_dir_path, target_module_dir_path)
-                !==
-                path.relative(_module_dir_path, _target_module_dir_path)
-        ){
+        if (
+            path.relative(module_dir_path, target_module_dir_path)
+            !==
+            path.relative(_module_dir_path, _target_module_dir_path)
+        ) {
             //NOTE: The new version of the package is not installed in the same location.
             continue;
         }
 
-        if( !([target_module_dir_path, _target_module_dir_path]
+        if (!([target_module_dir_path, _target_module_dir_path]
             .map(dir_path => path.join(dir_path, "package.json"))
             .map(file_path => require(file_path).version)
             .every((v, _index, [v0]) => v === v0))
-        ){
+        ) {
             //NOTE: The package have been updated.
             continue;
         }
@@ -641,7 +648,7 @@ export namespace tty0tty {
 
         process.stdout.write("Checking for linux kernel headers ...");
 
-        if( scriptLib.sh_if(`ls ${path.join(build_link_path, "include")}`) ){
+        if (scriptLib.sh_if(`ls ${path.join(build_link_path, "include")}`)) {
 
             console.log(`found. ${scriptLib.colorize("OK", "GREEN")}`);
 
@@ -935,8 +942,8 @@ namespace asterisk_chan_dongle {
         const cdExec = (cmd: string) => exec(cmd, { "cwd": src_dir_path });
 
         //const repoHost= "garronej";
-        const repoHost= "wdoekes";
-        const commit= "fd544d628d134cfe9cc2df6b5315298e93698664";
+        const repoHost = "wdoekes";
+        const commit = "fd544d628d134cfe9cc2df6b5315298e93698664";
 
         await exec(`git clone https://github.com/${repoHost}/asterisk-chan-dongle ${src_dir_path}`);
 
@@ -1289,7 +1296,7 @@ async function apt_get_install_asterisk() {
 
     }
 
-    const pr_install_ast = (async ()=>{
+    const pr_install_ast = (async () => {
 
         await scriptLib.apt_get_install_if_missing("asterisk-dev");
 
