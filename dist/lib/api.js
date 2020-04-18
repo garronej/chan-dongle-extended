@@ -95,7 +95,7 @@ function launch(modems, staticModuleConfiguration) {
         "displayOnlyErrors": false,
         "hideKeepAlive": true
     }));
-    var evtListening = new evt_1.VoidEvt();
+    var evtListening = evt_1.Evt.create();
     var netServer = net.createServer();
     netServer
         .once("error", function (error) { throw error; })
@@ -512,7 +512,7 @@ function performModemAction(modem, action) {
         return __generator(this, function (_a) {
             switch (_a.label) {
                 case 0:
-                    ctx = evt_1.VoidEvt.newCtx();
+                    ctx = evt_1.Evt.newCtx();
                     return [4 /*yield*/, Promise.race([
                             action(),
                             new Promise(function (_, reject) { return modem.evtTerminate.attachOnce(ctx, function () { return reject(new Error("Modem disconnect while performing action")); }); })

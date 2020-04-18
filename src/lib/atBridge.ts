@@ -6,7 +6,7 @@ import { Api as ConfManagerApi } from "./confManager";
 import { Tty0tty } from "./Tty0tty";
 import * as logger from "logger";
 import * as types from "./types";
-import { VoidEvt } from "evt";
+import { Evt } from "evt";
 import * as runExclusive from "run-exclusive";
 
 const debug = logger.debugFactory();
@@ -53,7 +53,7 @@ export namespace waitForTerminate {
 
     export const ports = new Set<SerialPortExt>();
 
-    export const evtAllClosed = new VoidEvt();
+    export const evtAllClosed = Evt.create();
 
 }
 

@@ -102,7 +102,7 @@ function waitForTerminate() {
 exports.waitForTerminate = waitForTerminate;
 (function (waitForTerminate) {
     waitForTerminate.ports = new Set();
-    waitForTerminate.evtAllClosed = new evt_1.VoidEvt();
+    waitForTerminate.evtAllClosed = evt_1.Evt.create();
 })(waitForTerminate = exports.waitForTerminate || (exports.waitForTerminate = {}));
 function atBridge(accessPoint, modem, tty0tty) {
     var _this = this;
