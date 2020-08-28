@@ -11,6 +11,7 @@ var __assign = (this && this.__assign) || function () {
     return __assign.apply(this, arguments);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Astdirs = void 0;
 var path = require("path");
 var fs = require("fs");
 var installer_1 = require("../bin/installer");

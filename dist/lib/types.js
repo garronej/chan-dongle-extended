@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.matchModem = exports.LockedModem = void 0;
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var LockedModem;
 (function (LockedModem) {

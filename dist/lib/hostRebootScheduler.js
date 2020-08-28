@@ -36,6 +36,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.rebootIfScheduled = exports.schedule = void 0;
 var i = require("../bin/installer");
 var path = require("path");
 var fs = require("fs");

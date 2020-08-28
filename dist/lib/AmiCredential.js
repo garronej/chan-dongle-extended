@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.AmiCredential = void 0;
 var path = require("path");
 var fs = require("fs");
 var scriptLib = require("scripting-tools");

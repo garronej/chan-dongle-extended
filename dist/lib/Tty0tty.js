@@ -1,5 +1,6 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.Tty0tty = void 0;
 var child_process = require("child_process");
 var Tty0tty = /** @class */ (function () {
     function Tty0tty(leftEnd, rightEnd) {

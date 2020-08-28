@@ -47,6 +47,7 @@ var __values = (this && this.__values) || function(o) {
     throw new TypeError(s ? "Object is not iterable." : "Symbol.iterator is not defined.");
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.messages = exports.pin = exports.flush = exports.launch = exports.beforeExit = exports._ = void 0;
 var sqliteCustom = require("sqlite-custom");
 var installer_1 = require("../bin/installer");
 var logger = require("logger");

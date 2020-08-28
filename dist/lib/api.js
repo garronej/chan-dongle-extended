@@ -63,6 +63,7 @@ var __read = (this && this.__read) || function (o, n) {
     return ar;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.launch = exports.beforeExit = void 0;
 var types = require("./types");
 var InstallOptions_1 = require("./InstallOptions");
 var logger = require("logger");

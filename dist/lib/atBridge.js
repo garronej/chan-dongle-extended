@@ -54,6 +54,7 @@ var __read = (this && this.__read) || function (o, n) {
     return ar;
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.waitForTerminate = exports.init = void 0;
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var Tty0tty_1 = require("./Tty0tty");
 var logger = require("logger");

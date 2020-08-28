@@ -47,6 +47,7 @@ var __generator = (this && this.__generator) || function (thisArg, body) {
     }
 };
 Object.defineProperty(exports, "__esModule", { value: true });
+exports.launch = exports.beforeExit = void 0;
 var ts_gsm_modem_1 = require("ts-gsm-modem");
 var trackable_map_1 = require("trackable-map");
 var AmiCredential_1 = require("./AmiCredential");
