@@ -4,7 +4,7 @@
 
 ## Installing node 
 
-Note for 2021: Everything will run smoothly only on Debian 9: Stretch
+Note for 2021: Save yourself some time, at least for developement, **use Debian 9: Stretch**
 
 ### On armv6 hosts ( raspberry pi 1 )
 ``` bash
