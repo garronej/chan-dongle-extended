@@ -1325,7 +1325,12 @@ async function apt_get_install_asterisk() {
                 )
             );
 
-            scriptLib.execSync("systemctl daemon-reload");
+            try{
+
+                scriptLib.execSync("systemctl daemon-reload");
+
+            }catch{
+            }
 
         }
 
