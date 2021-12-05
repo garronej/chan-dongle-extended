@@ -20,6 +20,9 @@ $ npm install -g npm@latest-5
 
 ### On any other host ( armv7, x32, x64 )
 ``` bash
+$ # On a fresh install of debian 8 Jessie:
+$ apt-get update && apt-get upgrade -y
+
 $ curl -sL https://deb.nodesource.com/setup_8.x | sudo -E bash -
 $ sudo apt-get install -y nodejs
 $ sudo npm install -g npm@latest-5
